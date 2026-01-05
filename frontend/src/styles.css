@@ -1,0 +1,1285 @@
+/* Basic Reset and Global Styles */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0; 
+    padding: 0; 
+}
+
+html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto; 
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    color: #000;
+    display: flex; 
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+    min-height: 100vh;
+    width: 100%;
+}
+
+.header-logos-container {
+    display: flex;
+    flex-direction: row; 
+    justify-content: center; 
+    align-items: center; 
+    margin-top: 20px; 
+    margin-bottom: 40px; 
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap; 
+    gap: 15px; 
+}
+
+.header-logo-item {
+    height: 50px; 
+    width: auto;
+    object-fit: contain;
+}
+
+h1 {
+    font-size: 1.8em; 
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+h2 {
+    font-size: 1.2em;
+    margin-bottom: 5px;
+}
+
+/* Button Styling (Generic base) */
+button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Signup-Specific Button Styles (Kept) */
+.dost-signup-btn {
+    background-color: #000; 
+    color: white;
+    transition: opacity 0.4s ease-out;
+    opacity: 1; 
+}
+
+.dost-signup-btn.fade-out {
+    opacity: 0.5; 
+    pointer-events: none;
+}
+
+/* Terms and Policy (Generic Base) */
+.terms-policy {
+    font-size: 0.8em;
+    color: #8b949e;
+    line-height: 1.5;
+    margin-top: 20px;
+}
+
+.terms-policy a {
+    color: #58a6ff; 
+    text-decoration: none;
+}
+
+.terms-policy a:hover {
+    text-decoration: underline;
+}
+
+/* -------------------------------------------------------------------------------- */
+/* --- Styles for SignupScreen.jsx (MATCHES THE PROVIDED IMAGE) --- */
+/* -------------------------------------------------------------------------------- */
+
+.login3-container.main-signup-screen {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    overflow-y: auto; 
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.google-auth-container {
+    /* 🔑 ADJUSTED: Use 100% height and center content for non-scrollable layout */
+    max-width: 450px;
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #fff; 
+    height: 90%;
+    justify-content: center;
+    align-items: center;
+    padding: 20px; 
+    box-sizing: border-box;
+    width: 100%;
+    overflow-y: auto;
+    display: flex; /* ADDED: Enables flex properties on the container itself */
+    flex-direction: column; /* ADDED: Stack content vertically */
+}
+
+/* Card Container */
+.google-card {
+    width: 100%;
+    max-width: 450px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3); 
+    margin-bottom: 24px;
+    box-sizing: border-box;
+}
+
+/* Header (Sign in with Google) */
+.google-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Removed padding-top and justify-content: flex-start to enable vertical centering */
+    min-height: 100%;
+    padding: 20px 0;
+}
+
+/* Specific Card Styling for the Signup Screen */
+.main-signup-card {
+    /* 🔑 CRITICAL: Remove card styling to match the clean, un-carded image look */
+    box-shadow: none; 
+    padding: 0; 
+    border: none; 
+    margin-bottom: 50px; /* Space between form and footer logos */
+    width: 100%;
+    text-align: center; /* Center form elements horizontally */
+    max-width: 380px; 
+    margin-left: auto; /* Center the card */
+    margin-right: auto; /* Center the card */
+}
+
+.main-signup-card h1 {
+    font-size: 1.8em; /* Match size of main title in the image */
+    font-weight: 500;
+    margin-bottom: 40px; /* Increased space below the main title */
+    text-align: center;
+}
+
+.create-account-subtitle {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+    /* 🔑 FIX: Align text left to match image */
+    text-align: center;
+}
+
+.create-account-subtext {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 20px;
+    /* 🔑 FIX: Align text left to match image */
+    text-align: center;
+}
+
+/* Input Styling */
+.signup-input {
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    font-size: 1rem;
+    color: #333;
+    background-color: #fff; 
+    /* 🔑 FIX: Ensure border/background overrides previous styles */
+    box-sizing: border-box; 
+}
+
+.signup-input::placeholder {
+    color: #999;
+}
+
+/* Button Styling */
+.signup-btn {
+    background-color: #1C244D; /* Dark Blue from the image */
+    color: white;
+    padding: 12px 20px;
+    font-weight: 600;
+    margin-top: 5px; 
+    margin-bottom: 15px; /* Space below button to terms */
+}
+
+/* Terms and Policy Styling */
+.terms-policy.terms-and-sign-in {
+    font-size: 0.8em; /* Slightly smaller font */
+    color: #666;
+    margin-top: 15px; 
+    margin-bottom: 15px; 
+    /* 🔑 FIX: Align text left to match image */
+    text-align: center;
+}
+.terms-policy.terms-and-sign-in a {
+    /* 🔑 FIX: Use a darker blue for links for better contrast */
+    color: #1C244D; 
+    font-weight: bold;
+}
+
+/* Already have an account text */
+.already-account {
+    font-size: 0.9em;
+    color: #333;
+    /* 🔑 FIX: Align text left to match image */
+    text-align: center;
+}
+.already-account .sign-in-link {
+    /* 🔑 FIX: Use a darker blue for links for better contrast */
+    color: #1C244D; 
+    font-weight: bold;
+    text-decoration: none;
+}
+
+/* Footer Logos Container (LogosContainer) positioning */
+.signup-logo-footer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    /* 🔑 FIX: Set max-width to align with the form content width (380px) */
+    max-width: 380px; 
+    margin-left: auto; /* Center the footer */
+    margin-right: auto; /* Center the footer */
+}
+
+.signup-logo-footer .header-logos-container {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+
+/* --- (Keep the rest of your provided styles for other components below this line) --- */
+/* -------------------------------------------------------------------------------- */
+/* --- Styles for Login Screen 3 (Sign In/Up/Forgot Password Screens) --- */
+/* -------------------------------------------------------------------------------- */
+
+/* NOTE: Keeping the rest of the styles from your provided document for completeness. */
+
+.signin-main-container {
+    font-family: Arial, sans-serif; 
+    height: 100vh; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; 
+    padding: 20px;
+    box-sizing: border-box;
+    width: 100%; 
+    overflow-y: auto; 
+}
+
+.signin-card {
+    background-color: #ffffff; 
+    box-shadow: none; 
+    border: none; 
+    padding: 0; 
+    width: 100%;
+    max-width: 380px; 
+    text-align: center;
+    margin-bottom: 50px; 
+    box-sizing: border-box;
+}
+
+.signin-title {
+    font-size: 1.8em; 
+    margin-bottom: 50px; 
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.welcome-back-subtitle {
+    font-size: 1.5em; 
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.enter-email-text {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 25px; 
+}
+
+.signin-input {
+    width: 100%; 
+    padding: 10px 12px; 
+    margin-bottom: 15px; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    font-size: 1rem;
+    color: #333;
+    box-sizing: border-box;
+    outline: none;
+    background-color: #fff; 
+}
+
+.signin-input::placeholder {
+    color: #999;
+}
+
+.signin-remember-me-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; 
+    width: 100%;
+    margin-bottom: 25px; 
+    font-size: 0.95rem; 
+    color: #333;
+}
+
+.signin-remember-me-container input[type="checkbox"] {
+    margin-right: 10px; 
+    width: 16px; 
+    height: 16px;
+    border: 1px solid #ccc; 
+    background-color: white;
+}
+
+.signin-continue-btn {
+    background-color: #1C244D; 
+    color: white;
+    padding: 10px 20px;
+    font-weight: 600;
+    margin-bottom: 25px; 
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.signin-continue-btn:hover {
+    background-color: #2a346e; 
+}
+
+.signin-terms-policy {
+    font-size: 0.75em; 
+    color: #666;
+    line-height: 1.5;
+    margin-top: 15px;
+    margin-bottom: 25px; 
+    padding: 0 10px;
+}
+
+.signin-terms-policy a {
+    color: #1C244D; 
+    text-decoration: none;
+    font-weight: 700; 
+}
+
+.signup-forgot-links {
+    font-size: 0.9em;
+    margin-bottom: 10px; 
+    color: #333;
+}
+
+.signup-forgot-links a {
+    color: #1C244D; 
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.signup-forgot-links a:hover {
+    text-decoration: underline;
+}
+
+.signin-logo-footer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    max-width: 450px; 
+}
+
+.signin-logo-footer .header-logos-container {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.forgot-password-main-title {
+    font-size: 1.8em; 
+    font-weight: 500;
+    margin-bottom: 50px; 
+    position: absolute;
+    top: 15vh; 
+}
+/* ... (Rest of dashboard styles not shown for brevity) ... */
+
+/* -------------------------------------------------------------------------------- */
+/* --- Styles for Dashboard (New Page) --- */
+/* -------------------------------------------------------------------------------- */
+/* Global change for Dashboard to take up the full view */
+html, body, #root, .dashboard-layout {
+    height: 100%;
+    margin: 0; /* Remove default body/html margin */
+    padding: 0; /* Remove default body/html padding */
+    box-sizing: border-box; /* Crucial for preventing layout issues */
+    /* 🔑 REVERTED: Removed global absolute positioning */
+    /* position: absolute; */ 
+    /* top: 0; */
+    /* left: 0; */
+}
+
+.dashboard-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    font-family: Arial, sans-serif;
+    background-color: #FFFFFF; /* Light background for the main area */
+    /* 🔑 CRITICAL FIX: Force dashboard to top-left to override body centering */
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 250px; /* Wider sidebar */
+    flex-shrink: 0; /* Prevent it from shrinking */
+    background-color: #1C244D;
+    color: white;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    position: sticky; /* For footer positioning */
+    top: 0; /* Stick to the top of the viewport */
+}
+
+.sidebar-footer {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    margin-top: auto; /* Push to the bottom */
+    cursor: pointer;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 0 20px 20px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px;
+}
+
+.sidebar-logo {
+    height: 50px;
+    width: auto;
+    margin-right: 10px;
+}
+
+.sidebar-header span {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.sidebar-menu-title {
+    color: #fcfcfc;
+    font-size: 0.85em;
+    padding: 0 20px;
+    margin-bottom: 10px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.95em;
+}
+
+.nav-item:hover {
+    background-color: #333;
+}
+
+.nav-item.active {
+    background-color: #4CAF50; /* Yellow highlight for active state */
+    color: #000;
+    font-weight: bold;
+}
+
+.nav-item .material-icons {
+    margin-right: 15px;
+    font-size: 40px;
+    color: #FFFFFF;
+}
+
+.nav-item.active .material-icons {
+    color: #000;
+}
+
+.sidebar-separator {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 15px 20px;
+}
+
+.sidebar-footer {
+    display: flex;
+    align-items: center;
+    padding: 10px 50px;
+    margin-top: auto; /* Push to the bottom */
+    cursor: pointer;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ADD THE NEW HOVER RULE HERE */
+.sidebar-footer:hover {
+    background-color: #0075d4; 
+}
+
+.user-initials-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #003881; /* Yellow */
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-right: 10px;
+}
+
+.logout-text {
+    font-size: 1.1em;
+}
+
+/* Main Content Styling */
+.main-content {
+    flex-grow: 1;
+    padding: 0 30px 30px 30px; /* FIX: Line 280 changed from '30px' to '0 30px 30px 30px' */
+    overflow-y: auto;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0;
+    margin-bottom: 0px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 1px;
+    flex-wrap: wrap;
+}  
+
+.main-header h1 {
+    font-size: 1.15em;
+    font-weight: 1500;
+    margin: 0;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Date/Product Filter Row */
+.filter-row {
+    display: flex;
+    align-items: flex-end; /* MODIFIED: Align items to the bottom, aligning the button with inputs */
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+/* NEW: Style for Filter Group */
+.filter-group {
+    display: flex;
+    flex-direction: column; /* Stack label and input vertically */
+    gap: 5px; /* Small space between label and input */
+}
+
+/* NEW: Style the Labels */
+.filter-group label {
+    font-size: 0.9em;
+    color: #666;
+    font-weight: 500;
+}
+
+.date-filter, .product-type-filter {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.date-filter input, .product-type-filter input {
+    padding: 8px 3px 10px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #F0F1F3;
+    cursor: pointer;
+    width: 300px; /* Fixed width for dates */
+    box-sizing: border-box; /* Crucial override */
+    margin-bottom: 0; /* Override global input margin */
+}
+
+.calendar-icon {
+    position: absolute;
+    right: 5px;
+    color: #666;
+    font-size: 20px;
+    pointer-events: none;
+}
+
+.product-type-filter .material-icons {
+    position: absolute;
+    right: 5px;
+    color: #666;
+    font-size: 20px;
+    pointer-events: none;
+}
+
+.get-data-btn {
+    padding: 8px 20px;
+    background-color: #1C244D;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-weight: bold;
+    cursor: pointer;
+    width: auto; /* Override global button style */
+    /* MODIFIED: Ensure button height matches input fields for vertical alignment */
+    height: 35px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0; /* Remove any previous button margin */
+}
+
+/* Stat Cards */
+.stat-cards-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    flex: 1; /* Equal width for cards */
+    min-width: 200px; /* Ensures cards don't get too small */
+}
+
+.stat-icon-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 15px;
+    color: white;
+}
+
+.stat-icon-circle .material-icons {
+    font-size: 24px;
+}
+
+.stat-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin: 0;
+    color: #333;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: #666;
+    margin: 0;
+}
+
+/* Data Table */
+.data-table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(246, 246, 246, 0.05);
+    overflow-x: auto; /* Ensures table is scrollable if content overflows */
+}
+
+.data-table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.data-table-container th, .data-table-container td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+}
+
+.data-table-container th {
+    background-color: #f7f9fc;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.table-row:hover {
+    background-color: #f0f4f8;
+}
+
+.table-title {
+    max-width: 300px; /* Control title width */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-cell {
+    font-weight: bold;
+    display: flex; /* To align dot and text */
+    align-items: center;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+/* Specific status colors */
+.status-pending-approval .status-dot {
+    background-color: #FFC107; /* Yellow */
+}
+
+.status-pending-approval {
+    color: #FFC107; /* Yellow text for consistency */
+}
+
+/* Additional styling for table to look like the image */
+.data-table-container td {
+    color: #333;
+}
+
+/* --- Dashboard Sidebar DROPDOWN/RBAC Styles (ADD THESE) --- */
+
+/* Ensures NavLink uses the existing styling and hover */
+.sidebar .nav-item {
+    padding: 12px 20px;
+}
+.sidebar .nav-item:hover {
+    background-color: #34495e; /* Slightly lighter dark on hover */
+}
+
+/* Style for Dropdown Buttons (Content Management, Analytics, User Management) */
+.dropdown-toggle-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #ecf0f1;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: background-color 0.3s;
+    justify-content: flex-start; /* Align text to the start */
+    margin: 0; /* Override generic button margin */
+}
+
+.dropdown-toggle-btn:hover {
+    background-color: #34495e;
+}
+
+.dropdown-toggle-btn .material-icons {
+    margin-right: 15px;
+    font-size: 20px;
+}
+
+/* Sub-Menu Styling */
+.sub-menu {
+    list-style: none;
+    padding-left: 55px !important; /* Indent sub-items */
+    margin: 5px 0 10px 0;
+}
+
+.sub-menu li a {
+    transition: color 0.2s;
+}
+
+.sub-menu li a:hover {
+    color: #f1c40f !important; /* Yellow hover for sub-items */
+}
+
+/* Small separator for between dropdown groups */
+.sidebar-separator-small {
+    height: 1px;
+    background-color: #34495e;
+    margin: 8px 20px;
+}
+
+/* -------------------------------------------------------------------------------- */
+/* --- Styles for UploadContentPage Form Layout and Elements --- */
+/* -------------------------------------------------------------------------------- */
+
+/* 1. Card Container (Reiterated from previous step) */
+.card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.01);
+    padding: 40px; 
+    margin-top: 0px; 
+    width: 100%; /* Ensures it fills the dashboard content area */
+    max-width: 100%;
+}
+
+/* 2. Top Controls and Buttons */
+.content-form-layout {
+    width: 100%;
+}
+
+.form-header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px; 
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    flex-wrap: wrap; 
+    gap: 20px; 
+}
+
+.checkbox-group, .action-buttons, .radio-group {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+/* Primary/Secondary Buttons */
+.primary-action-btn {
+    background-color: #1C244D; 
+    color: white;
+    padding: 10px 20px;
+    width: auto; 
+    margin-bottom: 0; 
+}
+
+.secondary-action-btn {
+    background-color: #E0E0E0; 
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 10px 20px;
+    width: auto;
+    margin-bottom: 0;
+}
+
+/* 3. Main Grid Layout */
+.form-grid {
+    display: grid;
+    /* Defines 6 equal columns with a 20px gap */
+    grid-template-columns: repeat(6, 1fr); 
+    gap: 20px; 
+    gap: 20px; /* Spacing between grid items */
+    width: 100%; /* Ensure the grid takes full width of the parent */
+}
+
+/* Grid Item Spanning Definitions (Crucial for the image layout) */
+.grid-item-1-2 { grid-column: span 2; } 
+.grid-item-3-4 { grid-column: 3 / span 2; }
+.grid-item-5-6 { grid-column: 5 / span 2; }
+.grid-item-1-3 { grid-column: span 3; }
+.grid-item-4-6 { grid-column: 4 / span 3; }
+.grid-item-1-6 { grid-column: span 8; } /* Full width */
+
+/* Form Group Structure & Labels */
+.form-group {
+    margin-bottom: 1;
+}
+
+.form-group label {
+    display: block; 
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px; 
+    font-size: 0.9em;
+}
+
+/* Input, Textarea, Select Styles */
+.form-group input:not([type="checkbox"]):not([type="radio"]), 
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #F8F9FA; 
+    color: #333;
+    box-sizing: border-box; 
+    font-size: 1em;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.form-group select {
+    /* Custom arrow for select dropdown */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M287%2C114.7L154.5%2C16.6c-4.3-3.3-10-3.3-14.3%2C0L5.4%2C114.7c-5.7%2C4.3-5.7%2C11.3%2C0%2C15.6l143.9%2C98.1c4.3%2C3.3%2C10%2C3.3%2C14.3%2C0l143.9-98.1C292.7%2C126%2C292.7%2C119%2C287%2C114.7z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 10px center; 
+    background-size: 12px;
+}
+
+/* Input with an icon (Unity Access Token field) */
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon input {
+    padding-right: 40px; 
+}
+
+.input-with-icon .icon-right {
+    position: absolute;
+    right: 10px;
+    color: #999;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* 4. Custom Checkboxes and Radios */
+.checkbox-container, .radio-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 25px; /* Space for custom box/circle */
+    cursor: pointer;
+    user-select: none;
+    font-weight: normal; /* Override label font-weight */
+    font-size: 0.9em;
+}
+
+.checkbox-container input, .radio-container input {
+    position: absolute;
+    opacity: 0; /* Hide the default browser input */
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkbox-custom, .radio-custom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 18px;
+    width: 18px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.radio-custom {
+    border-radius: 50%; /* Makes it a circle for radio button */
+}
+
+/* Checked state */
+.checkbox-container input:checked ~ .checkbox-custom,
+.radio-container input:checked ~ .radio-custom {
+    background-color: #1C244D;
+    border-color: #1C244D;
+}
+
+/* Checkmark/Dot inside */
+.checkbox-custom:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 6px;
+    top: 3px;
+    width: 3px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.radio-custom:after {
+    content: "";
+    position: absolute;
+    display: none;
+    top: 4px;
+    left: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+}
+
+.checkbox-container input:checked ~ .checkbox-custom:after,
+.radio-container input:checked ~ .radio-custom:after {
+    display: block;
+}
+
+/* Chatbot control specific alignment */
+.chatbot-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 10px;
+}
+.chat-bot-label {
+    margin-bottom: 0 !important;
+}
+
+/* 5. Rich Text Editor Placeholder Styles */
+.rich-text-editor {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #F8F9FA;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+    background-color: #F0F0F0;
+}
+
+.editor-toolbar button {
+    width: auto;
+    padding: 6px 10px;
+    border: none;
+    background: none;
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+    margin-right: 2px;
+    border-radius: 3px;
+    margin-bottom: 0; /* Clear global button margin */
+}
+
+.editor-toolbar button:hover {
+    background-color: #ddd;
+}
+
+.editor-toolbar .material-icons {
+    font-size: 18px;
+}
+
+.editor-content {
+    width: 100%;
+    border: none !important;
+    padding: 10px;
+    min-height: 100px;
+    resize: vertical;
+    font-size: 1em;
+    background-color: transparent !important;
+}
+
+/* 6. Custom File Upload Boxes (Image and PDF) */
+.file-upload-box {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    background-color: #F8F9FA;
+    text-align: center;
+    height: 100%; /* Important for grid alignment */
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.file-upload-input {
+    display: none; /* Hide the actual file input */
+}
+
+.file-upload-label {
+    cursor: pointer;
+    padding: 20px;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.upload-icon {
+    font-size: 48px;
+    color: #999;
+    margin-bottom: 10px;
+}
+
+.file-upload-label p {
+    margin: 5px 0;
+    font-size: 1em;
+    color: #666;
+}
+
+.file-upload-label p span {
+    color: #1a73e8; /* Blue link color for 'Browse' */
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.upload-hint {
+    font-size: 0.8em !important;
+    color: #999 !important;
+}
+
+/* Media Query for responsiveness on smaller screens */
+@media (max-width: 1200px) {
+    .form-grid {
+        /* On medium screens, collapse to 2 columns */
+        grid-template-columns: 1fr 1fr; 
+    }
+    
+    /* Make all elements span the full width of the 2-column grid */
+    .grid-item-1-2, .grid-item-3-4, .grid-item-5-6,
+    .grid-item-1-3, .grid-item-4-6, .grid-item-1-6 {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        /* On small screens, collapse to 1 column */
+        grid-template-columns: 1fr;
+    }
+    .grid-item-1-2, .grid-item-3-4, .grid-item-5-6,
+    .grid-item-1-3, .grid-item-4-6, .grid-item-1-6 {
+        grid-column: span 1;
+    }
+    .form-header-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* Content List Page Layout */
+.content-list-container {
+  padding: 40px;
+  background-color: #ffffff;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.page-title {
+  color: #1a3a5f;
+  font-size: 28px;
+  margin-bottom: 20px;
+}
+
+.section-subtitle {
+  color: #1a3a5f;
+  font-size: 18px;
+  margin: 40px 0 15px 0;
+}
+
+/* Table Design */
+.table-wrapper {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.content-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.content-table th {
+  background-color: #f5f5f5;
+  color: #333;
+  text-align: left;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.content-table td {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+  color: #444;
+  font-size: 14px;
+}
+
+.title-cell {
+  max-width: 400px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Preview Box (Gray placeholders in your image) */
+.preview-box {
+  width: 200px;
+  height: 100px;
+  background-color: #d9d9d9;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-box .material-icons {
+  font-size: 48px;
+  color: #333;
+}
+
+/* Action Buttons (Dark Blue/Navy) */
+.actions-cell {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-action {
+  background-color: #2b3e6e; /* Match the navy blue in your image */
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-action:hover {
+  background-color: #1a2a4d;
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: 100px;
+  font-size: 1.2rem;
+  color: #2b3e6e;
+}
