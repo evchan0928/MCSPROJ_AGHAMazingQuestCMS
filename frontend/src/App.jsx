@@ -9,11 +9,11 @@ import ForgotPassword from './ForgotPassword.jsx';
 import Dashboard from './Dashboard.jsx';
 
 // --- CONTENT PAGE COMPONENT IMPORTS ---
-import UploadContentPage from './pages/UploadContentPage.js';
+import UploadContentPage from './pages/UploadContentPage.jsx';
 // 🔑 IMPORT: Your newly renamed component
-import ContentListPage from './pages/ContentListPage.js'; 
+import ContentListPage from './pages/ContentListPage.jsx'; 
 // 🔑 IMPORT: If you still have a separate Edit page for the form
-import EditContentPage from './pages/ContentListPage.js'; 
+import EditContentPage from './pages/ContentListPage.jsx'; 
 
 // 🔑 FIX: Define the generic placeholder
 const PlaceholderPage = ({ name }) => <h1>{name} Page Content</h1>;
