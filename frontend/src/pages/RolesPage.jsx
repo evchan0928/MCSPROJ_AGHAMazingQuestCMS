@@ -124,7 +124,7 @@ export default function RolesPage() {
   const handleDelete = async (role) => {
     const id = typeof role === 'object' ? role.id : null;
     if (!id) return setError('Role delete requires role id');
-    if (!window.confirm(`Delete role "${role.name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete role "${role.name}"?`)) return;
     try {
       const res = await fetchAuth(`/api/users/roles/${id}/`, { method: 'DELETE' });
       if (res.status === 405 || res.status === 404) {

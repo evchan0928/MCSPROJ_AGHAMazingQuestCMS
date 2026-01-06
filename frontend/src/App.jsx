@@ -15,6 +15,9 @@ import ContentListPage from './pages/ContentListPage.jsx';
 // 🔑 IMPORT: If you still have a separate Edit page for the form
 import EditContentPage from './pages/ContentListPage.jsx'; 
 
+// 🔑 IMPORT: User Management Page
+import UserManagementPage from './pages/UserManagementPage.jsx';
+
 // 🔑 FIX: Define the generic placeholder
 const PlaceholderPage = ({ name }) => <h1>{name} Page Content</h1>;
 
@@ -25,8 +28,6 @@ const DeleteContentPage = () => <PlaceholderPage name="Delete Content" />;
 const GenerateAnalyticsPage = () => <PlaceholderPage name="Generate Analytics" />;
 const ViewAnalyticsPage = () => <PlaceholderPage name="View Analytics" />;
 const DownloadAnalyticsPage = () => <PlaceholderPage name="Download Analytics" />;
-const UserManagementPage = () => <PlaceholderPage name="User Management" />;
-const RolesPage = () => <PlaceholderPage name="User Roles" />;
 
 function App() {
   return (
@@ -61,7 +62,6 @@ function App() {
 
           {/* User Management Sub-Routes */}
           <Route path="users" element={<UserManagementPage />} />
-          <Route path="users/roles" element={<RolesPage />} />
 
           {/* Catch-all for /dashboard/* pages */}
           <Route path="*" element={<h1 style={{ padding: '20px', fontWeight: 'normal' }}>404 Dashboard Content Not Found</h1>} />
