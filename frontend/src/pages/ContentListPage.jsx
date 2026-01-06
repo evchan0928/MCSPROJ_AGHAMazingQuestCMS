@@ -5,6 +5,7 @@ export default function ContentListPage() {
   const navigate = useNavigate();
   const [contentList, setContentList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // 'all', 'text', 'media'
   const token = localStorage.getItem('access');
 
   useEffect(() => {
@@ -28,83 +29,98 @@ export default function ContentListPage() {
     return <div className="loading-state">Loading contents...</div>;
   }
 
-  const textContent = contentList.filter(item => item.type === 'text');
-  const mediaContent = contentList.filter(item => item.type === 'video' || item.type === 'image');
+  // Filter content based on selected filter
+  const filteredContent = filter === 'all' 
+    ? contentList 
+    : contentList.filter(item => 
+        filter === 'text' ? item.type === 'text' : 
+        item.type === 'video' || item.type === 'image'
+      );
 
   return (
     <div className="card content-list-container"> 
-      <h1 className="card-title">Content List</h1>
-      <p>View and manage your existing library of content items below.</p>
+      <div className="card-header">
+        <h1 className="card-title">Content Library</h1>
+        <p>Manage and review your content items</p>
+      </div>
+      
+      {/* Filter controls */}
+      <div className="filter-controls" style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+        <button 
+          className={`btn ${filter === 'all' ? 'primary' : 'secondary'}`}
+          onClick={() => setFilter('all')}
+        >
+          All Content
+        </button>
+        <button 
+          className={`btn ${filter === 'text' ? 'primary' : 'secondary'}`}
+          onClick={() => setFilter('text')}
+        >
+          Texts
+        </button>
+        <button 
+          className={`btn ${filter === 'media' ? 'primary' : 'secondary'}`}
+          onClick={() => setFilter('media')}
+        >
+          Media
+        </button>
+      </div>
 
-      {/* --- TEXTS SECTION --- */}
-      <section className="content-section">
-        <h2 className="section-subtitle">Texts</h2>
-        <div className="table-wrapper">
-          <table className="content-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {textContent.map((item) => (
+      {/* Content table */}
+      <div className="table-wrapper">
+        <table className="content-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredContent.length > 0 ? (
+              filteredContent.map((item) => (
                 <tr key={item.id}>
                   <td>{item.id}</td>
                   <td className="title-cell">{item.title}</td>
-                  <td className="actions-cell">
-                    <button className="btn-action" onClick={() => navigate(`edit/${item.id}`)}>Edit</button>
-                    <button className="btn-action">Approve</button>
-                    <button className="btn-action">Reject</button>
-                    <button className="btn-action">Publish</button>
-                    <button className="btn-action">Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* --- VIDEOS AND IMAGES SECTION --- */}
-      <section className="content-section">
-        <h2 className="section-subtitle">Videos and Images</h2>
-        <div className="table-wrapper">
-          <table className="content-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Preview</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mediaContent.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.id}</td>
-                  <td>{item.title}</td>
                   <td>
-                    <div className="preview-box">
-                      <span className="material-icons">
-                        {item.type === 'video' ? 'play_arrow' : 'image'}
-                      </span>
-                    </div>
+                    <span className="content-type-badge">
+                      {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                    </span>
                   </td>
+                  <td>
+                    <span className={`status-badge status-${item.status.toLowerCase().replace(' ', '-')}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td>{new Date(item.created_at).toLocaleDateString()}</td>
                   <td className="actions-cell">
-                    <button className="btn-action" onClick={() => navigate(`edit/${item.id}`)}>Edit</button>
-                    <button className="btn-action">Approve</button>
-                    <button className="btn-action">Reject</button>
-                    <button className="btn-action">Publish</button>
-                    <button className="btn-action">Delete</button>
+                    <button 
+                      className="btn-action" 
+                      onClick={() => navigate(`edit/${item.id}`)}
+                      title="Edit"
+                    >
+                      Edit
+                    </button>
+                    <button className="btn-action" title="Approve">Approve</button>
+                    <button className="btn-action" title="Reject">Reject</button>
+                    <button className="btn-action primary" title="Publish">Publish</button>
+                    <button className="btn-action danger" title="Delete">Delete</button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
+                  No content items found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

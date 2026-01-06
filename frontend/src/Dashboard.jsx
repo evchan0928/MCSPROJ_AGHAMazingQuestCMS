@@ -52,7 +52,7 @@ const Dashboard = () => { // <-- Opening brace for the function body
             {/* 2. Main Content */}
             <div className="main-content">
                 <div className="main-header">
-                    <h1>{isIndexRoute ? 'Dashboard' : 'Content Management Page'}</h1> 
+                    <h1>{isIndexRoute ? 'Dashboard' : 'Content Management'}</h1> 
                     <div className="header-controls">
                         {/* The search, content, and status controls have been removed from here. */}
                     </div>
