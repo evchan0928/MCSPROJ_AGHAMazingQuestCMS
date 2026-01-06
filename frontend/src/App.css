@@ -558,6 +558,306 @@ a {
   font-weight: 500;
 }
 
+/* Django admin style */
+.django-admin-container {
+  background: #fff;
+  border: 1px solid #ccc;
+  margin: 16px 0;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.module {
+  margin-bottom: 24px;
+}
+
+.module-header {
+  background: #417690;
+  padding: 10px 12px;
+}
+
+.module-header h1 {
+  color: #fff;
+  font-weight: 400;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-select {
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.action-button {
+  background: #5b80b2;
+  color: white;
+  border: 1px solid #5b80b2;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.action-button:hover {
+  background: #4a6b93;
+}
+
+.add-button-container {
+  margin-left: auto;
+}
+
+.add-button {
+  background: #69a550;
+  color: white;
+  border: 1px solid #69a550;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.add-button:hover {
+  background: #5a8c42;
+}
+
+.django-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.django-table th,
+.django-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.django-table thead th {
+  background: #f0f0f0;
+  color: #666;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 6px 8px;
+}
+
+.django-table thead th a {
+  color: #666;
+  text-decoration: none;
+}
+
+.django-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.django-table tbody tr.selected {
+  background-color: #e8f4f1;
+}
+
+.action-checkbox {
+  width: 1px;
+  white-space: nowrap;
+}
+
+.text {
+  color: #333;
+  text-decoration: none;
+}
+
+.actions-column {
+  width: 120px;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.edit-button, .delete-button {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+}
+
+.edit-button {
+  background: #79aec8;
+  color: white;
+  border: 1px solid #79aec8;
+}
+
+.edit-button:hover {
+  background: #609ab6;
+}
+
+.delete-button {
+  background: #ba2121;
+  color: white;
+  border: 1px solid #ba2121;
+}
+
+.delete-button:hover {
+  background: #a41515;
+}
+
+.loading {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+.error-message {
+  background: #ffebe8;
+  border: 1px solid #c00;
+  padding: 10px 12px;
+  color: #c00;
+  margin-top: 10px;
+}
+
+.form-container {
+  padding: 16px;
+}
+
+.form-buttons {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancel-button {
+  background: #ccc;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background: #bbb;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  padding: 16px;
+  background: #417690;
+  color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-body {
+  padding: 16px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.modal-footer {
+  padding: 16px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-button {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-button.primary {
+  background: #79aec8;
+  color: white;
+  border: 1px solid #79aec8;
+}
+
+.modal-button.primary:hover {
+  background: #609ab6;
+}
+
+.modal-button.secondary {
+  background: #f9f9f9;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.modal-button.secondary:hover {
+  background: #e0e0e0;
+}
+
+.expanded-content {
+  background: #f9f9f9;
+  padding: 12px;
+}
+
+.users-in-role ul {
+  margin: 8px 0 0 20px;
+  padding: 0;
+}
+
+.users-in-role li {
+  margin-bottom: 4px;
+}
+
+.no-users {
+  font-style: italic;
+  color: #666;
+}
+
 /* Responsive adjustments */
 @media (max-width: 920px) {
   .stat-cards-container { 
@@ -575,4 +875,159 @@ a {
   .sidebar { 
     display: none; 
   }
+  
+  .django-admin-container {
+    overflow-x: auto;
+  }
+  
+  .actions-column {
+    width: auto;
+  }
+  
+  .actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* Django admin form styles */
+.django-form-container {
+  background: #fff;
+  border: 1px solid #ccc;
+  margin: 16px 0;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.django-form {
+  padding: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-row > div {
+  flex: 1;
+}
+
+.form-row > div:first-child {
+  flex: 2;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-size: 0.8125rem;
+  color: #333;
+}
+
+.required:after {
+  content: " *";
+  color: #ba2121;
+}
+
+.form-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: auto;
+}
+
+.form-section-title {
+  margin: 0 0 16px 0;
+  padding: 0 0 8px 0;
+  border-bottom: 1px solid #eee;
+  color: #333;
+  font-size: 1rem;
+}
+
+.permissions-container {
+  border: 1px solid #ccc;
+  padding: 16px;
+  background: #f8f8f8;
+}
+
+.permissions-box {
+  border: 1px solid #ccc;
+  background: #fff;
+  min-height: 150px;
+}
+
+.permissions-header {
+  background: #f5f5f5;
+  padding: 4px 8px;
+  font-weight: bold;
+  border-bottom: 1px solid #ccc;
+}
+
+.permissions-content {
+  padding: 8px;
+  height: 150px;
+  overflow-y: auto;
+}
+
+.permission-checkbox {
+  display: block;
+  margin-bottom: 4px;
+  padding: 2px 0;
+}
+
+.submit-row {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+  text-align: right;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.save-button {
+  background: #5b80b2;
+  color: white;
+  border: 1px solid #5b80b2;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.save-button:hover {
+  background: #4a6b93;
+}
+
+.cancel-button {
+  background: #f9f9f9;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background: #e0e0e0;
 }

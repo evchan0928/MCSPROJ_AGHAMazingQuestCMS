@@ -140,89 +140,157 @@ export default function RolesPage() {
   };
 
   return (
-    <div>
-      <h2>Roles</h2>
-      <div style={{ marginBottom: 12 }}>
-        <button onClick={() => setShowCreate(true)}>Create Role</button>
-      </div>
+    <div className="django-admin-container">
+      <div className="module">
+        <div className="module-header">
+          <h1>Roles</h1>
+        </div>
+        
+        <div className="toolbar">
+          <div className="add-button-container">
+            <button 
+              onClick={() => setShowCreate(true)} 
+              className="add-button"
+            >
+              <span className="material-icons">add</span> Add role
+            </button>
+          </div>
+        </div>
 
-      {loading ? <div>Loading...</div> : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 8 }}>Role ID</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Role Name</th>
-              <th style={{ padding: 8 }}>Edit</th>
-              <th style={{ padding: 8 }}>Delete</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roles.map(r => {
-              const roleObj = typeof r === 'string' ? { id: r, name: r } : r;
-              return (
-                <React.Fragment key={roleObj.id}>
-                  <tr style={{ borderTop: '1px solid #ddd' }}>
-                    <td style={{ padding: 8 }}>{roleObj.id}</td>
-                    <td style={{ padding: 8, cursor: 'pointer' }} onClick={() => setExpandedRoleId(expandedRoleId === roleObj.id ? null : roleObj.id)}>
-                      {roleObj.name}
-                    </td>
-                    <td style={{ padding: 8 }}>
-                      <button onClick={() => handleEdit(r)}>Edit</button>
-                    </td>
-                    <td style={{ padding: 8 }}>
-                      <button onClick={() => handleDelete(r)}>Delete</button>
-                    </td>
-                  </tr>
-                  {expandedRoleId === roleObj.id && (
+        {loading ? (
+          <div className="loading">Loading...</div>
+        ) : (
+          <table className="django-table">
+            <thead>
+              <tr>
+                <th>
+                  <a href="#" className="text">Role Name</a>
+                </th>
+                <th>
+                  <a href="#" className="text">Users in Role</a>
+                </th>
+                <th className="actions-column">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roles.map(r => {
+                const roleObj = typeof r === 'string' ? { id: r, name: r } : r;
+                const roleUsers = usersInRole(roleObj);
+                return (
+                  <React.Fragment key={roleObj.id}>
                     <tr>
-                      <td colSpan={4} style={{ padding: 8, background: '#fafafa' }}>
-                        <strong>Users in {roleObj.name}:</strong>
-                        <ul style={{ marginTop: 8 }}>
-                          {usersInRole(roleObj).length > 0 ? usersInRole(roleObj).map(u => (
-                            <li key={u.id}>{u.username} ({u.email})</li>
-                          )) : <li style={{ fontStyle: 'italic', color: '#666' }}>No users in this role.</li>}
-                        </ul>
+                      <td>
+                        <a 
+                          href="#" 
+                          className="text"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setExpandedRoleId(expandedRoleId === roleObj.id ? null : roleObj.id);
+                          }}
+                        >
+                          {roleObj.name}
+                        </a>
+                      </td>
+                      <td className="text">{roleUsers.length}</td>
+                      <td className="actions">
+                        <button 
+                          onClick={() => handleEdit(r)} 
+                          className="edit-button"
+                        >
+                          Change
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(r)} 
+                          className="delete-button"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+                    {expandedRoleId === roleObj.id && (
+                      <tr>
+                        <td colSpan={3} className="expanded-content">
+                          <div className="users-in-role">
+                            <strong>Users in {roleObj.name}:</strong>
+                            <ul>
+                              {roleUsers.length > 0 ? roleUsers.map(u => (
+                                <li key={u.id}>{u.username} ({u.email})</li>
+                              )) : <li className="no-users">No users in this role.</li>}
+                            </ul>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
 
-      {error && (
-        <div style={{ marginTop: 12, color: 'red' }}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
+        {error && (
+          <div className="error-message">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+      </div>
 
       {/* Create Modal */}
       {showCreate && (
-        <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', padding: 20, borderRadius: 6, width: '90%', maxWidth: 500 }}>
-            <h3>Create Role</h3>
-            <input placeholder="Role name" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} />
-            <div style={{ marginTop: 12 }}>
-              <button onClick={handleCreate}>Create</button>{' '}
-              <button onClick={() => { setShowCreate(false); setNewRoleName(''); }}>Cancel</button>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Create Role</h3>
+            </div>
+            <div className="modal-body">
+              <input 
+                placeholder="Role name" 
+                value={newRoleName} 
+                onChange={e => setNewRoleName(e.target.value)} 
+                className="form-input"
+              />
+            </div>
+            <div className="modal-footer">
+              <button onClick={handleCreate} className="modal-button primary">Create</button>
+              <button 
+                onClick={() => { 
+                  setShowCreate(false); 
+                  setNewRoleName(''); 
+                }} 
+                className="modal-button secondary"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* inline preview is used instead of a modal */}
-
       {/* Edit modal */}
       {editingRole && (
-        <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', padding: 20, borderRadius: 6, width: '90%', maxWidth: 500 }}>
-            <h3>Edit Role</h3>
-            <input value={editRoleName} onChange={e => setEditRoleName(e.target.value)} />
-            <div style={{ marginTop: 12 }}>
-              <button onClick={submitEdit}>Save</button>{' '}
-              <button onClick={() => { setEditingRole(null); setEditRoleName(''); }}>Cancel</button>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Edit Role</h3>
+            </div>
+            <div className="modal-body">
+              <input 
+                value={editRoleName} 
+                onChange={e => setEditRoleName(e.target.value)} 
+                className="form-input"
+              />
+            </div>
+            <div className="modal-footer">
+              <button onClick={submitEdit} className="modal-button primary">Save</button>
+              <button 
+                onClick={() => { 
+                  setEditingRole(null); 
+                  setEditRoleName(''); 
+                }} 
+                className="modal-button secondary"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
