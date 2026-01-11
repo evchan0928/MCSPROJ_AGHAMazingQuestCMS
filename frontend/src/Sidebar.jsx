@@ -84,7 +84,7 @@ export default function Sidebar({ user }) {
                         <ul className="sub-menu">
                             {/* Upload: Encoder, Editor, Super Admin */}
                             {(user?.is_superuser || roles.includes('Encoder') || roles.includes('Editor') || roles.includes('Super Admin')) && (
-                                <li><NavLink to="/dashboard/content/upload" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Upload content</NavLink></li>
+                                <li><NavLink to="/dashboard/content/upload" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Upload Content</NavLink></li>
                             )}
 
                             {/* 🔑 CHANGED: Renamed from "Edit content" to "Content list" and updated path */}
@@ -94,7 +94,7 @@ export default function Sidebar({ user }) {
                                         to="/dashboard/content/list" 
                                         style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
                                     >
-                                        Content list
+                                        Content List
                                     </NavLink>
                                 </li>
                             )}
@@ -102,14 +102,14 @@ export default function Sidebar({ user }) {
                             {/* Approve & Publish: Approver, Super Admin */}
                             {(user?.is_superuser || roles.includes('Approver') || roles.includes('Super Admin')) && (
                                 <>
-                                    <li><NavLink to="/dashboard/content/approve" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Approve content</NavLink></li>
-                                    <li><NavLink to="/dashboard/content/publish" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Publish content</NavLink></li>
+                                    <li><NavLink to="/dashboard/content/approve" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Approve Content</NavLink></li>
+                                    <li><NavLink to="/dashboard/content/publish" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Published Content</NavLink></li>
                                 </>
                             )}
 
                             {/* Delete: Admin, Super Admin */}
                             {(user?.is_superuser || roles.includes('Admin') || roles.includes('Super Admin')) && (
-                                <li><NavLink to="/dashboard/content/delete" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Delete content</NavLink></li>
+                                <li><NavLink to="/dashboard/content/delete" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Delete Content</NavLink></li>
                             )}
                         </ul>
                     )}
