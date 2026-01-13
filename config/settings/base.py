@@ -56,8 +56,15 @@ except Exception:
     pass
 
 
-# Application definition
+# Database
+# Support switching between sqlite, MySQL and PostgreSQL via environment variables.
+# DB_ENGINE: 'sqlite' | 'mysql' (default when DEBUG is False) | 'postgres'/'postgresql'
+# For local development (DEBUG=True) default to sqlite to avoid requiring a DB server.
+default_db = 'sqlite' if DEBUG else 'mysql'
+DB_ENGINE = os.environ.get('DB_ENGINE', default_db).lower()
 
+
+# Application definition
 INSTALLED_APPS = [
     # Django core apps
     'django.contrib.admin',
@@ -67,7 +74,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+]
 
+# Add postgres contrib if using PostgreSQL
+if DB_ENGINE in ('postgres', 'postgresql'):
+    INSTALLED_APPS.append('django.contrib.postgres')
+
+# Add Wagtail and other apps
+INSTALLED_APPS.extend([
     # Wagtail CMS
     'wagtail.contrib.forms',
     'wagtail.contrib.redirects',
@@ -94,7 +108,7 @@ INSTALLED_APPS = [
     'apps.contentmanagement',
     'apps.usermanagement',
     'apps.analyticsmanagement',
-]
+])
 
 MIDDLEWARE = [
     # CORS middleware should be placed as high as possible
@@ -131,13 +145,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-
-# Database
-# Support switching between sqlite, MySQL and PostgreSQL via environment variables.
-# DB_ENGINE: 'sqlite' | 'mysql' (default when DEBUG is False) | 'postgres'/'postgresql'
-# For local development (DEBUG=True) default to sqlite to avoid requiring a DB server.
-default_db = 'sqlite' if DEBUG else 'mysql'
-DB_ENGINE = os.environ.get('DB_ENGINE', default_db).lower()
 if DB_ENGINE == 'sqlite':
     engine = 'django.db.backends.sqlite3'
     DATABASES = {
@@ -215,7 +222,7 @@ STATIC_URL = '/static/'
 # Where `collectstatic` will gather files for production
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Additional locations Django will search for static files in development
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
 # Media files uploaded by users
 MEDIA_URL = '/media/'
@@ -292,4 +299,3 @@ if not DEBUG:
 
     # Ensure DEBUG is False in production
     DEBUG = False
-

@@ -4,6 +4,21 @@ This project uses Django + Wagtail for the CMS and Django REST Framework for API
 
 This README contains a minimal checklist and example environment variables to run the project securely in production.
 
+## Linux Setup
+
+For Linux systems, please refer to the detailed setup instructions in the [environment_setup/linux/README.md](environment_setup/linux/README.md) file.
+
+Quick setup on Linux:
+```bash
+# Make the setup script executable and run it
+chmod +x environment_setup/linux/setup.sh
+./environment_setup/linux/setup.sh
+```
+
+## Windows Setup
+
+For Windows systems, the following commands can be used:
+
 1) Create and activate a virtual environment
 
 Windows PowerShell:
