@@ -13,10 +13,28 @@ This project is a Django/Wagtail-based content management system with a React fr
 - Node.js and npm
 - Virtual environment (recommended)
 
-## Setup Instructions
+## Linux Setup (Recommended)
+
+For Linux systems, we recommend using the automated setup script:
+
+```bash
+chmod +x environment_setup/linux/setup.sh
+./environment_setup/linux/setup.sh
+```
+
+This will automatically handle all the steps listed below.
+
+## Manual Setup Instructions
 
 ### 1. Create and activate virtual environment:
 
+Linux/macOS:
+```bash
+python3.11 -m venv venv
+source venv/bin/activate
+```
+
+Windows PowerShell:
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
@@ -24,7 +42,7 @@ python -m venv venv
 
 ### 2. Install Python dependencies:
 
-```powershell
+```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip install python-dotenv
@@ -34,6 +52,11 @@ python -m pip install python-dotenv
 
 A `.env` file is provided with default values. The application should work with the default settings.
 
+```bash
+cp .env.example .env  # On Linux/macOS
+copy .env.example .env  # On Windows
+```
+
 ### 4. Run database migrations:
 
 ```powershell
@@ -42,6 +65,14 @@ python manage.py migrate
 
 ### 5. Create a superuser account:
 
+Linux/macOS:
+```bash
+export DJANGO_SUPERUSER_PASSWORD="admin123"
+python manage.py createsuperuser --username admin --email admin@example.com --noinput
+unset DJANGO_SUPERUSER_PASSWORD
+```
+
+Windows PowerShell:
 ```powershell
 $env:DJANGO_SUPERUSER_PASSWORD="admin123"
 python manage.py createsuperuser --username admin --email admin@example.com --noinput
@@ -91,6 +122,8 @@ npm start
 - `frontend/` - React frontend application
 - `staticfiles/` - Collected static files
 - `media/` - User-uploaded media files
+- `environment_setup/` - Platform-specific setup scripts and documentation
+  - `linux/` - Linux-specific setup scripts and documentation
 
 ## Additional Management Commands
 
