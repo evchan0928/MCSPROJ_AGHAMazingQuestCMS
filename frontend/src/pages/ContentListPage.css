@@ -1,43 +1,50 @@
 .content-list-page {
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 64px);
   font-family: 'Inter', sans-serif;
-  margin: 20px;
 }
 
 .page-title {
-  font-size: 24px;
-  color: #002a6c;
-  margin-bottom: 32px;
+  color: #002a6c; /* DOST Blue */
+  margin-bottom: 24px;
+  font-size: 28px;
 }
 
 .section {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .section-title {
-  font-size: 16px;
-  color: #002a6c;
+  color: #002a6c; /* DOST Blue */
   margin-bottom: 16px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.content-table {
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .content-table .ant-table-thead > tr > th {
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #e8e8e8;
-  font-weight: 500;
-  color: #333;
-  font-size: 14px;
+  background-color: #f8f9fa;
+  color: #2d3748;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .content-table .ant-table-tbody > tr > td {
-  border-bottom: 1px solid #e8e8e8;
-  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .title-truncated {
+  max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 300px;
 }
 
 .action-buttons {
@@ -47,17 +54,53 @@
 }
 
 .preview-container {
-  width: 100px;
-  height: 60px;
-  background-color: #e0e0e0;
-  border-radius: 8px;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  border-radius: 4px;
+  background-color: #f0f0f0;
 }
 
 .preview-icon {
-  width: 24px;
-  height: 24px;
-  color: #333;
+  font-size: 20px;
+}
+
+/* Ant Design Table Customization */
+.ant-table {
+  font-size: 14px;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: #f0f8ff;
+}
+
+/* Button spacing */
+.ant-space-item {
+  margin-right: 4px;
+}
+
+/* Card Components */
+.page-card {
+  margin-bottom: 24px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.section-card {
+  margin-bottom: 24px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Content Type Icons */
+.video-icon {
+  color: #fa8c16; /* Orange for videos */
+}
+
+.image-icon {
+  color: #1890ff; /* Blue for images */
 }

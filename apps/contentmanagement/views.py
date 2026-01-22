@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
 from .models import ContentItem
-from .serializers import ContentItemSerializer
+from .serializers import ContentItemSerializer, ContentPageSerializer
 from .permissions import user_in_group
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -115,6 +115,95 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.soft_delete(user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# New viewset for ContentPage model
+from wagtail.models import Page
+from django.contrib.auth.models import Group
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
+
+
+class ContentPageViewSet(viewsets.ModelViewSet):
+    serializer_class = ContentPageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Get the actual ContentPage instances
+        from .models import ContentPage
+        return ContentPage.objects.all()
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        # Set the author to the current user
+        instance = serializer.save(author=user)
+        # Add to the appropriate group based on role
+        try:
+            user_group = Group.objects.get(name__iexact=user.role)
+            user.groups.add(user_group)
+        except Group.DoesNotExist:
+            # If no matching group exists, don't assign
+            pass
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        # Update the edited_by field when content is updated
+        instance = serializer.save()
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        from .models import ContentPage
+        try:
+            content = ContentPage.objects.get(pk=pk)
+            if request.user.role in ['reviewer', 'approver']:
+                content.status = 'approved'
+                content.approver = request.user
+                content.save()
+                return Response({'message': 'Content approved successfully'})
+            else:
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        except ContentPage.DoesNotExist:
+            raise Http404("Content does not exist")
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        from .models import ContentPage
+        try:
+            content = ContentPage.objects.get(pk=pk)
+            if request.user.role in ['reviewer', 'approver']:
+                content.status = 'rejected'
+                content.reviewer = request.user
+                content.save()
+                return Response({'message': 'Content rejected successfully'})
+            else:
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        except ContentPage.DoesNotExist:
+            raise Http404("Content does not exist")
+
+    @action(detail=True, methods=['post'])
+    def publish(self, request, pk=None):
+        from .models import ContentPage
+        try:
+            content = ContentPage.objects.get(pk=pk)
+            if request.user.role == 'approver':
+                content.status = 'published'
+                content.save()
+                return Response({'message': 'Content published successfully'})
+            else:
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        except ContentPage.DoesNotExist:
+            raise Http404("Content does not exist")
+
+    @action(detail=True, methods=['get'])
+    def version_history(self, request, pk=None):
+        from .models import ContentPage
+        try:
+            content = ContentPage.objects.get(pk=pk)
+            return Response({'versions': content.previous_versions})
+        except ContentPage.DoesNotExist:
+            raise Http404("Content does not exist")
+
+
 from django.shortcuts import render
 
 # Create your views here.

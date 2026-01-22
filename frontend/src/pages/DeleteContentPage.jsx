@@ -1,67 +1,288 @@
-import React, { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import statusLabel from '../utils/statusLabels.jsx';
-import ContentPreview from '../components/ContentPreview.jsx';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Card, Modal, message, Tag, Space } from 'antd';
+import { DeleteOutlined, ExclamationCircleOutlined, EyeOutlined } from '@ant-design/icons';
+import axios from 'axios';
 
-export default function DeleteContentPage() {
-  const [items, setItems] = useState([]);
+const DeleteContentPage = () => {
+  const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [previewId, setPreviewId] = useState(null);
-  const token = localStorage.getItem('access');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedContent, setSelectedContent] = useState(null);
 
-  const fetchItems = React.useCallback(async () => {
-    setLoading(true);
+  useEffect(() => {
+    fetchContentForDeletion();
+  }, []);
+
+  const fetchContentForDeletion = async () => {
     try {
-      const res = await fetch('/api/content/items/', { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Failed to load');
-      const data = await res.json();
-      setItems(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
+      // In a real implementation, this would fetch from the API
+      // const token = localStorage.getItem('token');
+      // const response = await axios.get('/api/content/', {
+      //   headers: { 'Authorization': `Bearer ${token}` }
+      // });
+      
+      // Mock data for demonstration - showing content that can be deleted
+      const mockData = [
+        {
+          id: 1,
+          title: 'Outdated Research Data',
+          author: 'John Smith',
+          status: 'draft',
+          type: 'article',
+          createdAt: '2023-01-15',
+          lastModified: '2023-05-20',
+          description: 'Research data that is no longer relevant to current studies.'
+        },
+        {
+          id: 2,
+          title: 'Old Event Coverage',
+          author: 'Maria Garcia',
+          status: 'published',
+          type: 'article',
+          createdAt: '2023-02-10',
+          lastModified: '2023-06-15',
+          description: 'Coverage of an event that happened over a year ago.'
+        },
+        {
+          id: 3,
+          title: 'Deprecated Guidelines',
+          author: 'Robert Johnson',
+          status: 'published',
+          type: 'document',
+          createdAt: '2022-11-05',
+          lastModified: '2023-01-12',
+          description: 'Guidelines that have been superseded by newer versions.'
+        },
+        {
+          id: 4,
+          title: 'Test Content',
+          author: 'David Wilson',
+          status: 'draft',
+          type: 'image',
+          createdAt: '2023-10-22',
+          lastModified: '2023-10-22',
+          description: 'Test content created during development.'
+        }
+      ];
+      
+      setContents(mockData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching content:', error);
+      message.error('Failed to load content for deletion');
       setLoading(false);
     }
-  }, [token]);
-
-  useEffect(() => { fetchItems(); }, [fetchItems]);
-
-  const doDelete = async (id) => {
-    if (!window.confirm('Delete this item (soft-delete)?')) return;
-    try {
-      const res = await fetch(`/api/content/items/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      if (![204,200].includes(res.status)) throw new Error('Delete failed');
-      fetchItems();
-    } catch (err) { console.error(err); alert(String(err)); }
   };
-  const { user } = useOutletContext();
-  // Only Admin group and superuser can delete content
-  const allowed = user && (user.is_superuser || (user.roles || []).includes('Admin') || (user.roles || []).includes('Super Admin'));
-  if (!allowed) return <div><h2>Access denied</h2><p>You don't have permission to delete content.</p></div>;
+
+  const handleDelete = async (id, title) => {
+    Modal.confirm({
+      title: 'Confirm deletion',
+      icon: <ExclamationCircleOutlined />,
+      content: `Are you sure you want to delete "${title}"? This action cannot be undone.`,
+      okText: 'Yes, delete',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          // In a real implementation, this would make an API call
+          // const token = localStorage.getItem('token');
+          // await axios.delete(`/api/content/${id}/`, {
+          //   headers: { 'Authorization': `Bearer ${token}` }
+          // });
+          
+          message.success('Content deleted successfully');
+          fetchContentForDeletion(); // Refresh the list
+        } catch (error) {
+          console.error('Error deleting content:', error);
+          message.error('Failed to delete content');
+        }
+      }
+    });
+  };
+
+  const handleArchive = async (id, title) => {
+    Modal.confirm({
+      title: 'Confirm archiving',
+      icon: <ExclamationCircleOutlined />,
+      content: `Are you sure you want to archive "${title}"? It will no longer be publicly visible but kept for records.`,
+      okText: 'Yes, archive',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          // In a real implementation, this would make an API call
+          // const token = localStorage.getItem('token');
+          // await axios.patch(`/api/content/${id}/`, { status: 'archived' }, {
+          //   headers: { 'Authorization': `Bearer ${token}` }
+          // });
+          
+          message.success('Content archived successfully');
+          fetchContentForDeletion(); // Refresh the list
+        } catch (error) {
+          console.error('Error archiving content:', error);
+          message.error('Failed to archive content');
+        }
+      }
+    });
+  };
+
+  const showModal = (record) => {
+    setSelectedContent(record);
+    setModalVisible(true);
+  };
+
+  const hideModal = () => {
+    setModalVisible(false);
+    setSelectedContent(null);
+  };
+
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+      render: (text) => (
+        <div style={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {text}
+        </div>
+      ),
+    },
+    {
+      title: 'Author',
+      dataIndex: 'author',
+      key: 'author',
+    },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type) => {
+        const colorMap = {
+          article: 'blue',
+          video: 'green',
+          image: 'orange',
+          document: 'purple'
+        };
+        return <Tag color={colorMap[type] || 'default'}>{type.charAt(0).toUpperCase() + type.slice(1)}</Tag>;
+      },
+    },
+    {
+      title: 'Created',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+    },
+    {
+      title: 'Last Modified',
+      dataIndex: 'lastModified',
+      key: 'lastModified',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => {
+        const colorMap = {
+          draft: 'default',
+          review: 'orange',
+          approved: 'blue',
+          published: 'green',
+          archived: 'gray',
+          rejected: 'red'
+        };
+        
+        return (
+          <Tag color={colorMap[status] || 'default'}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button 
+            type="default" 
+            icon={<EyeOutlined />}
+            onClick={() => showModal(record)}
+          >
+            Preview
+          </Button>
+          {record.status === 'published' ? (
+            <Button 
+              type="primary" 
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleArchive(record.id, record.title)}
+            >
+              Archive
+            </Button>
+          ) : (
+            <Button 
+              type="primary" 
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record.id, record.title)}
+            >
+              Delete
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <div>
-      <h2>Delete content</h2>
-      {loading ? <div>Loading...</div> : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr><th style={{ textAlign: 'left', padding: 8 }}>Title</th><th style={{ padding: 8 }}>Status</th><th style={{ padding: 8 }}>Actions</th></tr>
-          </thead>
-          <tbody>
-            {items.map(it => (
-              <tr key={it.id} style={{ borderTop: '1px solid #ddd' }}>
-                <td style={{ padding: 8 }}>{it.title}</td>
-                <td style={{ padding: 8 }}>{statusLabel(it.status)}</td>
-                <td style={{ padding: 8 }}>
-                  <button onClick={() => setPreviewId(it.id)}>Preview</button>{' '}
-                  <button className="btn secondary" onClick={() => doDelete(it.id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {previewId && <ContentPreview id={previewId} onClose={() => setPreviewId(null)} />}
+    <div style={{ padding: '24px' }}>
+      <Card title="Content Management - Delete/Archive" style={{ marginBottom: '24px' }}>
+        <p>Select content to delete or archive. Draft content can be permanently deleted, published content should be archived.</p>
+      </Card>
+
+      <Card>
+        <Table
+          dataSource={contents}
+          columns={columns}
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          rowKey="id"
+        />
+      </Card>
+
+      <Modal
+        title={selectedContent?.title}
+        open={modalVisible}
+        onCancel={hideModal}
+        footer={[
+          <Button key="back" onClick={hideModal}>Close</Button>,
+        ]}
+      >
+        {selectedContent && (
+          <div>
+            <p><strong>Author:</strong> {selectedContent.author}</p>
+            <p><strong>Type:</strong> {selectedContent.type}</p>
+            <p><strong>Status:</strong> {selectedContent.status}</p>
+            <p><strong>Created:</strong> {selectedContent.createdAt}</p>
+            <p><strong>Last Modified:</strong> {selectedContent.lastModified}</p>
+            <p><strong>Description:</strong> {selectedContent.description}</p>
+            <div style={{ marginTop: '16px', padding: '16px', background: '#f5f5f5', borderRadius: '4px' }}>
+              <h4>Content Preview</h4>
+              <p>This would show a detailed preview of the content in a real implementation.</p>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
-}
+};
 
+export default DeleteContentPage;

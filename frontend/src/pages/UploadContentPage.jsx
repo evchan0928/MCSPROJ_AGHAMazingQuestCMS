@@ -2,25 +2,25 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
+import axios from 'axios';
 
 export default function UploadContentPage() {
   const navigate = useNavigate();
   
   // State to manage all form fields
   const [formData, setFormData] = useState({
-    arMarker: false,
-    quiz: false,
-    enableBadges: false,
-    code: '',
-    shortTitle: '',
-    contentTitle: '',
-    slugIntro: '',
-    topicTags: '',
-    description: '', 
+    title: '',
+    body: '', 
+    status: 'for_editing', // Default status matching backend workflow
+    type: 'text', // Default type
     metaKeywords: '',
     metaDescription: '',
     photoCaption: '',
     highlights: '', 
+    arMarker: false,
+    quiz: false,
+    enableBadges: false,
     chatBotAllow: true, 
     excludeAudio: false,
   });
@@ -34,7 +34,7 @@ export default function UploadContentPage() {
     const { name, type, value, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === 'checkbox' || type === 'radio' ? checked || value : value,
     }));
   };
 
@@ -54,29 +54,103 @@ export default function UploadContentPage() {
     }));
   };
 
-  const handleSaveDraft = () => {
-    // Simulate saving draft functionality
-    console.log('Saving as draft:', { ...formData, imageFile, pdfFile });
+  const handleSaveDraft = async () => {
+    setLoading(true);
     
-    // In a real application, you would send the data to your backend
-    alert('Content saved as draft successfully!');
+    try {
+      const token = localStorage.getItem('token');
+      const contentData = {
+        ...formData,
+        status: 'for_editing'
+      };
+      
+      // Create form data object for multipart request
+      const requestData = new FormData();
+      
+      // Add form fields to FormData
+      Object.keys(contentData).forEach(key => {
+        if (contentData[key] !== undefined && contentData[key] !== null) {
+          requestData.append(key, contentData[key]);
+        }
+      });
+      
+      // Add files if they exist
+      if (imageFile) {
+        requestData.append('file', imageFile);
+      }
+      if (pdfFile) {
+        requestData.append('file', pdfFile);
+      }
+
+      const response = await axios.post('/api/content/items/', requestData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      message.success('Content saved as draft successfully!');
+      navigate('/dashboard/content/list'); // Redirect to content list
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      message.error('Failed to save draft');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // --- Replace this with your actual API call ---
-    console.log('Submitting Data:', formData, 'Image:', imageFile, 'PDF:', pdfFile);
-    
-    setTimeout(() => {
-      setLoading(false);
-      // Navigate away after successful submission
-      // 🔑 FIX: The navigate function is now used, resolving the ESLint warning.
-      navigate('/dashboard/content'); 
+    try {
+      const token = localStorage.getItem('token');
+      const contentData = {
+        ...formData,
+        status: 'for_editing' // Initial status when created
+      };
       
-    }, 1500);
-  }
+      // Create form data object for multipart request
+      const requestData = new FormData();
+      
+      // Add form fields to FormData
+      Object.keys(contentData).forEach(key => {
+        if (contentData[key] !== undefined && contentData[key] !== null) {
+          requestData.append(key, contentData[key]);
+        }
+      });
+      
+      // Add files if they exist
+      if (imageFile) {
+        requestData.append('file', imageFile);
+      }
+      if (pdfFile) {
+        requestData.append('file', pdfFile);
+      }
+
+      const response = await axios.post('/api/content/items/', requestData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      // After creation, send for approval
+      await axios.post(`/api/content/items/${response.data.id}/send_for_approval/`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      message.success('Content submitted successfully!');
+      navigate('/dashboard/content/list'); // Redirect to content list
+    } catch (error) {
+      console.error('Error submitting content:', error);
+      message.error('Failed to submit content');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Function to handle formatting commands
   const formatText = (command, value = null) => {
@@ -142,11 +216,11 @@ export default function UploadContentPage() {
             </label>
           </div>
           <div className="action-buttons">
-            <button type="button" className="secondary-action-btn" onClick={handleSaveDraft}>
+            <button type="button" className="secondary-action-btn" onClick={handleSaveDraft} disabled={loading}>
               Save as Draft
             </button>
             <button type="submit" className="primary-action-btn" disabled={loading}>
-              {loading ? 'Submitting...' : 'Submit'}
+              {loading ? 'Submitting...' : 'Submit for Review'}
             </button>
           </div>
         </div>
@@ -154,78 +228,40 @@ export default function UploadContentPage() {
         {/* Main Form Grid Layout */}
         <div className="form-grid">
           
-          {/* Row 1: Code, Short Title, Content Title (3 columns) */}
-          <div className="form-group grid-item-1-2">
-            <label htmlFor="code">Unity Access Token (Script) *</label>
-            <div className="input-with-icon">
-              <input
-                type="text"
-                id="code"
-                name="code"
-                value={formData.code}
-                onChange={handleChange}
-                placeholder="Code"
-                required
-              />
-              <span className="material-icons icon-right">delete</span>
-            </div>
-          </div>
-          <div className="form-group grid-item-3-4">
-            <label htmlFor="shortTitle">Short Title *</label>
+          {/* Row 1: Title (Full Width) */}
+          <div className="form-group grid-item-1-6">
+            <label htmlFor="title">Content Title *</label>
             <input
               type="text"
-              id="shortTitle"
-              name="shortTitle"
-              value={formData.shortTitle}
+              id="title"
+              name="title"
+              value={formData.title}
               onChange={handleChange}
-              placeholder=""
-              required
-            />
-          </div>
-          <div className="form-group grid-item-5-6">
-            <label htmlFor="contentTitle">Content Title *</label>
-            <input
-              type="text"
-              id="contentTitle"
-              name="contentTitle"
-              value={formData.contentTitle}
-              onChange={handleChange}
-              placeholder=""
+              placeholder="Enter content title"
               required
             />
           </div>
 
-          {/* Row 2: Slug Intro (Full Width) */}
+          {/* Row 2: Type Selection */}
           <div className="form-group grid-item-1-6">
-            <label htmlFor="slugIntro">Slug Intro *</label>
-            <input
-              type="text"
-              id="slugIntro"
-              name="slugIntro"
-              value={formData.slugIntro}
+            <label htmlFor="type">Content Type *</label>
+            <select
+              id="type"
+              name="type"
+              value={formData.type}
               onChange={handleChange}
-              placeholder=""
               required
-            />
-          </div>
-          
-          {/* Row 3: Topic Tags (Full Width) */}
-          <div className="form-group grid-item-1-6">
-            <label htmlFor="topicTags">Topic Tags (1-2 tags in english) *</label>
-            <input
-              type="text"
-              id="topicTags"
-              name="topicTags"
-              value={formData.topicTags}
-              onChange={handleChange}
-              placeholder=""
-              required
-            />
+            >
+              <option value="text">Text</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+              <option value="document">Document</option>
+            </select>
           </div>
 
           {/* Row 4: Description (Rich Text Editor with full Word-like functionality, Full Width) */}
           <div className="form-group grid-item-1-6">
-            <label htmlFor="description">Description</label>
+            <label htmlFor="body">Description</label>
             <div className="rich-text-editor">
               <div className="editor-toolbar" onMouseDown={(e) => e.preventDefault()}>
                 <div className="toolbar-group">
@@ -308,13 +344,13 @@ export default function UploadContentPage() {
                 </div>
               </div>
               <div
-                id="description"
-                name="description"
+                id="body"
+                name="body"
                 contentEditable
                 className="editor-content"
                 style={{ minHeight: '200px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-                dangerouslySetInnerHTML={{ __html: formData.description }}
-                onBlur={(e) => handleRichTextChange('description', e.target.innerHTML)}
+                dangerouslySetInnerHTML={{ __html: formData.body }}
+                onBlur={(e) => handleRichTextChange('body', e.target.innerHTML)}
               ></div>
             </div>
           </div>
@@ -473,7 +509,7 @@ export default function UploadContentPage() {
             </div>
           </div>
 
-          {/* Row 9: Chat Bot & Exclude Audio (Full Width control) */}
+          {/* Row 5: Chat Bot & Exclude Audio (Full Width control) */}
           <div className="form-group grid-item-1-6 chatbot-controls">
             <label className="chat-bot-label">Chat Bot</label>
             <div className="radio-group">
@@ -508,31 +544,31 @@ export default function UploadContentPage() {
                 onChange={handleChange}
               />
               <span className="checkbox-custom"></span>
-              Exclude Audio
-            </label>
-          </div>
-
-          {/* Row 10: PDF Upload (Full Width) */}
-          <div className="grid-item-1-6">
-            <div className="file-upload-box pdf-upload-box">
-              <input
-                type="file"
-                id="pdfFile"
-                name="pdfFile"
-                className="file-upload-input"
-                onChange={handlePdfFileChange}
-                accept="application/pdf"
-              />
-              <label htmlFor="pdfFile" className="file-upload-label">
-                <span className="material-icons upload-icon">picture_as_pdf</span>
-                <p>Drag and drop PDF file here, or <span>Browse</span></p>
-                <p className="upload-hint">Max PDF file size is 10MB</p>
+                Exclude Audio
               </label>
             </div>
-          </div>
 
-        </div> {/* End form-grid */}
-      </form>
-    </div>
-  );
-}
+            {/* Row 7: PDF Upload (Full Width) */}
+            <div className="grid-item-1-6">
+              <div className="file-upload-box pdf-upload-box">
+                <input
+                  type="file"
+                  id="pdfFile"
+                  name="pdfFile"
+                  className="file-upload-input"
+                  onChange={handlePdfFileChange}
+                  accept="application/pdf"
+                />
+                <label htmlFor="pdfFile" className="file-upload-label">
+                  <span className="material-icons upload-icon">picture_as_pdf</span>
+                  <p>Drag and drop PDF file here, or <span>Browse</span></p>
+                  <p className="upload-hint">Max PDF file size is 10MB</p>
+                </label>
+              </div>
+            </div>
+
+          </div> {/* End form-grid */}
+        </form>
+      </div>
+    );
+  }

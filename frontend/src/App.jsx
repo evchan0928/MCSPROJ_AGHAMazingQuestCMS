@@ -13,21 +13,23 @@ import UploadContentPage from './pages/UploadContentPage.jsx';
 // 🔑 IMPORT: Your newly renamed component
 import ContentListPage from './pages/ContentListPage.jsx'; 
 // 🔑 IMPORT: If you still have a separate Edit page for the form
-import EditContentPage from './pages/ContentListPage.jsx'; 
+import EditContentPage from './pages/EditContentPage.jsx'; 
 
 // 🔑 IMPORT: User Management Page
 import UserManagementPage from './pages/UserManagementPage.jsx';
 
-// 🔑 FIX: Define the generic placeholder
-const PlaceholderPage = ({ name }) => <h1>{name} Page Content</h1>;
+// 🔑 IMPORT: Analytics Pages
+import AnalyticsManagementPage from './pages/AnalyticsManagementPage.jsx';
+import GenerateAnalyticsPage from './pages/GenerateAnalyticsPage.jsx';
+import ViewAnalyticsPage from './pages/ViewAnalyticsPage.jsx';
+import DownloadAnalyticsPage from './pages/DownloadAnalyticsPage.jsx';
 
-// 🔑 UPDATED: Removed the Placeholder for EditContent since we are importing the real ones
-const ApproveContentPage = () => <PlaceholderPage name="Approve Content" />;
-const PublishContentPage = () => <PlaceholderPage name="Publish Content" />;
-const DeleteContentPage = () => <PlaceholderPage name="Delete Content" />;
-const GenerateAnalyticsPage = () => <PlaceholderPage name="Generate Analytics" />;
-const ViewAnalyticsPage = () => <PlaceholderPage name="View Analytics" />;
-const DownloadAnalyticsPage = () => <PlaceholderPage name="Download Analytics" />;
+// 🔑 IMPORT: Content Management Pages
+import ApproveContentPage from './pages/ApproveContentPage.jsx';
+import PublishContentPage from './pages/PublishContentPage.jsx';
+import DeleteContentPage from './pages/DeleteContentPage.jsx';
+
+// 🔑 REMOVED: Generic placeholder component
 
 function App() {
   return (
