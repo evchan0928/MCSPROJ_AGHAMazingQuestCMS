@@ -11,7 +11,7 @@ const isValidEmail = (email) => {
 
 const SignupScreen = () => {
     const navigate = useNavigate();
-    // 🔑 ADDED: State for the email input and error message
+    // State for the email input and error message
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
 
@@ -24,7 +24,7 @@ const SignupScreen = () => {
         navigate('/google-auth');
     };
 
-    // 🔑 MODIFIED: Validation logic added here
+    // Validation logic added here
     const onDostSignup = () => {
         setError(''); // Clear previous errors
 
@@ -36,61 +36,64 @@ const SignupScreen = () => {
         
         // In a real app, this is where the DOST/APC signup process would begin
         console.log('DOST Signup successful. Redirecting to /dashboard');
-        navigate('/dashboard'); // ⭐ Redirects to the Dashboard on successful validation
+        navigate('/dashboard'); // Redirects to the Dashboard on successful validation
     };
 
     return (
-        <React.Fragment>
-
-            <div className="login3-container">
-                <div className="login3-card">
-
-                    <h1>Sign Up for AGHAMazing Quest</h1>
-                    <LogosContainer />
-
-                    {/* 🔑 MODIFIED: Input is now controlled by state */}
+        <div className="signin-main-container">
+            <div className="signin-card">
+                <h1 className="signin-title">Create Your Account</h1>
+                <h2 className="welcome-back-subtitle">Sign up for AGHAMazing Quest</h2>
+                
+                {/* Input is now controlled by state */}
+                <div className="form-group">
+                    <label htmlFor="email" className="sr-only">Email</label>
                     <input 
+                        id="email"
                         type="email" 
                         placeholder="Enter your email" 
-                        className="login3-input"
+                        className="signin-input"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)} 
                     />
-                    
-                    {/* 🔑 ADDED: Display Error Message */}
-                    {error && <p style={{ color: 'red', fontSize: '0.85em', marginTop: '-10px', marginBottom: '10px' }}>{error}</p>}
+                </div>
+                
+                {/* Display Error Message */}
+                {error && <p className="error-message signin-error">{error}</p>}
+                
+                <button className="signin-continue-btn" onClick={onDostSignup}>
+                    Sign Up with DOST or APC Account
+                </button>
 
+                <div className="divider">or continue with</div>
 
-                    <button className="dost-signup-btn" onClick={onDostSignup}>
-                        Sign Up with DOST or APC Account
-                    </button>
+                <button className="login3-google-btn-alt" onClick={onGoogleSignup}>
+                    <img
+                        src="https://github.com/Marianne-101/pictures/blob/main/google-icon.png?raw=true"
+                        alt="Google Icon"
+                        className="google-icon"
+                    />
+                    Sign up with Google
+                </button>
 
-                    <div className="separator">or continue with</div>
+                <div className="signin-terms-policy">
+                    By clicking continue, you agree to our
+                    <a href="/terms-of-service"> Terms of Service </a>
+                    and
+                    <a href="/privacy-policy"> Privacy Policy</a>
+                </div>
 
-                    <button className="login3-google-btn-alt" onClick={onGoogleSignup}>
-                        <img
-                            src="https://github.com/Marianne-101/pictures/blob/main/google-icon.png?raw=true"
-                            alt="Google Icon"
-                            className="google-icon"
-                        />
-                        Sign up with Google
-                    </button>
-
-                    <p className="terms-policy">
-                        By clicking continue, you agree to our
-                        <a href="/terms-of-service"> **Terms of Service** </a>
-                        and
-                        <a href="/privacy-policy"> **Privacy Policy** </a>
-                    </p>
-
-                    <p style={{ marginTop: '20px' }}>
-                        Already have an account?
-                        <a href="/signin" className="sign-in-link" onClick={(e) => { e.preventDefault(); handleSignInClick(); }}>Sign In</a>
-                    </p>
+                <div className="signup-forgot-links">
+                    Already have an account?
+                    <a href="/signin" onClick={(e) => { e.preventDefault(); handleSignInClick(); }}>Sign In</a>
                 </div>
             </div>
-
-        </React.Fragment>
+            
+            <div className="signin-logo-footer">
+                <LogosContainer />
+                <p>© 2023 DOST-STII. All rights reserved.</p>
+            </div>
+        </div>
     );
 };
 

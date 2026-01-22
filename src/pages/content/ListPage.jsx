@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Button } from 'antd';
-import './ContentListPage.css';
+import './ListPage.css';
 
 const ContentList = () => {
   const textsData = [

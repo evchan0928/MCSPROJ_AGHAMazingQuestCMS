@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import './styles.css';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -44,27 +47,67 @@ export default function Login({ onLogin }) {
     }
   };
 
+  const handleSignUpClick = () => {
+    navigate('/signup');
+  };
+
   return (
-    <div style={{ maxWidth: 420 }}>
-      <h3>Sign in</h3>
-      <form onSubmit={submit}>
-        <div style={{ marginBottom: 8 }}>
-          <label>Username</label>
-          <br />
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+    <div className="signin-main-container">
+      <div className="signin-card">
+        <h1 className="signin-title">Welcome Back</h1>
+        <h2 className="welcome-back-subtitle">Sign in to your account</h2>
+        
+        <form onSubmit={submit} className="signin-form">
+          {error && <div className="error-message signin-error">{error}</div>}
+          
+          <div className="form-group">
+            <label htmlFor="username" className="sr-only">Username</label>
+            <input 
+              id="username"
+              type="text"
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
+              placeholder="Username or Email" 
+              required 
+              className="signin-input"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="password" className="sr-only">Password</label>
+            <input 
+              id="password"
+              type="password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              placeholder="Password" 
+              required 
+              className="signin-input"
+            />
+          </div>
+          
+          <div className="signin-remember-me-container">
+            <input type="checkbox" id="rememberMe" />
+            <label htmlFor="rememberMe">Remember me</label>
+          </div>
+          
+          <button type="submit" className="signin-continue-btn" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+        
+        <div className="signin-terms-policy">
+          <a href="/forgot-password">Forgot Password?</a>
         </div>
-        <div style={{ marginBottom: 8 }}>
-          <label>Password</label>
-          <br />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        
+        <div className="signup-forgot-links">
+          Don't have an account? 
+          <a href="/signup" onClick={(e) => { e.preventDefault(); handleSignUpClick(); }}>Sign Up</a>
         </div>
-        <div>
-          <button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</button>
-        </div>
-      </form>
-      {error && <div style={{ color: 'crimson', marginTop: 8 }}>{error}</div>}
-      <div style={{ marginTop: 12, color: '#666' }}>
-        Tip: use an existing Django superuser or register via API at <code>/api/auth/register/</code>.
+      </div>
+      
+      <div className="signin-logo-footer">
+        <p>© 2023 DOST-STII. All rights reserved.</p>
       </div>
     </div>
   );

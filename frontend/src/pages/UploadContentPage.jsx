@@ -19,11 +19,7 @@ export default function UploadContentPage() {
     description: '', 
     metaKeywords: '',
     metaDescription: '',
-    building: '',
-    facility: '',
-    location: '',
     photoCaption: '',
-    author: '',
     highlights: '', 
     chatBotAllow: true, 
     excludeAudio: false,
@@ -50,6 +46,22 @@ export default function UploadContentPage() {
     setPdfFile(e.target.files[0]);
   };
 
+  // Handle rich text editor changes
+  const handleRichTextChange = (field, content) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: content
+    }));
+  };
+
+  const handleSaveDraft = () => {
+    // Simulate saving draft functionality
+    console.log('Saving as draft:', { ...formData, imageFile, pdfFile });
+    
+    // In a real application, you would send the data to your backend
+    alert('Content saved as draft successfully!');
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
@@ -65,6 +77,24 @@ export default function UploadContentPage() {
       
     }, 1500);
   }
+  
+  // Function to handle formatting commands
+  const formatText = (command, value = null) => {
+    document.execCommand(command, false, value);
+    // Force a re-render to capture the updated content
+    setTimeout(() => {
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.classList.contains('editor-content')) {
+        handleRichTextChange(activeElement.id, activeElement.innerHTML);
+      }
+    }, 0);
+  };
+  
+  // Function to handle color selection
+  const handleColorChange = (command, color) => {
+    formatText(command, color);
+  };
+
   return (
     // The 'card' class provides the main container styling matching your design
     // The router renders this component directly into the main content area of the layout.
@@ -112,7 +142,7 @@ export default function UploadContentPage() {
             </label>
           </div>
           <div className="action-buttons">
-            <button type="button" className="secondary-action-btn">
+            <button type="button" className="secondary-action-btn" onClick={handleSaveDraft}>
               Save as Draft
             </button>
             <button type="submit" className="primary-action-btn" disabled={loading}>
@@ -193,34 +223,99 @@ export default function UploadContentPage() {
             />
           </div>
 
-          {/* Row 4: Description (Rich Text Editor Placeholder, Full Width) */}
+          {/* Row 4: Description (Rich Text Editor with full Word-like functionality, Full Width) */}
           <div className="form-group grid-item-1-6">
             <label htmlFor="description">Description</label>
             <div className="rich-text-editor">
-              <div className="editor-toolbar">
-                <button type="button"><b>B</b></button>
-                <button type="button"><i>I</i></button>
-                <button type="button"><u>U</u></button>
-                <button type="button">A<span className="material-icons">arrow_drop_down</span></button>
-                <button type="button"><span className="material-icons">format_align_left</span></button>
-                <button type="button"><span className="material-icons">format_align_center</span></button>
-                <button type="button"><span className="material-icons">format_align_right</span></button>
-                <button type="button"><span className="material-icons">format_align_justify</span></button>
-                <button type="button"><span className="material-icons">format_list_bulleted</span></button>
-                <button type="button"><span className="material-icons">format_list_numbered</span></button>
-                <button type="button"><span className="material-icons">code</span></button>
-                <button type="button"><span className="material-icons">arrow_left</span></button>
-                <button type="button"><span className="material-icons">arrow_right</span></button>
+              <div className="editor-toolbar" onMouseDown={(e) => e.preventDefault()}>
+                <div className="toolbar-group">
+                  <button type="button" title="Bold" onMouseDown={(e) => {e.preventDefault(); formatText('bold')}}>
+                    <b>B</b>
+                  </button>
+                  <button type="button" title="Italic" onMouseDown={(e) => {e.preventDefault(); formatText('italic')}}>
+                    <i>I</i>
+                  </button>
+                  <button type="button" title="Underline" onMouseDown={(e) => {e.preventDefault(); formatText('underline')}}>
+                    <u>U</u>
+                  </button>
+                  <button type="button" title="Strikethrough" onMouseDown={(e) => {e.preventDefault(); formatText('strikethrough')}}>
+                    <span style={{textDecoration: 'line-through'}}>S</span>
+                  </button>
+                </div>
+                
+                <div className="toolbar-group">
+                  <select onChange={(e) => formatText('formatBlock', e.target.value)} defaultValue="">
+                    <option value="">Format</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="h3">Heading 3</option>
+                    <option value="pre">Preformatted</option>
+                  </select>
+                  
+                  <select onChange={(e) => formatText('fontSize', e.target.value)} defaultValue="3">
+                    <option value="1">Small</option>
+                    <option value="5">Large</option>
+                    <option value="6">Huge</option>
+                  </select>
+                </div>
+                
+                <div className="toolbar-group">
+                  <button type="button" title="Align Left" onMouseDown={(e) => {e.preventDefault(); formatText('justifyLeft')}}>
+                    <span className="material-icons">format_align_left</span>
+                  </button>
+                  <button type="button" title="Align Center" onMouseDown={(e) => {e.preventDefault(); formatText('justifyCenter')}}>
+                    <span className="material-icons">format_align_center</span>
+                  </button>
+                  <button type="button" title="Align Right" onMouseDown={(e) => {e.preventDefault(); formatText('justifyRight')}}>
+                    <span className="material-icons">format_align_right</span>
+                  </button>
+                  <button type="button" title="Justify" onMouseDown={(e) => {e.preventDefault(); formatText('justifyFull')}}>
+                    <span className="material-icons">format_align_justify</span>
+                  </button>
+                </div>
+                
+                <div className="toolbar-group">
+                  <button type="button" title="Bullet List" onMouseDown={(e) => {e.preventDefault(); formatText('insertUnorderedList')}}>
+                    <span className="material-icons">format_list_bulleted</span>
+                  </button>
+                  <button type="button" title="Numbered List" onMouseDown={(e) => {e.preventDefault(); formatText('insertOrderedList')}}>
+                    <span className="material-icons">format_list_numbered</span>
+                  </button>
+                </div>
+                
+                <div className="toolbar-group">
+                  <input 
+                    type="color" 
+                    title="Text Color" 
+                    onChange={(e) => handleColorChange('foreColor', e.target.value)}
+                    style={{width: '30px', height: '30px', border: 'none', backgroundColor: 'transparent'}}
+                  />
+                  <input 
+                    type="color" 
+                    title="Background Color" 
+                    onChange={(e) => handleColorChange('hiliteColor', e.target.value)}
+                    style={{width: '30px', height: '30px', border: 'none', backgroundColor: 'transparent'}}
+                  />
+                </div>
+                
+                <div className="toolbar-group">
+                  <button type="button" title="Undo" onMouseDown={(e) => {e.preventDefault(); formatText('undo')}}>
+                    <span className="material-icons">undo</span>
+                  </button>
+                  <button type="button" title="Redo" onMouseDown={(e) => {e.preventDefault(); formatText('redo')}}>
+                    <span className="material-icons">redo</span>
+                  </button>
+                </div>
               </div>
-              <textarea
+              <div
                 id="description"
                 name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows="8"
-                placeholder=""
+                contentEditable
                 className="editor-content"
-              ></textarea>
+                style={{ minHeight: '200px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                dangerouslySetInnerHTML={{ __html: formData.description }}
+                onBlur={(e) => handleRichTextChange('description', e.target.innerHTML)}
+              ></div>
             </div>
           </div>
 
@@ -250,8 +345,8 @@ export default function UploadContentPage() {
             ></textarea>
           </div>
 
-          {/* Row 6: Image Upload & Dropdowns (2 columns) */}
-          <div className="grid-item-1-3">
+          {/* Row 6: Image Upload (Full Width) */}
+          <div className="grid-item-1-6">
             <div className="file-upload-box">
               <input
                 type="file"
@@ -268,51 +363,9 @@ export default function UploadContentPage() {
               </label>
             </div>
           </div>
-          <div className="grid-item-4-6">
-            <div className="form-group">
-              <label htmlFor="building">Building</label>
-              <select
-                id="building"
-                name="building"
-                value={formData.building}
-                onChange={handleChange}
-              >
-                <option value="">Select Building</option>
-                <option value="buildingA">Building A</option>
-                <option value="buildingB">Building B</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="facility">Facility *</label>
-              <select
-                id="facility"
-                name="facility"
-                value={formData.facility}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select Facility</option>
-                <option value="facilityX">Facility X</option>
-                <option value="facilityY">Facility Y</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="location">Location</label>
-              <select
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-              >
-                <option value="">Select Location</option>
-                <option value="loc1">Location 1</option>
-                <option value="loc2">Location 2</option>
-              </select>
-            </div>
-          </div>
 
-          {/* Row 7: Photo Caption and Author (2 columns) */}
-          <div className="form-group grid-item-1-3">
+          {/* Row 7: Photo Caption (Full Width) */}
+          <div className="form-group grid-item-1-6">
             <label htmlFor="photoCaption">Photo Caption</label>
             <input
               type="text"
@@ -323,48 +376,100 @@ export default function UploadContentPage() {
               placeholder=""
             />
           </div>
-          <div className="form-group grid-item-4-6">
-            <label htmlFor="author">Author</label>
-            <select
-              id="author"
-              name="author"
-              value={formData.author}
-              onChange={handleChange}
-            >
-              <option value="">Select Author</option>
-              <option value="author1">Author One</option>
-              <option value="author2">Author Two</option>
-            </select>
-          </div>
 
-          {/* Row 8: Highlights (Rich Text Editor Placeholder, Full Width) */}
+          {/* Row 8: Highlights (Rich Text Editor with full Word-like functionality, Full Width) */}
           <div className="form-group grid-item-1-6">
             <label htmlFor="highlights">Highlights</label>
             <div className="rich-text-editor">
-              <div className="editor-toolbar">
-                <button type="button"><b>B</b></button>
-                <button type="button"><i>I</i></button>
-                <button type="button"><u>U</u></button>
-                <button type="button">A<span className="material-icons">arrow_drop_down</span></button>
-                <button type="button"><span className="material-icons">format_align_left</span></button>
-                <button type="button"><span className="material-icons">format_align_center</span></button>
-                <button type="button"><span className="material-icons">format_align_right</span></button>
-                <button type="button"><span className="material-icons">format_align_justify</span></button>
-                <button type="button"><span className="material-icons">format_list_bulleted</span></button>
-                <button type="button"><span className="material-icons">format_list_numbered</span></button>
-                <button type="button"><span className="material-icons">code</span></button>
-                <button type="button"><span className="material-icons">arrow_left</span></button>
-                <button type="button"><span className="material-icons">arrow_right</span></button>
+              <div className="editor-toolbar" onMouseDown={(e) => e.preventDefault()}>
+                <div className="toolbar-group">
+                  <button type="button" title="Bold" onMouseDown={(e) => {e.preventDefault(); formatText('bold')}}>
+                    <b>B</b>
+                  </button>
+                  <button type="button" title="Italic" onMouseDown={(e) => {e.preventDefault(); formatText('italic')}}>
+                    <i>I</i>
+                  </button>
+                  <button type="button" title="Underline" onMouseDown={(e) => {e.preventDefault(); formatText('underline')}}>
+                    <u>U</u>
+                  </button>
+                  <button type="button" title="Strikethrough" onMouseDown={(e) => {e.preventDefault(); formatText('strikethrough')}}>
+                    <span style={{textDecoration: 'line-through'}}>S</span>
+                  </button>
+                </div>
+                
+                <div className="toolbar-group">
+                  <select onChange={(e) => formatText('formatBlock', e.target.value)} defaultValue="">
+                    <option value="">Format</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="h3">Heading 3</option>
+                    <option value="pre">Preformatted</option>
+                  </select>
+                  
+                  <select onChange={(e) => formatText('fontSize', e.target.value)} defaultValue="3">
+                    <option value="1">Small</option>
+                    <option value="5">Large</option>
+                    <option value="6">Huge</option>
+                  </select>
+                </div>
+                
+                <div className="toolbar-group">
+                  <button type="button" title="Align Left" onMouseDown={(e) => {e.preventDefault(); formatText('justifyLeft')}}>
+                    <span className="material-icons">format_align_left</span>
+                  </button>
+                  <button type="button" title="Align Center" onMouseDown={(e) => {e.preventDefault(); formatText('justifyCenter')}}>
+                    <span className="material-icons">format_align_center</span>
+                  </button>
+                  <button type="button" title="Align Right" onMouseDown={(e) => {e.preventDefault(); formatText('justifyRight')}}>
+                    <span className="material-icons">format_align_right</span>
+                  </button>
+                  <button type="button" title="Justify" onMouseDown={(e) => {e.preventDefault(); formatText('justifyFull')}}>
+                    <span className="material-icons">format_align_justify</span>
+                  </button>
+                </div>
+                
+                <div className="toolbar-group">
+                  <button type="button" title="Bullet List" onMouseDown={(e) => {e.preventDefault(); formatText('insertUnorderedList')}}>
+                    <span className="material-icons">format_list_bulleted</span>
+                  </button>
+                  <button type="button" title="Numbered List" onMouseDown={(e) => {e.preventDefault(); formatText('insertOrderedList')}}>
+                    <span className="material-icons">format_list_numbered</span>
+                  </button>
+                </div>
+                
+                <div className="toolbar-group">
+                  <input 
+                    type="color" 
+                    title="Text Color" 
+                    onChange={(e) => handleColorChange('foreColor', e.target.value)}
+                    style={{width: '30px', height: '30px', border: 'none', backgroundColor: 'transparent'}}
+                  />
+                  <input 
+                    type="color" 
+                    title="Background Color" 
+                    onChange={(e) => handleColorChange('hiliteColor', e.target.value)}
+                    style={{width: '30px', height: '30px', border: 'none', backgroundColor: 'transparent'}}
+                  />
+                </div>
+                
+                <div className="toolbar-group">
+                  <button type="button" title="Undo" onMouseDown={(e) => {e.preventDefault(); formatText('undo')}}>
+                    <span className="material-icons">undo</span>
+                  </button>
+                  <button type="button" title="Redo" onMouseDown={(e) => {e.preventDefault(); formatText('redo')}}>
+                    <span className="material-icons">redo</span>
+                  </button>
+                </div>
               </div>
-              <textarea
+              <div
                 id="highlights"
                 name="highlights"
-                value={formData.highlights}
-                onChange={handleChange}
-                rows="4"
-                placeholder=""
+                contentEditable
                 className="editor-content"
-              ></textarea>
+                style={{ minHeight: '150px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                dangerouslySetInnerHTML={{ __html: formData.highlights }}
+                onBlur={(e) => handleRichTextChange('highlights', e.target.innerHTML)}
+              ></div>
             </div>
           </div>
 
