@@ -46,3 +46,76 @@ python -m pip install -r requirements.txt
 
 - Serve media (user-uploaded files) from a cloud storage bucket + CDN for performance. Configure `DEFAULT_FILE_STORAGE` and return absolute URLs from the API.
 - For private/protected media, implement presigned URLs (S3) or short-lived signed URLs returned by an authenticated endpoint.
+
+## Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- Docker and Docker Compose
+- Supabase account (if deploying to Supabase)
+
+## Quick Start
+
+1. Install backend dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your actual values
+   ```
+
+3. Run database migrations:
+   ```bash
+   python manage.py migrate
+   ```
+
+4. Install frontend dependencies:
+   ```bash
+   cd frontend && npm install
+   ```
+
+5. Run the development servers:
+   ```bash
+   # Terminal 1: Start backend
+   python manage.py runserver
+   
+   # Terminal 2: Start frontend
+   cd frontend && npm start
+   ```
+
+Or use the convenience script:
+```bash
+./scripts/run_both.sh
+```
+
+## Deployment
+
+### Using Docker
+```bash
+docker-compose up -d
+```
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and update the values accordingly.
+
+## Project Structure
+
+- `apps/` - Django applications
+- `config/` - Django project settings
+- `frontend/` - React frontend application
+- `scripts/` - Utility scripts
+- `deploy/` - Deployment configurations
+
+## Available Scripts
+
+- `scripts/run_backend.py` - Run the Django backend server
+- `scripts/run_frontend.sh` - Run the React frontend server
+- `scripts/run_both.sh` - Run both servers simultaneously
+
+## Development Guidelines
+
+Follow the standard Django and React development practices.

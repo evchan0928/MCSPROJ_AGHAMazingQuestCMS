@@ -1,9 +1,21 @@
-django>=5.2.7
-wagtail
-djangorestframework
+# 核心Django和Wagtail
+Django>=4.2.0
+wagtail>=5.0.0
+
+# REST Framework和相关扩展
+djangorestframework>=3.14.0
 djangorestframework-simplejwt
-django-cors-headers
-pymysql
+
+# 数据库相关
 psycopg2-binary
+Pillow
+
+# 第三方包
+modelcluster
+taggit
+django-environ
+
+# 跨域和部署
+django-cors-headers
 gunicorn
 python-dotenv
