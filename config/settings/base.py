@@ -124,6 +124,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Add Supabase middleware if environment variables are set
+if os.environ.get('SUPABASE_URL') and os.environ.get('SUPABASE_ANON_KEY'):
+    # Insert Supabase middleware after CORS but before other middleware
+    MIDDLEWARE.insert(1, 'middleware.supabase_auth.SupabaseAuthMiddleware')
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [

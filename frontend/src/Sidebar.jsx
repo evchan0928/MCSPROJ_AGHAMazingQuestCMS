@@ -136,7 +136,7 @@ export default function Sidebar({ user }) {
                     </li>
                 )}
 
-                {/* User Management Dropdown */}
+                {/* User & Role Management Dropdown */}
                 {isAdmin && (
                     <li className="sidebar-section-li" style={{ marginTop: '12px' }}>
                         <div className="sidebar-separator-small"></div>
@@ -145,11 +145,12 @@ export default function Sidebar({ user }) {
                             className="dropdown-toggle-btn"
                         >
                             <span className="material-icons" style={{ marginRight: '10px' }}>manage_accounts</span>
-                            User Management {userMgmtOpen ? '▲' : '▼'}
+                            User & Role Management {userMgmtOpen ? '▲' : '▼'}
                         </button>
                         {userMgmtOpen && (
                             <ul className="sub-menu">
                                 <li><NavLink to="/dashboard/users" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Users</NavLink></li>
+                                <li><NavLink to="/dashboard/users/roles" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Roles</NavLink></li>
                             </ul>
                         )}
                     </li>

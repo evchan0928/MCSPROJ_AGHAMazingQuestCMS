@@ -19,3 +19,7 @@ django-environ
 django-cors-headers
 gunicorn
 python-dotenv
+
+# Supabase dependencies
+dj-database-url
+supabase

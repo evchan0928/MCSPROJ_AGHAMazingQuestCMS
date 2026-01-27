@@ -29,6 +29,9 @@ import ApproveContentPage from './pages/ApproveContentPage.jsx';
 import PublishContentPage from './pages/PublishContentPage.jsx';
 import DeleteContentPage from './pages/DeleteContentPage.jsx';
 
+// 🔑 IMPORT: Roles Page
+import RolesPage from './pages/RolesPage.jsx';
+
 // 🔑 REMOVED: Generic placeholder component
 
 function App() {
@@ -64,6 +67,7 @@ function App() {
 
           {/* User Management Sub-Routes */}
           <Route path="users" element={<UserManagementPage />} />
+          <Route path="users/roles" element={<RolesPage />} />
 
           {/* Catch-all for /dashboard/* pages */}
           <Route path="*" element={<h1 style={{ padding: '20px', fontWeight: 'normal' }}>404 Dashboard Content Not Found</h1>} />
