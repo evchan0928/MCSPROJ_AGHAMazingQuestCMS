@@ -23,3 +23,6 @@ python-dotenv
 # Supabase dependencies
 dj-database-url
 supabase
+
+# PostgreSQL support
+psycopg2-binary>=2.9.0
