@@ -1,212 +1,249 @@
 import React, { useState, useEffect } from 'react';
+import { Form, Input, Select, Checkbox, Button, Row, Col, Card, Divider, notification } from 'antd';
+import { UserOutlined, MailOutlined, LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+
+const { Option } = Select;
 
 export default function UserForm({ user: initial, roles = [], onCancel, onSaved, onDone }) {
-  const [user, setUser] = useState(initial || { 
-    username: '', 
-    email: '', 
-    first_name: '', 
-    last_name: '', 
-    is_active: true, 
-    is_staff: false, 
-    is_superuser: false, 
-    roles: [], 
-    password: '' 
-  });
+  const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [api, contextHolder] = notification.useNotification();
+
+  const openNotification = (message, description, type) => {
+    api[type]({
+      message: message,
+      description: description,
+      placement: 'topRight',
+    });
+  };
 
   useEffect(() => {
-    // normalize roles to an array of role names (backend may return objects or strings)
-    const base = initial || { 
-      username: '', 
-      email: '', 
-      first_name: '', 
-      last_name: '', 
-      is_active: true, 
-      is_staff: false, 
-      is_superuser: false, 
-      roles: [], 
-      password: '' 
-    };
-    const normRoles = Array.isArray(base.roles) ? base.roles.map(r => (typeof r === 'string' ? r : (r && r.name) || '')).filter(Boolean) : [];
-    setUser({ ...base, roles: normRoles });
-  }, [initial]);
+    // Set initial values for the form
+    if (initial) {
+      // Normalize roles to an array of role names
+      const normalizedRoles = Array.isArray(initial.roles) 
+        ? initial.roles.map(r => typeof r === 'string' ? r : (r && r.name) || '')
+        : [];
+      
+      form.setFieldsValue({
+        ...initial,
+        roles: normalizedRoles,
+      });
+    } else {
+      // Set default values for new user
+      form.setFieldsValue({
+        username: '',
+        email: '',
+        first_name: '',
+        last_name: '',
+        is_active: true,
+        is_staff: false,
+        is_superuser: false,
+        roles: [],
+        password: ''
+      });
+    }
+  }, [initial, form]);
 
   const token = localStorage.getItem('access');
   const API_BASE = process.env.REACT_APP_API_URL || ((window.location.hostname === 'localhost' && window.location.port === '3000') ? 'http://localhost:8000' : '');
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submit = async (values) => {
     setSaving(true);
     try {
-      const payload = { ...user };
+      const payload = { ...values };
       if (!payload.password) delete payload.password;
-      const method = user.id ? 'PUT' : 'POST';
-      const url = user.id ? `${API_BASE}/api/users/${user.id}/` : `${API_BASE}/api/users/`;
+      
+      const method = initial && initial.id ? 'PUT' : 'POST';
+      const url = initial && initial.id ? `${API_BASE}/api/users/${initial.id}/` : `${API_BASE}/api/users/`;
+      
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error('Save failed');
-      const ct = (res.headers.get('content-type') || '').toLowerCase();
-      if (!ct.includes('application/json')) {
-        const txt = await res.text();
-        throw new Error(`Expected JSON response from save but received: ${txt.substring(0,200)}`);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Save failed');
       }
+      
       const data = await res.json();
-      // Call saved/done callbacks (support older prop name onDone)
+      
+      // Call saved/done callbacks
       if (onSaved) onSaved(data);
       else if (onDone) onDone(data);
+      
+      openNotification('Success', `User ${initial && initial.id ? 'updated' : 'created'} successfully`, 'success');
     } catch (err) {
-      alert(String(err));
+      openNotification('Error', `Failed to ${initial && initial.id ? 'update' : 'create'} user: ${err.message}`, 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const toggleGroup = (name) => {
-    const cur = new Set(user.roles || []);
-    if (cur.has(name)) cur.delete(name); else cur.add(name);
-    setUser({ ...user, roles: Array.from(cur) });
-  };
-
   return (
-    <div className="django-form-container">
-      <form onSubmit={submit} className="django-form">
-        <div className="form-row">
-          <div>
-            <label className="required">Username</label>
-            <input 
-              value={user.username} 
-              onChange={e => setUser({ ...user, username: e.target.value })} 
-              required 
-              className="form-input"
-            />
-          </div>
-        </div>
-        
-        <div className="form-row">
-          <div>
-            <label>Email</label>
-            <input 
-              value={user.email} 
-              onChange={e => setUser({ ...user, email: e.target.value })} 
-              className="form-input"
-            />
-          </div>
-        </div>
-        
-        <div className="form-row">
-          <div>
-            <label>First name</label>
-            <input 
-              value={user.first_name} 
-              onChange={e => setUser({ ...user, first_name: e.target.value })} 
-              className="form-input"
-            />
-          </div>
-          <div>
-            <label>Last name</label>
-            <input 
-              value={user.last_name} 
-              onChange={e => setUser({ ...user, last_name: e.target.value })} 
-              className="form-input"
-            />
-          </div>
-        </div>
+    <>
+      {contextHolder}
+      <Card 
+        title={initial && initial.id ? "Edit User" : "Add New User"} 
+        style={{ marginBottom: '20px' }}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={submit}
+          initialValues={{
+            username: '',
+            email: '',
+            first_name: '',
+            last_name: '',
+            is_active: true,
+            is_staff: false,
+            is_superuser: false,
+            roles: [],
+            password: initial && initial.id ? '' : '' // Only require password for new users
+          }}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="username"
+                label="Username"
+                rules={[{ required: true, message: 'Please input the username!' }]}
+              >
+                <Input 
+                  prefix={<UserOutlined />} 
+                  placeholder="Enter username" 
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { required: true, message: 'Please input the email!' },
+                  { type: 'email', message: 'Please enter a valid email!' }
+                ]}
+              >
+                <Input 
+                  prefix={<MailOutlined />} 
+                  placeholder="Enter email" 
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-        <div className="form-row">
-          <div>
-            <label>Password {user.id ? '(leave blank to keep current)' : '(required)'}</label>
-            <input 
-              value={user.password} 
-              onChange={e => setUser({ ...user, password: e.target.value })} 
-              type="password" 
-              className="form-input"
-              required={!user.id}
-            />
-          </div>
-        </div>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="first_name"
+                label="First Name"
+              >
+                <Input placeholder="Enter first name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="last_name"
+                label="Last Name"
+              >
+                <Input placeholder="Enter last name" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-        <div className="form-row">
-          <div className="checkbox-row">
-            <label>
-              <input 
-                type="checkbox" 
-                checked={!!user.is_active} 
-                onChange={e => setUser({ ...user, is_active: e.target.checked })} 
-              /> 
-              Active
-            </label>
-          </div>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="password"
+                label={initial && initial.id ? "New Password (optional)" : "Password"}
+                rules={!initial || !initial.id ? [{ required: true, message: 'Please input the password!' }] : []}
+              >
+                <Input.Password 
+                  prefix={<LockOutlined />} 
+                  placeholder={initial && initial.id ? "Leave blank to keep current password" : "Enter password"} 
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider orientation="left">User Status & Permissions</Divider>
           
-          <div className="checkbox-row">
-            <label>
-              <input 
-                type="checkbox" 
-                checked={!!user.is_staff} 
-                onChange={e => setUser({ ...user, is_staff: e.target.checked })} 
-              /> 
-              Staff status
-            </label>
-          </div>
-          
-          <div className="checkbox-row">
-            <label>
-              <input 
-                type="checkbox" 
-                checked={!!user.is_superuser} 
-                onChange={e => setUser({ ...user, is_superuser: e.target.checked })} 
-              /> 
-              Superuser status
-            </label>
-          </div>
-        </div>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item 
+                name="is_active" 
+                valuePropName="checked"
+                label="Active"
+              >
+                <Checkbox>Account Active</Checkbox>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item 
+                name="is_staff" 
+                valuePropName="checked"
+                label="Staff"
+              >
+                <Checkbox>Staff Status</Checkbox>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item 
+                name="is_superuser" 
+                valuePropName="checked"
+                label="Superuser"
+              >
+                <Checkbox>Superuser Status</Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
 
-        <div className="form-row">
-          <div>
-            <h3 className="form-section-title">Permissions</h3>
-            <div className="permissions-container">
-              <div className="permissions-box">
-                <div className="permissions-header">Roles</div>
-                <div className="permissions-content">
-                  {roles.map(g => (
-                    <label key={g.name} className="permission-checkbox">
-                      <input 
-                        type="checkbox" 
-                        checked={(user.roles || []).includes(g.name)} 
-                        onChange={() => toggleGroup(g.name)} 
-                      /> 
-                      {g.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
+          <Divider orientation="left">User Roles</Divider>
+          
+          <Form.Item
+            name="roles"
+            label="Assign Roles"
+          >
+            <Select
+              mode="multiple"
+              placeholder="Select roles for this user"
+              style={{ width: '100%' }}
+              prefix={<SafetyCertificateOutlined />}
+            >
+              {roles.map(role => (
+                <Option key={role.name} value={role.name}>
+                  {role.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+              <Button 
+                type="default" 
+                onClick={() => { 
+                  if (onCancel) onCancel(); 
+                  else if (onDone) onDone(); 
+                }} 
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={saving}
+              >
+                {saving ? 'Saving...' : (initial && initial.id ? 'Update User' : 'Create User')}
+              </Button>
             </div>
-          </div>
-        </div>
-
-        <div className="submit-row">
-          <button 
-            type="button" 
-            onClick={() => { 
-              if (onCancel) onCancel(); 
-              else if (onDone) onDone(); 
-            }} 
-            disabled={saving}
-            className="cancel-button"
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            className="save-button"
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : (user.id ? 'Save' : 'Create')}
-          </button>
-        </div>
-      </form>
-    </div>
+          </Form.Item>
+        </Form>
+      </Card>
+    </>
   );
 }

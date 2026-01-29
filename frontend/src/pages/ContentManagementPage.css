@@ -1,0 +1,70 @@
+/* Layout styles for user management and roles pages */
+.user-management-page,
+.roles-management-page {
+  padding: 24px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1f2d3d;
+}
+
+.page-description {
+  font-size: 16px;
+  color: #606266;
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-container {
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.search-bar {
+  width: 100%;
+}
+
+.action-buttons {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+.error-section {
+  margin-top: 20px;
+}
+
+.error-text {
+  color: #ff4d4f;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-container {
+    min-width: 100%;
+  }
+  
+  .action-buttons {
+    justify-content: center;
+    margin-top: 12px;
+  }
+}

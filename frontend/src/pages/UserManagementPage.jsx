@@ -4,6 +4,7 @@ import UserForm from '../components/UserForm';
 import { Row, Col, Card, Statistic, Table, Button, Space, Input, Tag, Popconfirm, notification } from 'antd';
 import { UserAddOutlined, TeamOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import './ContentManagementPage.css';  // Import the CSS file
 
 const { Search } = Input;
 
@@ -18,6 +19,7 @@ export default function UserManagementPage() {
   const [sidePanelContent, setSidePanelContent] = useState(null);
   const [sidePanelTitle, setSidePanelTitle] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
 
   const [api, contextHolder] = notification.useNotification();
 
@@ -31,14 +33,24 @@ export default function UserManagementPage() {
 
   const fetchUsers = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetchAuth('/api/users/');
-      if (!res.ok) throw new Error('Failed');
+      if (res.status === 401 || res.status === 403) {
+        throw new Error('Authentication required. Please log in to access users.');
+      }
+      
+      if (!res.ok) throw new Error('Failed to load users');
       const data = await res.json();
       setUsers(data);
+      
       // attempt to load roles for the create/edit form
       try {
         const r = await fetchAuth('/api/users/roles/');
+        if (r.status === 401 || r.status === 403) {
+          throw new Error('Authentication required. Please log in to access roles.');
+        }
+        
         if (r.ok) {
           const rd = await r.json();
           setRoles(rd || []);
@@ -48,7 +60,8 @@ export default function UserManagementPage() {
       }
     } catch (err) { 
       console.error(err); 
-      openNotification('Error', 'Failed to load users', 'error');
+      setError(err.message);
+      openNotification('Error', err.message, 'error');
     } finally { 
       setLoading(false); 
     }
@@ -222,14 +235,10 @@ export default function UserManagementPage() {
   return (
     <>
       {contextHolder}
-      <div style={{ padding: '24px' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '600', marginBottom: '8px', color: '#1f2d3d' }}>
-            User Management
-          </h1>
-          <p style={{ fontSize: '16px', color: '#606266' }}>
-            Manage users and their permissions in the system
-          </p>
+      <div className="user-management-page">
+        <div className="page-header">
+          <h1 className="page-title">User Management</h1>
+          <p className="page-description">Manage users and their permissions in the system</p>
         </div>
 
         <Row gutter={[24, 24]}>
@@ -282,18 +291,18 @@ export default function UserManagementPage() {
             <Card
               title="User List"
               extra={
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: '200px', maxWidth: '300px' }}>
+                <div className="controls-row">
+                  <div className="search-container">
                     <Search
                       placeholder="Search users..."
                       allowClear
                       enterButton={<SearchOutlined />}
                       size="middle"
                       onSearch={(value) => setSearchTerm(value)}
-                      style={{ width: '100%' }}
+                      className="search-bar"
                     />
                   </div>
-                  <Space wrap style={{ flex: '1 1 auto', justifyContent: 'flex-end' }}>
+                  <Space wrap className="action-buttons">
                     <Button 
                       type="primary" 
                       icon={<UserAddOutlined />}
@@ -384,6 +393,24 @@ export default function UserManagementPage() {
             </Card>
           </Col>
         </Row>
+
+        {error && (
+          <div className="error-section">
+            <Card type="inner" style={{ borderColor: '#ff4d4f' }}>
+              <p className="error-text"><strong>Error:</strong> {error}</p>
+              {error.includes('Authentication required') && (
+                <div style={{ marginTop: '10px' }}>
+                  <Button 
+                    type="primary" 
+                    onClick={() => navigate('/signin')}
+                  >
+                    Go to Login Page
+                  </Button>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
 
         {/* Side Panel */}
         {showSidePanel && (

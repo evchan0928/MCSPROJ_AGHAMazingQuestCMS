@@ -3,6 +3,7 @@ import { fetchAuth } from '../api';
 import { Card, Row, Col, Statistic, Table, Button, Space, Input, Tag, Popconfirm, notification, Typography } from 'antd';
 import { PlusOutlined, TeamOutlined, UserOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import './ContentManagementPage.css';  // Import the CSS file
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -118,9 +119,9 @@ export default function RolesPage() {
       
       if (res.status === 401 || res.status === 403) {
         throw new Error('Authentication required. Please log in to create roles.');
-        }
-        
-        if (res.status === 405 || res.status === 404) {
+      }
+      
+      if (res.status === 405 || res.status === 404) {
         // API not supported on backend
         setError('Role creation via API is not enabled on the backend. Use Django admin or contact the server admin.');
         openNotification('Error', 'Role creation via API is not enabled on the backend. Use Django admin or contact the server admin.', 'error');
@@ -288,10 +289,10 @@ export default function RolesPage() {
   return (
     <>
       {contextHolder}
-      <div style={{ padding: '24px' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <Title level={2} style={{ marginBottom: '8px', color: '#1f2d3d' }}>Role Management</Title>
-          <Text type="secondary">Manage user roles and permissions in the system</Text>
+      <div className="roles-management-page">
+        <div className="page-header">
+          <Title level={2} className="page-title">Role Management</Title>
+          <Text type="secondary" className="page-description">Manage user roles and permissions in the system</Text>
         </div>
 
         <Row gutter={[24, 24]}>
@@ -344,18 +345,18 @@ export default function RolesPage() {
             <Card
               title="Role List"
               extra={
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: '200px', maxWidth: '300px' }}>
+                <div className="controls-row">
+                  <div className="search-container">
                     <Search
                       placeholder="Search roles..."
                       allowClear
                       enterButton={<SearchOutlined />}
                       size="middle"
                       onSearch={(value) => setSearchTerm(value)}
-                      style={{ width: '100%' }}
+                      className="search-bar"
                     />
                   </div>
-                  <Space wrap style={{ flex: '1 1 auto', justifyContent: 'flex-end' }}>
+                  <Space wrap className="action-buttons">
                     <Button 
                       type="primary" 
                       icon={<PlusOutlined />}
@@ -412,10 +413,9 @@ export default function RolesPage() {
         </Row>
 
         {error && (
-          <div style={{ marginTop: '20px' }}>
+          <div className="error-section">
             <Card type="inner" style={{ borderColor: '#ff4d4f' }}>
-              <Text strong type="danger">Error: </Text>
-              <Text type="danger">{error}</Text>
+              <p className="error-text"><strong>Error:</strong> {error}</p>
               {error.includes('Authentication required') && (
                 <div style={{ marginTop: '10px' }}>
                   <Button 
