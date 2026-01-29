@@ -57,11 +57,40 @@ except Exception:
 
 
 # Database
-# Support switching between sqlite, MySQL and PostgreSQL via environment variables.
-# DB_ENGINE: 'sqlite' | 'mysql' (default when DEBUG is False) | 'postgres'/'postgresql'
+# Support switching between sqlite and PostgreSQL via environment variables.
+# DB_ENGINE: 'sqlite' | 'postgres'/'postgresql' (default when DEBUG is False)
 # For local development (DEBUG=True) default to sqlite to avoid requiring a DB server.
-default_db = 'sqlite' if DEBUG else 'mysql'
+default_db = 'sqlite' if DEBUG else 'postgres'
 DB_ENGINE = os.environ.get('DB_ENGINE', default_db).lower()
+
+if DB_ENGINE == 'sqlite':
+    engine = 'django.db.backends.sqlite3'
+    DATABASES = {
+        'default': {
+            'ENGINE': engine,
+            'NAME': os.environ.get('DB_NAME', str(BASE_DIR / 'db.sqlite3')),
+        }
+    }
+else:
+    if DB_ENGINE in ('postgres', 'postgresql'):
+        engine = 'django.db.backends.postgresql'
+    else:
+        engine = DB_ENGINE
+
+    DATABASES = {
+        'default': {
+            'ENGINE': engine,
+            'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
+            'USER': os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'admin123'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+            'OPTIONS': {
+                # PostgreSQL specific options
+                'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
+            },
+        }
+    }
 
 
 # Application definition
@@ -150,45 +179,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-if DB_ENGINE == 'sqlite':
-    engine = 'django.db.backends.sqlite3'
-    DATABASES = {
-        'default': {
-            'ENGINE': engine,
-            'NAME': os.environ.get('DB_NAME', str(BASE_DIR / 'db.sqlite3')),
-        }
-    }
-else:
-    if DB_ENGINE in ('mysql', 'mariadb'):
-        try:
-            import pymysql
-
-            pymysql.install_as_MySQLdb()
-        except Exception:
-            # If PyMySQL is not available, let Django raise an import error later
-            pass
-        engine = 'django.db.backends.mysql'
-    elif DB_ENGINE in ('postgres', 'postgresql'):
-        engine = 'django.db.backends.postgresql'
-    else:
-        engine = DB_ENGINE
-
-    DATABASES = {
-        'default': {
-            'ENGINE': engine,
-            'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
-            'USER': os.environ.get('DB_USER', 'admin'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'admin'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '3306' if engine.endswith('mysql') else '5432'),
-            'OPTIONS': {
-                # MySQL strict mode is recommended; leave empty for PostgreSQL
-                **({'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"} if engine.endswith('mysql') else {}),
-            },
-        }
-    }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -247,6 +237,7 @@ WAGTAILADMIN_BASE_URL = os.environ.get('WAGTAILADMIN_BASE_URL', 'http://localhos
 # CORS (for React frontend running on localhost:3000)
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
+    'http://127.0.0.1:3000',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -256,7 +247,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ),
 }
 

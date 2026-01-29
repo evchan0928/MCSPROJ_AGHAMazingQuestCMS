@@ -112,7 +112,7 @@ class ContentPage(Page):
     version_number = models.IntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='content_authors')
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_authors')
     reviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_reviewers')
     approver = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_approvers')
     

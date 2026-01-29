@@ -11,8 +11,8 @@ psycopg2-binary
 Pillow
 
 # 第三方包
-modelcluster
-taggit
+django-modelcluster
+django-taggit
 django-environ
 
 # 跨域和部署
@@ -20,9 +20,8 @@ django-cors-headers
 gunicorn
 python-dotenv
 
-# Supabase dependencies
+# Database URL support (for potential PostgreSQL connections)
 dj-database-url
-supabase
 
 # PostgreSQL support
 psycopg2-binary>=2.9.0
