@@ -35,7 +35,7 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 # Default to False for safety in production deployments. Set DJANGO_DEBUG=True
 # in your development environment if you need debug mode locally.
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"  # Default to True for staging
 
 # Hosts allowed to serve the app. Read from env, splitting on commas and
 # stripping whitespace. If the env var is missing or doesn't include the
@@ -261,10 +261,21 @@ SIMPLE_JWT = {
 
 
 # ---------- Security / production defaults
-# When DEBUG is False, pick sensible secure defaults from environment variables.
-# These defaults help pass `manage.py check --deploy` and are safe to override
-# per-deployment via environment variables.
-if not DEBUG:
+# When STAGING_ENVIRONMENT is True, use relaxed security settings appropriate for staging
+STAGING_ENVIRONMENT = os.environ.get('STAGING_ENVIRONMENT', 'False') == 'True'
+
+if STAGING_ENVIRONMENT:
+    # Relaxed security for staging environment
+    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'False') == 'True'
+    SECURE_HSTS_SECONDS = 0  # Don't enforce HSTS in staging
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    
+    # Allow insecure cookies in staging (not recommended for production)
+    SESSION_COOKIE_SECURE = os.environ.get('DJANGO_SESSION_COOKIE_SECURE', 'False') == 'True'
+    CSRF_COOKIE_SECURE = os.environ.get('DJANGO_CSRF_COOKIE_SECURE', 'False') == 'True'
+elif not DEBUG:
+    # Production security settings
     # Force SSL redirect in production unless explicitly disabled
     SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'True') == 'True'
 
