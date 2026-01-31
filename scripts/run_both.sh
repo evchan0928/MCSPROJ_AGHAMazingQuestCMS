@@ -3,7 +3,7 @@
 
 echo "🚀 Starting AGHAMazingQuestCMS - Full Stack Development Server"
 echo "==============================================================="
-echo "Backend: http://127.0.0.1:8000"
+echo "Backend: http://172.19.91.23:8080"
 echo "Frontend: http://localhost:3000"
 echo "Press Ctrl+C to stop both servers"
 echo ""
@@ -25,13 +25,13 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Activate virtual environment
-cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS
+cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
 source venv/bin/activate
 
 # Start the backend server in the background
 echo "🔌 Starting Backend Server (Django/Wagtail)..."
-cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS
-python manage.py runserver 127.0.0.1:8000 &
+cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
+python manage.py runserver 0.0.0.0:8080 &
 BACKEND_PID=$!
 
 # Small delay to let the backend start
@@ -39,7 +39,7 @@ sleep 3
 
 # Start the frontend server in the background
 echo "🌐 Starting Frontend Server (React)..."
-cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/frontend
+cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS/frontend
 
 # Check if node_modules exists, if not install dependencies
 if [ ! -d "node_modules" ]; then
@@ -57,7 +57,7 @@ FRONTEND_PID=$!
 
 # Wait for both processes
 echo "✅ Both servers are running!"
-echo "Backend: http://127.0.0.1:8000"
+echo "Backend: http://0.0.0.0:8080"
 echo "Frontend: http://localhost:3000"
 echo "Communication between them is enabled via CORS"
 echo ""
