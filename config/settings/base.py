@@ -239,7 +239,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://172.19.91.23:3000',  # Staging environment IP for frontend
-    'http://172.19.91.23:8080',  # Backend server IP and port
 ]
 CORS_ALLOW_CREDENTIALS = True
 

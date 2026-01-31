@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchAuth } from '../api';
+import { getUsers, deleteUser, getRoles } from '../api/django-api'; // Import the API functions
 import UserForm from '../components/UserForm';
 import { Row, Col, Card, Statistic, Table, Button, Space, Input, Tag, Popconfirm, notification } from 'antd';
 import { UserAddOutlined, TeamOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
@@ -35,26 +35,14 @@ export default function UserManagementPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchAuth('/api/users/');
-      if (res.status === 401 || res.status === 403) {
-        throw new Error('Authentication required. Please log in to access users.');
-      }
-      
-      if (!res.ok) throw new Error('Failed to load users');
-      const data = await res.json();
+      // Use the API service instead of fetchAuth
+      const data = await getUsers();
       setUsers(data);
       
       // attempt to load roles for the create/edit form
       try {
-        const r = await fetchAuth('/api/users/roles/');
-        if (r.status === 401 || r.status === 403) {
-          throw new Error('Authentication required. Please log in to access roles.');
-        }
-        
-        if (r.ok) {
-          const rd = await r.json();
-          setRoles(rd || []);
-        }
+        const roleData = await getRoles();
+        setRoles(roleData || []);
       } catch (e) {
         console.error('Failed to load roles', e);
       }
@@ -124,16 +112,9 @@ export default function UserManagementPage() {
 
   const handleDeleteUser = async (userId, username) => {
     try {
-      const response = await fetchAuth(`/api/users/${userId}/`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        openNotification('Success', `User ${username} deleted successfully`, 'success');
-        fetchUsers(); // Refresh the list
-      } else {
-        openNotification('Error', `Failed to delete user ${username}`, 'error');
-        console.error('Failed to delete user');
-      }
+      await deleteUser(userId);
+      openNotification('Success', `User ${username} deleted successfully`, 'success');
+      fetchUsers(); // Refresh the list
     } catch (error) {
       console.error('Error deleting user:', error);
       openNotification('Error', `Error deleting user ${username}: ${error.message}`, 'error');
@@ -180,9 +161,16 @@ export default function UserManagementPage() {
     },
     {
       title: 'Role',
-      dataIndex: 'role',
+      dataIndex: 'roles',
       key: 'role',
-      render: (role) => role ? <Tag color="blue">{role}</Tag> : <Tag color="default">N/A</Tag>,
+      render: (roles) => {
+        if (!roles || roles.length === 0) return <Tag color="default">N/A</Tag>;
+        return roles.map((role, index) => (
+          <Tag key={index} color="blue">
+            {typeof role === 'string' ? role : (role && role.name) || 'N/A'}
+          </Tag>
+        ));
+      },
     },
     {
       title: 'Status',
@@ -342,7 +330,7 @@ export default function UserManagementPage() {
             </Card>
           </Col>
 
-          {/* Role Management Overview */}
+          {/* Role Management Overview - Now Dynamic from Database */}
           <Col span={24}>
             <Card title="Role Management Overview">
               <Table

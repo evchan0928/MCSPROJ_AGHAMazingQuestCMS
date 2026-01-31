@@ -228,3 +228,75 @@ export const deleteContentItem = async (id) => {
     throw new Error(error.response?.data?.detail || error.message);
   }
 };
+
+/**
+ * Get all users
+ */
+export const getUsers = async () => {
+  try {
+    const response = await apiClient.get('/users/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Get user by ID
+ */
+export const getUserById = async (id) => {
+  try {
+    const response = await apiClient.get(`/users/${id}/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Create a new user
+ */
+export const createUser = async (userData) => {
+  try {
+    const response = await apiClient.post('/users/', userData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Update a user
+ */
+export const updateUser = async (id, userData) => {
+  try {
+    const response = await apiClient.patch(`/users/${id}/`, userData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Delete a user
+ */
+export const deleteUser = async (id) => {
+  try {
+    const response = await apiClient.delete(`/users/${id}/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Get all roles
+ */
+export const getRoles = async () => {
+  try {
+    const response = await apiClient.get('/users/roles/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Select, Checkbox, Button, Row, Col, Card, Divider, notification } from 'antd';
 import { UserOutlined, MailOutlined, LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { createUser, updateUser } from '../api/django-api'; // Import the API functions
 
 const { Option } = Select;
 
@@ -45,38 +46,41 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
     }
   }, [initial, form]);
 
-  const token = localStorage.getItem('access');
-  const API_BASE = process.env.REACT_APP_API_URL || ((window.location.hostname === 'localhost' && window.location.port === '3000') ? 'http://localhost:8000' : '');
-
   const submit = async (values) => {
     setSaving(true);
     try {
+      // Determine if we're creating or updating
+      const isUpdate = initial && initial.id;
+      
+      // Prepare the payload
       const payload = { ...values };
       if (!payload.password) delete payload.password;
       
-      const method = initial && initial.id ? 'PUT' : 'POST';
-      const url = initial && initial.id ? `${API_BASE}/api/users/${initial.id}/` : `${API_BASE}/api/users/`;
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Save failed');
+      let result;
+      if (isUpdate) {
+        // Update existing user
+        result = await updateUser(initial.id, payload);
+      } else {
+        // Create new user
+        result = await createUser(payload);
       }
       
-      const data = await res.json();
-      
       // Call saved/done callbacks
-      if (onSaved) onSaved(data);
-      else if (onDone) onDone(data);
+      if (onSaved) onSaved(result);
+      else if (onDone) onDone(result);
       
-      openNotification('Success', `User ${initial && initial.id ? 'updated' : 'created'} successfully`, 'success');
+      openNotification(
+        'Success', 
+        `User ${isUpdate ? 'updated' : 'created'} successfully`, 
+        'success'
+      );
     } catch (err) {
-      openNotification('Error', `Failed to ${initial && initial.id ? 'update' : 'create'} user: ${err.message}`, 'error');
+      console.error(`Failed to ${initial && initial.id ? 'update' : 'create'} user:`, err);
+      openNotification(
+        'Error', 
+        `Failed to ${initial && initial.id ? 'update' : 'create'} user: ${err.message}`, 
+        'error'
+      );
     } finally {
       setSaving(false);
     }

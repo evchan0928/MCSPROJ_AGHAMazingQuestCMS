@@ -4,7 +4,7 @@
 echo "🚀 Starting AGHAMazingQuestCMS - Full Stack Development Server"
 echo "==============================================================="
 echo "Backend: http://172.19.91.23:8080"
-echo "Frontend: http://localhost:3000"
+echo "Frontend: http://172.19.91.23:3000"
 echo "Press Ctrl+C to stop both servers"
 echo ""
 
@@ -52,13 +52,14 @@ if [ ! -d "node_modules" ]; then
     fi
 fi
 
-npm start &
+# Use HOST=0.0.0.0 to allow external connections to React dev server
+HOST=0.0.0.0 npm start &
 FRONTEND_PID=$!
 
 # Wait for both processes
 echo "✅ Both servers are running!"
 echo "Backend: http://0.0.0.0:8080"
-echo "Frontend: http://localhost:3000"
+echo "Frontend: http://0.0.0.0:3000"
 echo "Communication between them is enabled via CORS"
 echo ""
 
