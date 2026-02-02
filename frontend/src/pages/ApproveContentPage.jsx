@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Card, Modal, message, Tag, Space, Pagination } from 'antd';
+import { Table, Button, Card, Modal, notification, Tag, Space, Pagination, Descriptions, Typography } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useOutletContext } from 'react-router-dom';
+import { 
+  getContentItems, 
+  approveContentItem, 
+  denyContentItem 
+} from '../api/django-api';
 import statusLabel from '../utils/statusLabels.jsx';
+
+const { Title, Paragraph, Text } = Typography;
 
 export default function ApproveContentPage() {
   const [contents, setContents] = useState([]);
@@ -11,7 +18,7 @@ export default function ApproveContentPage() {
   const [selectedContent, setSelectedContent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const token = localStorage.getItem('access');
+  const [api, contextHolder] = notification.useNotification();
   const outlet = useOutletContext();
   const outletUser = outlet?.user || null;
 
@@ -25,16 +32,16 @@ export default function ApproveContentPage() {
     
     setLoading(true);
     try {
-      const res = await fetch(`/api/content/items/?status=for_approval`, { 
-        headers: { Authorization: `Bearer ${token}` } 
-      });
-      
-      if (!res.ok) throw new Error('Failed to load content');
-      const data = await res.json();
-      setContents(data);
+      // Fetch content items with status 'for_approval'
+      const allContent = await getContentItems();
+      const pendingApprovalContent = allContent.filter(item => item.status === 'for_approval');
+      setContents(pendingApprovalContent);
     } catch (error) {
       console.error('Error fetching content:', error);
-      message.error('Failed to load content for approval');
+      api.error({
+        message: 'Error',
+        description: 'Failed to load content for approval'
+      });
     } finally {
       setLoading(false);
     }
@@ -42,37 +49,39 @@ export default function ApproveContentPage() {
 
   useEffect(() => {
     fetchPendingContent();
-  }, [allowed, token]);
+  }, [allowed]);
 
   const handleApprove = async (id) => {
     try {
-      const res = await fetch(`/api/content/items/${id}/approve/`, { 
-        method: 'POST', 
-        headers: { Authorization: `Bearer ${token}` } 
+      await approveContentItem(id);
+      api.success({
+        message: 'Success',
+        description: 'Content approved successfully'
       });
-      
-      if (!res.ok) throw new Error('Approve failed');
-      message.success('Content approved successfully');
       fetchPendingContent();
     } catch (error) {
       console.error('Error approving content:', error);
-      message.error('Failed to approve content');
+      api.error({
+        message: 'Error',
+        description: 'Failed to approve content'
+      });
     }
   };
 
   const handleReject = async (id) => {
     try {
-      const res = await fetch(`/api/content/items/${id}/deny/`, { 
-        method: 'POST', 
-        headers: { Authorization: `Bearer ${token}` } 
+      await denyContentItem(id);
+      api.success({
+        message: 'Success',
+        description: 'Content rejected successfully'
       });
-      
-      if (!res.ok) throw new Error('Reject failed');
-      message.success('Content rejected successfully');
       fetchPendingContent();
     } catch (error) {
       console.error('Error rejecting content:', error);
-      message.error('Failed to reject content');
+      api.error({
+        message: 'Error',
+        description: 'Failed to reject content'
+      });
     }
   };
 
@@ -98,7 +107,12 @@ export default function ApproveContentPage() {
       approved: 'blue',
       published: 'green',
       archived: 'gray',
-      rejected: 'red'
+      rejected: 'red',
+      for_editing: 'default',
+      for_approval: 'orange',
+      for_publishing: 'blue',
+      published: 'green',
+      deleted: 'gray'
     };
     return colorMap[status] || 'default';
   };
@@ -171,71 +185,139 @@ export default function ApproveContentPage() {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card title="Content Approval Queue" style={{ marginBottom: '24px' }}>
-        <p>Review and approve/reject content submitted by encoders</p>
-      </Card>
+    <>
+      {contextHolder}
+      <div style={{ padding: '24px' }}>
+        <Card title="Content Approval Queue" style={{ marginBottom: '24px' }}>
+          <p>Review and approve/reject content submitted by encoders</p>
+        </Card>
 
-      <Card>
-        <Table
-          dataSource={contents.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
-          columns={columns}
-          loading={loading}
-          pagination={false}
-          rowKey="id"
-        />
-        <div style={{ marginTop: 16, textAlign: 'right' }}>
-          <Pagination
-            current={currentPage}
-            pageSize={pageSize}
-            total={contents.length}
-            onChange={handlePageChange}
-            showSizeChanger
-            showQuickJumper
-            showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
+        <Card>
+          <Table
+            dataSource={contents.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
+            columns={columns}
+            loading={loading}
+            pagination={false}
+            rowKey="id"
           />
-        </div>
-      </Card>
-
-      <Modal
-        title={selectedContent?.title}
-        open={modalVisible}
-        onCancel={hideModal}
-        footer={[
-          <Button key="back" onClick={hideModal}>Close</Button>,
-          <Button 
-            key="reject" 
-            danger
-            onClick={() => {
-              handleReject(selectedContent?.id);
-              hideModal();
-            }}
-          >
-            Reject
-          </Button>,
-          <Button 
-            key="approve" 
-            type="primary"
-            onClick={() => {
-              handleApprove(selectedContent?.id);
-              hideModal();
-            }}
-          >
-            Approve
-          </Button>,
-        ]}
-      >
-        {selectedContent && (
-          <div>
-            <p><strong>Status:</strong> <Tag color={getStatusColor(selectedContent.status)}>{statusLabel(selectedContent.status)}</Tag></p>
-            <p><strong>Created:</strong> {selectedContent.created_at}</p>
-            <div style={{ marginTop: '16px', padding: '16px', background: '#f5f5f5', borderRadius: '4px' }}>
-              <h4>Content Preview</h4>
-              <p>This would show a detailed preview of the content in a real implementation.</p>
-            </div>
+          <div style={{ marginTop: 16, textAlign: 'right' }}>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={contents.length}
+              onChange={handlePageChange}
+              showSizeChanger
+              showQuickJumper
+              showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
+            />
           </div>
-        )}
-      </Modal>
-    </div>
+        </Card>
+
+        <Modal
+          title={selectedContent?.title}
+          open={modalVisible}
+          onCancel={hideModal}
+          footer={[
+            <Button key="back" onClick={hideModal}>Close</Button>,
+            <Button 
+              key="reject" 
+              danger
+              onClick={() => {
+                handleReject(selectedContent?.id);
+                hideModal();
+              }}
+            >
+              Reject
+            </Button>,
+            <Button 
+              key="approve" 
+              type="primary"
+              onClick={() => {
+                handleApprove(selectedContent?.id);
+                hideModal();
+              }}
+            >
+              Approve
+            </Button>,
+          ]}
+          width={800}
+        >
+          {selectedContent && (
+            <div>
+              <Descriptions bordered column={2} style={{ marginBottom: 20 }}>
+                <Descriptions.Item label="Title">{selectedContent.title}</Descriptions.Item>
+                <Descriptions.Item label="Status">
+                  <Tag color={getStatusColor(selectedContent.status)}>{statusLabel(selectedContent.status)}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Type">{selectedContent.content_type || 'Text'}</Descriptions.Item>
+                <Descriptions.Item label="Created At">{selectedContent.created_at}</Descriptions.Item>
+                <Descriptions.Item label="Author" span={2}>
+                  {selectedContent.created_by?.username || 'Unknown'}
+                </Descriptions.Item>
+              </Descriptions>
+
+              <div style={{ marginTop: '16px' }}>
+                <Title level={4}>Content Preview</Title>
+                <Paragraph strong>Body:</Paragraph>
+                <div 
+                  style={{ 
+                    padding: '16px', 
+                    background: '#f5f5f5', 
+                    borderRadius: '4px', 
+                    maxHeight: '200px', 
+                    overflow: 'auto' 
+                  }}
+                  dangerouslySetInnerHTML={{ __html: selectedContent.body || 'No content provided' }}
+                />
+
+                {selectedContent.meta_description && (
+                  <>
+                    <Paragraph strong style={{ marginTop: '16px' }}>Meta Description:</Paragraph>
+                    <Text>{selectedContent.meta_description}</Text>
+                  </>
+                )}
+
+                {selectedContent.meta_keywords && (
+                  <>
+                    <Paragraph strong style={{ marginTop: '16px' }}>Meta Keywords:</Paragraph>
+                    <Text>{selectedContent.meta_keywords}</Text>
+                  </>
+                )}
+
+                {selectedContent.photo_caption && (
+                  <>
+                    <Paragraph strong style={{ marginTop: '16px' }}>Photo Caption:</Paragraph>
+                    <Text>{selectedContent.photo_caption}</Text>
+                  </>
+                )}
+
+                {selectedContent.highlights && (
+                  <>
+                    <Paragraph strong style={{ marginTop: '16px' }}>Highlights:</Paragraph>
+                    <div 
+                      style={{ 
+                        padding: '16px', 
+                        background: '#f5f5f5', 
+                        borderRadius: '4px', 
+                        maxHeight: '150px', 
+                        overflow: 'auto' 
+                      }}
+                      dangerouslySetInnerHTML={{ __html: selectedContent.highlights }}
+                    />
+                  </>
+                )}
+
+                {selectedContent.file && (
+                  <>
+                    <Paragraph strong style={{ marginTop: '16px' }}>Attached File:</Paragraph>
+                    <Text>{selectedContent.file.split('/').pop()}</Text>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </Modal>
+      </div>
+    </>
   );
 }
