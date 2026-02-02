@@ -1,12 +1,29 @@
 // src/Dashboard.jsx (The complete and correct file structure)
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx';
+import { Card, Statistic, Table, Row, Col, Button, DatePicker, Select, Space } from 'antd';
+import { UserOutlined, FileTextOutlined, ClockCircleOutlined, NotificationOutlined } from '@ant-design/icons';
+import { getDashboardStats, getRecentContent } from './api/django-api';
+
+const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const Dashboard = () => { // <-- Opening brace for the function body
     const location = useLocation();
     const isIndexRoute = location.pathname === '/dashboard';
+
+    const [dashboardStats, setDashboardStats] = useState({
+        published: 0,
+        pendingApproval: 0,
+        activeUsers: 0,
+        notifications: 0
+    });
+    
+    const [recentContent, setRecentContent] = useState([]);
+    const [loadingStats, setLoadingStats] = useState(true);
+    const [loadingContent, setLoadingContent] = useState(true);
 
     const currentUser = {
         name: "Super Boss",
@@ -15,33 +32,72 @@ const Dashboard = () => { // <-- Opening brace for the function body
         is_superuser: true 
     };
 
-    // Helper component for the dashboard statistic cards
-    const StatCard = ({ iconClass, value, label, color }) => ( 
-        <div className="stat-card">
-            <div className="stat-icon-circle" style={{ backgroundColor: color }}>
-                <span className="material-icons">{iconClass}</span>
-            </div>
-            <div className="stat-details">
-                <p className="stat-value">{value}</p>
-                <p className="stat-label">{label}</p>
-            </div>
-        </div>
-    );
-    
-    // Helper component for the table rows
-    const TableRow = ({ id, title, timeStamp, encodedBy, toBeReviewedBy, status }) => (
-        <tr className="table-row">
-            <td>{id}</td>
-            <td className="table-title">{title}</td>
-            <td>{timeStamp}</td>
-            <td>{encodedBy}</td>
-            <td>{toBeReviewedBy}</td>
-            <td className={`status-cell status-${status.toLowerCase().replace(' ', '-')}`}>
-                <span className="status-dot"></span>
-                {status}
-            </td>
-        </tr>
-    );
+    useEffect(() => {
+        if (isIndexRoute) {
+            fetchDashboardData();
+        }
+    }, [isIndexRoute]);
+
+    const fetchDashboardData = async () => {
+        setLoadingStats(true);
+        setLoadingContent(true);
+        
+        try {
+            // Fetch dashboard statistics
+            const statsData = await getDashboardStats();
+            setDashboardStats(statsData);
+            
+            // Fetch recent content
+            const contentData = await getRecentContent();
+            setRecentContent(contentData);
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoadingStats(false);
+            setLoadingContent(false);
+        }
+    };
+
+    // Define table columns for recent content
+    const columns = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: 'Title',
+            dataIndex: 'title',
+            key: 'title',
+            render: (text) => <span className="table-title">{text}</span>,
+        },
+        {
+            title: 'Time Stamp',
+            dataIndex: 'timestamp',
+            key: 'timestamp',
+        },
+        {
+            title: 'Encoded By',
+            dataIndex: 'encoded_by',
+            key: 'encoded_by',
+        },
+        {
+            title: 'To be Reviewed By',
+            dataIndex: 'reviewed_by',
+            key: 'reviewed_by',
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            render: (status) => (
+                <span className={`status-cell status-${status.toLowerCase().replace(' ', '-')}`}>
+                    <span className="status-dot"></span>
+                    {status}
+                </span>
+            ),
+        },
+    ];
 
     // 🔑 START OF EXPLICIT RETURN STATEMENT
     return ( 
@@ -61,7 +117,7 @@ const Dashboard = () => { // <-- Opening brace for the function body
                 {/* The Outlet renders the nested route component */}
                 <Outlet /> 
 
-                {/* Static Dashboard Content only rendered on the index route */}
+                {/* Dynamic Dashboard Content only rendered on the index route */}
                 {isIndexRoute && (
                     <React.Fragment>
                         {/* Date and Product Filters (EDITED BLOCK START) */}
@@ -70,81 +126,83 @@ const Dashboard = () => { // <-- Opening brace for the function body
                             <div className="filter-group">
                                 <label htmlFor="startDate">Start Date</label>
                                 <div className="date-filter">
-                                    <input type="date" id="startDate"/>
-                                    <span className="material-icons calendar-icon">calendar_today</span>
-                                </div>
-                            </div>
-                            
-                            {/* END DATE FILTER GROUP */}
-                            <div className="filter-group">
-                                <label htmlFor="endDate">End Date</label>
-                                <div className="date-filter">
-                                    <input type="date" id="endDate"/>
-                                    <span className="material-icons calendar-icon">calendar_today</span>
+                                    <RangePicker />
                                 </div>
                             </div>
                             
                             {/* PRODUCT TYPE FILTER GROUP */}
                             <div className="filter-group">
                                 <label htmlFor="productType">Product Type</label>
-                                <div className="product-type-filter">
-                                    <input type="text" id="productType" value="AR Marker" readOnly />
-                                    <span className="material-icons">arrow_drop_down</span>
-                                </div>
+                                <Select defaultValue="AR Marker" style={{ width: '100%' }} allowClear>
+                                    <Option value="AR Marker">AR Marker</Option>
+                                    <Option value="Video Content">Video Content</Option>
+                                    <Option value="Image Content">Image Content</Option>
+                                    <Option value="Document">Document</Option>
+                                </Select>
                             </div>
                             
-                            <button className="get-data-btn">Get Data</button>
+                            <Button type="primary" className="get-data-btn">Get Data</Button>
                         </div>
                         {/* Date and Product Filters (EDITED BLOCK END) */}
 
                         {/* Stat Cards */}
-                        <div className="stat-cards-container">
-                            <StatCard iconClass="article" value="240" label="Published" color="#4CAF50" />
-                            <StatCard iconClass="schedule" value="16" label="Pending Approval" color="#FFC107" />
-                            <StatCard iconClass="group" value="12" label="Active Users" color="#2196F3" />
-                            <StatCard iconClass="notifications" value="1" label="Notifications" color="#FF9800" />
-                        </div>
+                        <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+                            <Col xs={24} sm={12} md={6}>
+                                <Card>
+                                    <Statistic
+                                        title="Published"
+                                        value={dashboardStats.published || 0}
+                                        prefix={<FileTextOutlined />}
+                                        valueStyle={{ color: '#4CAF50' }}
+                                    />
+                                </Card>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Card>
+                                    <Statistic
+                                        title="Pending Approval"
+                                        value={dashboardStats.pendingApproval || 0}
+                                        prefix={<ClockCircleOutlined />}
+                                        valueStyle={{ color: '#FFC107' }}
+                                    />
+                                </Card>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Card>
+                                    <Statistic
+                                        title="Active Users"
+                                        value={dashboardStats.activeUsers || 0}
+                                        prefix={<UserOutlined />}
+                                        valueStyle={{ color: '#2196F3' }}
+                                    />
+                                </Card>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Card>
+                                    <Statistic
+                                        title="Notifications"
+                                        value={dashboardStats.notifications || 0}
+                                        prefix={<NotificationOutlined />}
+                                        valueStyle={{ color: '#FF9800' }}
+                                    />
+                                </Card>
+                            </Col>
+                        </Row>
 
-                        {/* Data Table */}
+                        {/* Recent Content Table */}
                         <div className="data-table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Title</th>
-                                        <th>Time Stamp</th>
-                                        <th>Encoded By</th>
-                                        <th>To be Reviewed By</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <TableRow 
-                                        id="1998498" 
-                                        title="Image Marker to align with the building heritage of the DOST..." 
-                                        timeStamp="12-June-2025 | 08:53 am" 
-                                        encodedBy="Juan Dela Cruz" 
-                                        toBeReviewedBy="Carlo Makatangay" 
-                                        status="Pending Approval" 
-                                    />
-                                    <TableRow 
-                                        id="1998499" 
-                                        title="A marker that signifies the historical event and bravery of..." 
-                                        timeStamp="13-June-2025 | 09:33 am" 
-                                        encodedBy="John Ignacio" 
-                                        toBeReviewedBy="Carlo Makatangay" 
-                                        status="Pending Approval" 
-                                    />
-                                    <TableRow 
-                                        id="19984100" 
-                                        title="There's A Message in The Suspension Spree..." 
-                                        timeStamp="14-June-2025 | 08:30 am" 
-                                        encodedBy="Chrisitan De vera" 
-                                        toBeReviewedBy="Carlo Makatangay" 
-                                        status="Pending Approval" 
-                                    />
-                                </tbody>
-                            </table>
+                            <Table
+                                dataSource={recentContent}
+                                columns={columns}
+                                rowKey="id"
+                                loading={loadingContent}
+                                pagination={{
+                                    pageSize: 10,
+                                    showSizeChanger: true,
+                                    showQuickJumper: true,
+                                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                                }}
+                            />
                         </div>
                     </React.Fragment>
                 )}

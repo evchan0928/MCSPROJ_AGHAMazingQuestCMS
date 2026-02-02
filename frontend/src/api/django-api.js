@@ -172,6 +172,30 @@ export const getContentItems = async () => {
 };
 
 /**
+ * Get dashboard statistics
+ */
+export const getDashboardStats = async () => {
+  try {
+    const response = await apiClient.get('/dashboard/stats/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Get recent content items
+ */
+export const getRecentContent = async () => {
+  try {
+    const response = await apiClient.get('/content/recent/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
  * Create a new content item
  */
 export const createContentItem = async (data) => {

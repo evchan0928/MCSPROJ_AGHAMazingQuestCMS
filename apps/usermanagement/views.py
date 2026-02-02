@@ -1,66 +1,338 @@
 from django.shortcuts import render
-from rest_framework import viewsets
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-from .serializers import UserSerializer
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.hashers import make_password
+from django.utils import timezone
+from datetime import timedelta
+from wagtail.models import Page
+from apps.contentmanagement.models import ContentItem
+from .models import CustomUserRole  # Changed to import from the local models module
+from django.db.models import Count, Q
+import json
 
-User = get_user_model()
+def get_dashboard_stats(request):
+    """
+    API endpoint to get dashboard statistics
+    """
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        # Get published content count
+        published_count = ContentItem.objects.filter(status='published').count()
+        
+        # Get pending approval count
+        pending_approval_count = ContentItem.objects.filter(status='pending').count()
+        
+        # Get active users count
+        active_users_count = User.objects.filter(is_active=True).count()
+        
+        # Get notifications count (for now, returning 0 - this would come from a notifications model in the future)
+        notifications_count = 0
+        
+        stats_data = {
+            'published': published_count,
+            'pendingApproval': pending_approval_count,
+            'activeUsers': active_users_count,
+            'notifications': notifications_count
+        }
+        
+        return JsonResponse(stats_data, status=200)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
-class IsAdminOrSuperuser(IsAuthenticated):
-	def has_permission(self, request, view):
-		if not super().has_permission(request, view):
-			return False
-		# allow only superusers or users in Admin/Super Admin groups
-		# request.user.groups is a RelatedManager; use values_list to avoid
-		# accidentally iterating the manager itself (which raises TypeError).
-		if request.user.is_superuser:
-			return True
-		# Use values_list for an efficient DB-level fetch of group names
-		names = set(request.user.groups.values_list('name', flat=True))
-		return ('Admin' in names) or ('Super Admin' in names)
+def get_recent_content(request):
+    """
+    API endpoint to get recent content items
+    """
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        # Get the 10 most recently created content items
+        recent_content = ContentItem.objects.order_by('-created_at')[:10]
+        
+        content_list = []
+        for item in recent_content:
+            # Get the author information
+            author_name = item.author.get_full_name() if item.author.get_full_name() else item.author.username
+            
+            content_list.append({
+                'id': item.id,
+                'title': item.title,
+                'timestamp': item.created_at.strftime('%d-%B-%Y | %H:%M %p'),
+                'encoded_by': author_name,
+                'reviewed_by': 'Auto-assigned' if not item.reviewer else item.reviewer.get_full_name(),
+                'status': item.get_status_display(),  # Using the display value of the status choice
+            })
+        
+        return JsonResponse(content_list, safe=False, status=200)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
-class UserViewSet(viewsets.ModelViewSet):
-	queryset = User.objects.all()
-	serializer_class = UserSerializer
-	permission_classes = [IsAdminOrSuperuser]
+@login_required
+@csrf_exempt
+def user_list_view(request):
+    """View to list, create, update, or delete users."""
+    if request.method == 'GET':
+        # Return a list of all users with basic info
+        users = User.objects.all()
+        user_data = []
+        for user in users:
+            user_info = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'is_active': user.is_active,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+                'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+            }
+            
+            # Add role information if available
+            try:
+                custom_role = CustomUserRole.objects.get(user=user)
+                user_info['roles'] = [{'id': custom_role.id, 'name': custom_role.role_name}]
+            except CustomUserRole.DoesNotExist:
+                user_info['roles'] = []
+                
+            user_data.append(user_info)
+        
+        return JsonResponse(user_data, safe=False)
+    
+    elif request.method == 'POST':
+        # Create a new user
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            email = data.get('email')
+            password = data.get('password')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
+            is_active = data.get('is_active', True)
+            is_staff = data.get('is_staff', False)
+            is_superuser = data.get('is_superuser', False)
+            roles = data.get('roles', [])
+            
+            # Validate required fields
+            if not username or not email or not password:
+                return JsonResponse({'error': 'Username, email, and password are required.'}, status=400)
+            
+            # Validate password
+            try:
+                validate_password(password)
+            except ValidationError as e:
+                return JsonResponse({'error': e.messages[0]}, status=400)
+            
+            # Check if user already exists
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'error': 'Username already exists.'}, status=400)
+            
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({'error': 'Email already exists.'}, status=400)
+            
+            # Create the user
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=is_active,
+                is_staff=is_staff,
+                is_superuser=is_superuser
+            )
+            
+            # Assign roles if provided
+            for role_name in roles:
+                if isinstance(role_name, str):
+                    role, created = CustomUserRole.objects.get_or_create(
+                        user=user,
+                        role_name=role_name
+                    )
+                elif isinstance(role_name, dict):
+                    role, created = CustomUserRole.objects.get_or_create(
+                        user=user,
+                        role_name=role_name.get('name', role_name.get('role_name', ''))
+                    )
+            
+            # Return the created user data
+            user_info = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'is_active': user.is_active,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+                'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+            }
+            
+            # Add role information
+            user_roles = CustomUserRole.objects.filter(user=user)
+            user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in user_roles]
+            
+            return JsonResponse(user_info, status=201)
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+        except ValidationError as e:
+            return JsonResponse({'error': e.messages[0]}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth.models import Group
-import logging
-import sys
+@login_required
+@csrf_exempt
+def user_detail_view(request, user_id):
+    """View to retrieve, update, or delete a specific user."""
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found.'}, status=404)
+    
+    if request.method == 'GET':
+        # Return user details
+        user_info = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'is_active': user.is_active,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+            'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+            'last_login': user.last_login.isoformat() if user.last_login else None,
+        }
+        
+        # Add role information
+        user_roles = CustomUserRole.objects.filter(user=user)
+        user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in user_roles]
+        
+        return JsonResponse(user_info)
+    
+    elif request.method == 'PUT':
+        # Update user details
+        try:
+            data = json.loads(request.body)
+            
+            # Update fields if provided
+            if 'username' in data:
+                username = data['username']
+                # Check if username is already taken by another user
+                if User.objects.filter(username=username).exclude(id=user_id).exists():
+                    return JsonResponse({'error': 'Username already exists.'}, status=400)
+                user.username = username
+            
+            if 'email' in data:
+                email = data['email']
+                # Check if email is already taken by another user
+                if User.objects.filter(email=email).exclude(id=user_id).exists():
+                    return JsonResponse({'error': 'Email already exists.'}, status=400)
+                user.email = email
+            
+            if 'first_name' in data:
+                user.first_name = data['first_name']
+            
+            if 'last_name' in data:
+                user.last_name = data['last_name']
+            
+            if 'is_active' in data:
+                user.is_active = data['is_active']
+            
+            if 'is_staff' in data:
+                user.is_staff = data['is_staff']
+            
+            if 'is_superuser' in data:
+                user.is_superuser = data['is_superuser']
+            
+            # Update password if provided
+            if 'password' in data and data['password']:
+                try:
+                    validate_password(data['password'])
+                    user.password = make_password(data['password'])
+                except ValidationError as e:
+                    return JsonResponse({'error': e.messages[0]}, status=400)
+            
+            # Update roles if provided
+            if 'roles' in data:
+                roles = data['roles']
+                # Clear existing roles
+                CustomUserRole.objects.filter(user=user).delete()
+                
+                # Add new roles
+                for role_name in roles:
+                    if isinstance(role_name, str):
+                        CustomUserRole.objects.get_or_create(user=user, role_name=role_name)
+                    elif isinstance(role_name, dict):
+                        CustomUserRole.objects.get_or_create(
+                            user=user,
+                            role_name=role_name.get('name', role_name.get('role_name', ''))
+                        )
+            
+            user.save()
+            
+            # Return updated user data
+            user_info = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'is_active': user.is_active,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+                'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+            }
+            
+            # Add role information
+            user_roles = CustomUserRole.objects.filter(user=user)
+            user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in user_roles]
+            
+            return JsonResponse(user_info)
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+        except ValidationError as e:
+            return JsonResponse({'error': e.messages[0]}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    elif request.method == 'DELETE':
+        # Delete the user
+        user.delete()
+        return JsonResponse({'message': 'User deleted successfully.'})
+    
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-class RoleListView(APIView):
-	"""Return list of roles (Django auth Groups) for the admin UI.
-
-	NOTE: For diagnosis this view temporarily allows any requester so we can
-	determine whether the 404/Not found seen in the frontend is a permission
-	issue vs a routing/proxy issue. This change should be reverted after
-	diagnosis (or replaced with proper client auth)."""
-	permission_classes = [IsAdminOrSuperuser]
-
-	def get(self, request):
-		# Diagnostic response: return the request's authorization header and
-		# basic user info so the client-side can see what the server received.
-		auth_hdr = request.META.get('HTTP_AUTHORIZATION')
-		try:
-			user_info = {
-				'is_authenticated': bool(getattr(request.user, 'is_authenticated', False)),
-				'username': getattr(request.user, 'username', None),
-				'is_superuser': bool(getattr(request.user, 'is_superuser', False)),
-			}
-		except Exception:
-			user_info = {'error': 'could not read user'}
-
-		# Return the canonical list of roles for the UI.
-		roles = Group.objects.all().order_by('name')
-		data = [{'id': g.id, 'name': g.name} for g in roles]
-		return Response(data)
-
+@login_required
+def user_roles_view(request):
+    """View to get all available roles."""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    # Get all unique role names from the CustomUserRole model
+    roles = CustomUserRole.objects.values('role_name').distinct()
+    role_list = [{'name': role['role_name']} for role in roles]
+    
+    return JsonResponse(role_list, safe=False)

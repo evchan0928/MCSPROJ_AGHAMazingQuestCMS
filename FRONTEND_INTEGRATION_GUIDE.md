@@ -12,7 +12,7 @@ This document explains how to ensure the frontend is fully functional and connec
 
 ### Frontend Settings
 - Environment variable: `REACT_APP_BACKEND_API_URL=http://172.19.91.23:8080/api`
-- Runs on: `http://localhost:3000`
+- Runs on: `http://localhost:3000` or `http://172.19.91.23:3000` (with proper configuration)
 
 ## Running the Full Stack Application
 
@@ -31,13 +31,20 @@ chmod +x scripts/run_both.sh
    python manage.py runserver 0.0.0.0:8080
    ```
 
-2. **In a new terminal, start the frontend:**
+2. **In a new terminal, start the frontend with network access:**
    ```bash
    cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS/frontend
-   npm start
+   HOST=0.0.0.0 npm start
    ```
 
-### Option 3: Staging environment
+### Option 3: Dedicated frontend network script
+```bash
+cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
+chmod +x start_frontend_network.sh
+./start_frontend_network.sh
+```
+
+### Option 4: Staging environment
 ```bash
 cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
 chmod +x start_staging.sh
@@ -67,6 +74,16 @@ After starting the frontend, open browser developer tools and check:
 - Network tab for API requests to the backend
 - Console for any CORS or connection errors
 
+## Common Issue: Blank White Page
+
+If you're accessing `http://172.19.91.23:3000` and seeing a blank white page, this is likely because:
+
+1. **The React development server is not running**: Make sure you've started the frontend with `npm start`
+2. **The React server is only binding to localhost**: By default, React development server only listens on 127.0.0.1 (localhost), which prevents access from other machines on the network
+3. **Solution**: Start the React server with `HOST=0.0.0.0 npm start` to allow external connections
+
+The updated scripts in this project (run_both.sh and start_frontend_network.sh) now include the HOST environment variable to fix this issue.
+
 ## Troubleshooting Common Issues
 
 ### Issue 1: CORS Errors
@@ -80,11 +97,11 @@ If the frontend reports "Network Error":
 2. Verify firewall settings allow connections on port 8080
 3. Confirm the REACT_APP_BACKEND_API_URL matches the backend address
 
-### Issue 3: Authentication Issues
-If authentication isn't working:
-1. Check that JWT tokens are being stored in localStorage
-2. Verify the token refresh mechanism works
-3. Ensure the backend has the correct authentication endpoints
+### Issue 3: Blank Page on Frontend Access
+If you see a blank white page when accessing the frontend:
+1. Ensure the frontend server is started with `HOST=0.0.0.0 npm start`
+2. Check the browser console for JavaScript errors
+3. Verify that all required dependencies are installed
 
 ## Testing the Integration
 
@@ -99,7 +116,7 @@ echo "SELECT COUNT(*) FROM django_migrations;" | python manage.py dbshell
 ```
 
 ### 2. Frontend Functionality Tests
-1. Open the frontend at `http://localhost:3000`
+1. Open the frontend at `http://172.19.91.23:3000`
 2. Try to access protected routes (should redirect to login)
 3. Attempt to login with valid credentials
 4. Verify content management features work
@@ -131,7 +148,7 @@ echo "SELECT COUNT(*) FROM django_migrations;" | python manage.py dbshell
 ## Verification Checklist
 
 - [ ] Backend running on `http://0.0.0.0:8080`
-- [ ] Frontend running on `http://localhost:3000`
+- [ ] Frontend running on `http://0.0.0.0:3000` (accessible externally)
 - [ ] Environment variables correctly set
 - [ ] CORS configuration allows frontend-backend communication
 - [ ] Database connectivity verified

@@ -1,13 +1,13 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import UserViewSet, RoleListView
-
-router = DefaultRouter()
-router.register(r'', UserViewSet, basename='user')
+from django.urls import path
+from . import views
 
 urlpatterns = [
-	# Ensure the explicit 'roles/' path is checked before router detail routes
-	# which could otherwise capture 'roles' as a user PK and return 404.
-	path('roles/', RoleListView.as_view(), name='user-roles'),
-	path('', include(router.urls)),
+    # Existing user management URLs
+    path('', views.user_list_view, name='user-list'),
+    path('<int:user_id>/', views.user_detail_view, name='user-detail'),
+    path('roles/', views.user_roles_view, name='user-roles'),
+    
+    # New dashboard URLs
+    path('dashboard/stats/', views.get_dashboard_stats, name='dashboard-stats'),
+    path('content/recent/', views.get_recent_content, name='recent-content'),
 ]

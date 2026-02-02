@@ -9,7 +9,7 @@ function buildUrl(path) {
 }
 
 export async function fetchAuth(path, options = {}) {
-  const token = localStorage.getItem('access');
+  const token = localStorage.getItem('access_token'); // Changed from 'access' to 'access_token' to match django-api.js
   const headers = Object.assign({}, options.headers || {});
   if (token && !headers.Authorization && !headers.authorization) {
     headers['Authorization'] = `Bearer ${token}`;
