@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { message } from 'antd';
-import axios from 'axios';
+import { message, notification } from 'antd';
+import { createContentItem } from '../api/django-api';
 
 export default function UploadContentPage() {
   const navigate = useNavigate();
@@ -14,15 +14,15 @@ export default function UploadContentPage() {
     body: '', 
     status: 'for_editing', // Default status matching backend workflow
     type: 'text', // Default type
-    metaKeywords: '',
-    metaDescription: '',
-    photoCaption: '',
+    meta_keywords: '',  // Changed to snake_case to match backend
+    meta_description: '', // Changed to snake_case to match backend
+    photo_caption: '', // Changed to snake_case to match backend
     highlights: '', 
-    arMarker: false,
+    ar_marker: false, // Changed to snake_case to match backend
     quiz: false,
-    enableBadges: false,
-    chatBotAllow: true, 
-    excludeAudio: false,
+    enable_badges: false, // Changed to snake_case to match backend
+    chat_bot_allow: true, // Changed to snake_case to match backend
+    exclude_audio: false, // Changed to snake_case to match backend
   });
 
   const [imageFile, setImageFile] = useState(null);
@@ -54,46 +54,24 @@ export default function UploadContentPage() {
     }));
   };
 
+  const [api, contextHolder] = notification.useNotification();
+
   const handleSaveDraft = async () => {
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('token');
       const contentData = {
         ...formData,
-        status: 'for_editing'
+        status: 'draft',
+        file: imageFile || pdfFile || null
       };
       
-      // Create form data object for multipart request
-      const requestData = new FormData();
-      
-      // Add form fields to FormData
-      Object.keys(contentData).forEach(key => {
-        if (contentData[key] !== undefined && contentData[key] !== null) {
-          requestData.append(key, contentData[key]);
-        }
-      });
-      
-      // Add files if they exist
-      if (imageFile) {
-        requestData.append('file', imageFile);
-      }
-      if (pdfFile) {
-        requestData.append('file', pdfFile);
-      }
-
-      const response = await axios.post('/api/content/items/', requestData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
+      const result = await createContentItem(contentData);
       message.success('Content saved as draft successfully!');
       navigate('/dashboard/content/list'); // Redirect to content list
     } catch (error) {
       console.error('Error saving draft:', error);
-      message.error('Failed to save draft');
+      message.error(`Failed to save draft: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -104,49 +82,19 @@ export default function UploadContentPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
       const contentData = {
         ...formData,
-        status: 'for_editing' // Initial status when created
+        status: 'pending', // Submitting for review changes status to pending
+        file: imageFile || pdfFile || null
       };
-      
-      // Create form data object for multipart request
-      const requestData = new FormData();
-      
-      // Add form fields to FormData
-      Object.keys(contentData).forEach(key => {
-        if (contentData[key] !== undefined && contentData[key] !== null) {
-          requestData.append(key, contentData[key]);
-        }
-      });
-      
-      // Add files if they exist
-      if (imageFile) {
-        requestData.append('file', imageFile);
-      }
-      if (pdfFile) {
-        requestData.append('file', pdfFile);
-      }
 
-      const response = await axios.post('/api/content/items/', requestData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      // After creation, send for approval
-      await axios.post(`/api/content/items/${response.data.id}/send_for_approval/`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const result = await createContentItem(contentData);
       
       message.success('Content submitted successfully!');
-      navigate('/dashboard/content/list'); // Redirect to content list
+      navigate('/dashboard/content/approve'); // Redirect to approve content page
     } catch (error) {
       console.error('Error submitting content:', error);
-      message.error('Failed to submit content');
+      message.error(`Failed to submit content: ${error.message}`);
     } finally {
       setLoading(false);
     }

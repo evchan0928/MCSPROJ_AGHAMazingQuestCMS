@@ -202,8 +202,16 @@ export const createContentItem = async (data) => {
   try {
     const formData = new FormData();
     
+    // Map the frontend field names to backend field names
     Object.keys(data).forEach(key => {
-      formData.append(key, data[key]);
+      if (data[key] !== undefined && data[key] !== null) {
+        // Convert boolean values to strings as Django expects
+        if (typeof data[key] === 'boolean') {
+          formData.append(key, data[key].toString());
+        } else {
+          formData.append(key, data[key]);
+        }
+      }
     });
     
     const response = await apiClient.post('/content/items/', formData, {
@@ -225,8 +233,16 @@ export const updateContentItem = async (id, data) => {
   try {
     const formData = new FormData();
     
+    // Map the frontend field names to backend field names
     Object.keys(data).forEach(key => {
-      formData.append(key, data[key]);
+      if (data[key] !== undefined && data[key] !== null) {
+        // Convert boolean values to strings as Django expects
+        if (typeof data[key] === 'boolean') {
+          formData.append(key, data[key].toString());
+        } else {
+          formData.append(key, data[key]);
+        }
+      }
     });
     
     const response = await apiClient.patch(`/content/items/${id}/`, formData, {

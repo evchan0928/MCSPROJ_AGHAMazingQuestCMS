@@ -3,6 +3,7 @@ from wagtail.models import Page  # Updated import for newer Wagtail versions
 from .models import ContentItem, ContentPage
 from apps.usermanagement.serializers import UserSerializer
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -21,14 +22,24 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'created_by', 'created_at', 'edited_by', 'edited_at',
             'approved_by', 'approved_at', 'published_by', 'published_at', 'is_deleted',
             'file_url',
+            # Additional content management fields
+            'content_type', 'meta_keywords', 'meta_description', 'photo_caption', 
+            'highlights', 'ar_marker', 'quiz', 'enable_badges', 'chat_bot_allow', 'exclude_audio'
         ]
-        read_only_fields = ['slug', 'status', 'created_by', 'created_at', 'edited_by', 'edited_at', 'approved_by', 'approved_at', 'published_by', 'published_at', 'is_deleted']
+        read_only_fields = ['slug', 'created_at', 'edited_at', 'approved_at', 'published_at', 'is_deleted']
 
     def create(self, validated_data):
         # file uploads handled by DRF parser
         user = self.context['request'].user
         validated_data['created_by'] = user
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Update edited_by when content is updated
+        user = self.context['request'].user
+        validated_data['edited_by'] = user
+        validated_data['edited_at'] = timezone.now()
+        return super().update(instance, validated_data)
 
     def get_file_url(self, obj):
         """Return an absolute URL for the attached file if present.

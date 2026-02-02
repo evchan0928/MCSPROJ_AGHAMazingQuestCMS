@@ -27,6 +27,23 @@ class ContentItem(models.Model):
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     body = models.TextField(blank=True)
     file = models.FileField(upload_to='content_files/%Y/%m/%d', null=True, blank=True)
+    
+    # Additional fields for content management
+    content_type = models.CharField(max_length=50, default='text', choices=[
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('document', 'Document'),
+    ])
+    meta_keywords = models.TextField(blank=True)
+    meta_description = models.TextField(blank=True)
+    photo_caption = models.CharField(max_length=500, blank=True)
+    highlights = models.TextField(blank=True)
+    ar_marker = models.BooleanField(default=False)
+    quiz = models.BooleanField(default=False)
+    enable_badges = models.BooleanField(default=False)
+    chat_bot_allow = models.BooleanField(default=True)
+    exclude_audio = models.BooleanField(default=False)
 
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=STATUS_FOR_EDITING)
 
