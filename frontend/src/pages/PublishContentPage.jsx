@@ -1,82 +1,69 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Card, Modal, message, Tag, Space } from 'antd';
+import { Table, Button, Card, Modal, notification, Tag, Space } from 'antd';
 import { EyeOutlined, PushpinOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { 
+  getContentItems, 
+  publishContentItem,
+  getCurrentUser
+} from '../api/django-api';
 
 const PublishContentPage = () => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
+  const [api, contextHolder] = notification.useNotification();
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const fetchUserData = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      api.error({
+        message: 'Error',
+        description: 'Failed to fetch user data',
+      });
+    }
+  };
 
   useEffect(() => {
+    fetchUserData();
     fetchContentForPublishing();
   }, []);
 
   const fetchContentForPublishing = async () => {
     try {
-      // In a real implementation, this would fetch from the API
-      // const token = localStorage.getItem('token');
-      // const response = await axios.get('/api/content/?status=approved', {
-      //   headers: { 'Authorization': `Bearer ${token}` }
-      // });
-      
-      // Mock data for demonstration
-      const mockData = [
-        {
-          id: 1,
-          title: 'Historical Landmarks of DOST',
-          author: 'John Smith',
-          status: 'approved',
-          type: 'article',
-          createdAt: '2023-11-15',
-          approvedAt: '2023-11-16',
-          description: 'An article about the historical landmarks within the Department of Science and Technology.'
-        },
-        {
-          id: 2,
-          title: 'Research Breakthroughs in 2023',
-          author: 'Maria Garcia',
-          status: 'approved',
-          type: 'article',
-          createdAt: '2023-11-10',
-          approvedAt: '2023-11-12',
-          description: 'Summary of major research breakthroughs achieved in 2023.'
-        },
-        {
-          id: 3,
-          title: 'Innovation Labs Overview',
-          author: 'Robert Johnson',
-          status: 'approved',
-          type: 'video',
-          createdAt: '2023-11-05',
-          approvedAt: '2023-11-07',
-          description: 'Virtual tour of the latest innovation labs at DOST facilities.'
-        }
-      ];
-      
-      setContents(mockData);
+      // Fetch content items with status 'for_publishing' (approved but not yet published)
+      const allContent = await getContentItems();
+      const contentForPublishing = allContent.filter(item => item.status === 'for_publishing');
+      setContents(contentForPublishing);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching content:', error);
-      message.error('Failed to load content for publishing');
+      api.error({
+        message: 'Error',
+        description: 'Failed to load content for publishing'
+      });
       setLoading(false);
     }
   };
 
   const handlePublish = async (id) => {
     try {
-      // In a real implementation, this would make an API call
-      // const token = localStorage.getItem('token');
-      // await axios.post(`/api/content/${id}/publish/`, {}, {
-      //   headers: { 'Authorization': `Bearer ${token}` }
-      // });
-      
-      message.success('Content published successfully');
+      await publishContentItem(id);
+      api.success({
+        message: 'Success',
+        description: 'Content published successfully'
+      });
       fetchContentForPublishing(); // Refresh the list
     } catch (error) {
       console.error('Error publishing content:', error);
-      message.error('Failed to publish content');
+      api.error({
+        message: 'Error',
+        description: 'Failed to publish content'
+      });
     }
   };
 
@@ -89,12 +76,18 @@ const PublishContentPage = () => {
       cancelText: 'No',
       onOk: async () => {
         try {
-          // In a real implementation, this would make an API call
-          message.success('Content unpublished successfully');
+          // Note: Unpublishing functionality would need a backend endpoint
+          api.success({
+            message: 'Success',
+            description: 'Content unpublished successfully'
+          });
           fetchContentForPublishing(); // Refresh the list
         } catch (error) {
           console.error('Error unpublishing content:', error);
-          message.error('Failed to unpublish content');
+          api.error({
+            message: 'Error',
+            description: 'Failed to unpublish content'
+          });
         }
       }
     });
@@ -129,16 +122,18 @@ const PublishContentPage = () => {
     },
     {
       title: 'Author',
-      dataIndex: 'author',
+      dataIndex: 'created_by',
       key: 'author',
+      render: (createdBy) => createdBy?.username || 'Unknown'
     },
     {
       title: 'Type',
-      dataIndex: 'type',
+      dataIndex: 'content_type',
       key: 'type',
       render: (type) => {
         const colorMap = {
           article: 'blue',
+          text: 'blue',
           video: 'green',
           image: 'orange',
           document: 'purple'
@@ -148,13 +143,15 @@ const PublishContentPage = () => {
     },
     {
       title: 'Created',
-      dataIndex: 'createdAt',
+      dataIndex: 'created_at',
       key: 'createdAt',
+      render: (date) => date ? new Date(date).toLocaleDateString() : 'N/A'
     },
     {
       title: 'Approved',
-      dataIndex: 'approvedAt',
+      dataIndex: 'approved_at',
       key: 'approvedAt',
+      render: (date) => date ? new Date(date).toLocaleDateString() : 'N/A'
     },
     {
       title: 'Status',
@@ -167,7 +164,11 @@ const PublishContentPage = () => {
           approved: 'blue',
           published: 'green',
           archived: 'gray',
-          rejected: 'red'
+          rejected: 'red',
+          for_editing: 'default',
+          for_approval: 'orange',
+          for_publishing: 'blue',
+          deleted: 'gray'
         };
         
         return (
@@ -202,61 +203,89 @@ const PublishContentPage = () => {
     },
   ];
 
-  return (
-    <div style={{ padding: '24px' }}>
-      <Card title="Content Publishing Queue" style={{ marginBottom: '24px' }}>
-        <p>Publish approved content to make it publicly available</p>
-      </Card>
+  // Check if user has permission to publish content
+  const hasPermission = currentUser && (
+    currentUser.is_superuser || 
+    currentUser.role === 'approver' || 
+    currentUser.role === 'super_admin'
+  );
 
+  if (!hasPermission) {
+    return (
       <Card>
-        <Table
-          dataSource={contents}
-          columns={columns}
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-          }}
-          rowKey="id"
-        />
+        <h2>Access denied</h2>
+        <p>You don't have permission to publish content.</p>
       </Card>
+    );
+  }
 
-      <Modal
-        title={selectedContent?.title}
-        open={modalVisible}
-        onCancel={hideModal}
-        footer={[
-          <Button key="back" onClick={hideModal}>Close</Button>,
-          <Button 
-            key="publish" 
-            type="primary"
-            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-            onClick={() => {
-              handlePublish(selectedContent?.id);
-              hideModal();
+  return (
+    <>
+      {contextHolder}
+      <div style={{ padding: '24px' }}>
+        <Card title="Content Publishing Queue" style={{ marginBottom: '24px' }}>
+          <p>Publish approved content to make it publicly available</p>
+        </Card>
+
+        <Card>
+          <Table
+            dataSource={contents}
+            columns={columns}
+            loading={loading}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
             }}
-          >
-            Publish
-          </Button>,
-        ]}
-      >
-        {selectedContent && (
-          <div>
-            <p><strong>Author:</strong> {selectedContent.author}</p>
-            <p><strong>Type:</strong> {selectedContent.type}</p>
-            <p><strong>Created:</strong> {selectedContent.createdAt}</p>
-            <p><strong>Approved:</strong> {selectedContent.approvedAt}</p>
-            <p><strong>Description:</strong> {selectedContent.description}</p>
-            <div style={{ marginTop: '16px', padding: '16px', background: '#f5f5f5', borderRadius: '4px' }}>
-              <h4>Content Preview</h4>
-              <p>This would show a detailed preview of the content in a real implementation.</p>
+            rowKey="id"
+          />
+        </Card>
+
+        <Modal
+          title={selectedContent?.title}
+          open={modalVisible}
+          onCancel={hideModal}
+          footer={[
+            <Button key="back" onClick={hideModal}>Close</Button>,
+            <Button 
+              key="publish" 
+              type="primary"
+              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              onClick={() => {
+                handlePublish(selectedContent?.id);
+                hideModal();
+              }}
+            >
+              Publish
+            </Button>,
+          ]}
+        >
+          {selectedContent && (
+            <div>
+              <p><strong>Author:</strong> {selectedContent.created_by?.username || 'Unknown'}</p>
+              <p><strong>Type:</strong> {selectedContent.content_type}</p>
+              <p><strong>Created:</strong> {selectedContent.created_at ? new Date(selectedContent.created_at).toLocaleDateString() : 'N/A'}</p>
+              <p><strong>Approved:</strong> {selectedContent.approved_at ? new Date(selectedContent.approved_at).toLocaleDateString() : 'N/A'}</p>
+              <p><strong>Description:</strong> {selectedContent.meta_description || 'No description provided'}</p>
+              <div style={{ marginTop: '16px', padding: '16px', background: '#f5f5f5', borderRadius: '4px' }}>
+                <h4>Content Preview</h4>
+                <div 
+                  style={{ 
+                    padding: '16px', 
+                    background: '#f0f0f0', 
+                    borderRadius: '4px', 
+                    maxHeight: '200px', 
+                    overflow: 'auto' 
+                  }}
+                  dangerouslySetInnerHTML={{ __html: selectedContent.body || 'No content provided' }}
+                />
+              </div>
             </div>
-          </div>
-        )}
-      </Modal>
-    </div>
+          )}
+        </Modal>
+      </div>
+    </>
   );
 };
 

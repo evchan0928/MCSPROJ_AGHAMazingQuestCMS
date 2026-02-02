@@ -103,7 +103,8 @@ export default function Sidebar({ user }) {
                             {(user?.is_superuser || roles.includes('Approver') || roles.includes('Super Admin')) && (
                                 <>
                                     <li><NavLink to="/dashboard/content/approve" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Approve Content</NavLink></li>
-                                    <li><NavLink to="/dashboard/content/publish" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Published Content</NavLink></li>
+                                    <li><NavLink to="/dashboard/content/publish" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Publish Content</NavLink></li>
+                                    <li><NavLink to="/dashboard/content/published" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Published Content</NavLink></li>
                                 </>
                             )}
 

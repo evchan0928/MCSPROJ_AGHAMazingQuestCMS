@@ -28,6 +28,7 @@ import DownloadAnalyticsPage from './pages/DownloadAnalyticsPage.jsx';
 import ApproveContentPage from './pages/ApproveContentPage.jsx';
 import PublishContentPage from './pages/PublishContentPage.jsx';
 import DeleteContentPage from './pages/DeleteContentPage.jsx';
+import PublishedContentPage from './pages/PublishedContentPage.jsx';
 
 // 🔑 IMPORT: Roles Page
 import RolesPage from './pages/RolesPage.jsx';
@@ -58,6 +59,7 @@ function App() {
 
           <Route path="content/approve" element={<ApproveContentPage />} />
           <Route path="content/publish" element={<PublishContentPage />} />
+          <Route path="content/published" element={<PublishedContentPage />} />
           <Route path="content/delete" element={<DeleteContentPage />} />
 
           {/* Analytics Management Sub-Routes */}
