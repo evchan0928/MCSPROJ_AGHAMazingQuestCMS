@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Modal, message, Card } from 'antd';
+import { Table, Button, Space, Tag, Modal, notification, Card } from 'antd';
 import { EditOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, DeleteOutlined, PushpinOutlined, PlayCircleOutlined, UploadOutlined } from '@ant-design/icons';
-import axios from 'axios';
-import './ContentListPage.css';
+import { 
+  getContentItems, 
+  getCurrentUser, 
+  sendContentForApproval, 
+  approveContentItem, 
+  denyContentItem, 
+  publishContentItem, 
+  deleteContentItem,
+  updateContentItem
+} from '../api/django-api';
 
 const ContentList = () => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [api, contextHolder] = notification.useNotification();
 
   useEffect(() => {
     fetchUserData();
@@ -16,33 +25,26 @@ const ContentList = () => {
 
   const fetchUserData = async () => {
     try {
-      // In a real implementation, this would fetch user data from the API
-      // For now, we'll simulate getting user role from localStorage or a mock
-      const storedRole = localStorage.getItem('userRole') || 'encoder';
-      const mockUser = {
-        id: 1,
-        username: 'current_user',
-        role: storedRole,
-        isSuperuser: storedRole === 'admin'
-      };
-      setCurrentUser(mockUser);
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
     } catch (error) {
       console.error('Error fetching user data:', error);
+      // Show error notification
+      api.error({
+        message: 'Error',
+        description: 'Failed to fetch user data',
+      });
     }
   };
 
   const fetchContentList = async () => {
+    setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      // Using the correct endpoint: /api/content/items/
-      const response = await axios.get('/api/content/items/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Using the correct endpoint through our API service
+      const response = await getContentItems();
       
       // Transform the data to match table structure
-      const transformedData = response.data.map(item => ({
+      const transformedData = response.map(item => ({
         key: item.id,
         id: item.id,
         title: item.title,
@@ -55,10 +57,13 @@ const ContentList = () => {
       }));
       
       setContents(transformedData);
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching content:', error);
-      message.error('Failed to load content list');
+      api.error({
+        message: 'Error',
+        description: 'Failed to load content list',
+      });
+    } finally {
       setLoading(false);
     }
   };
@@ -82,12 +87,12 @@ const ContentList = () => {
     }
     
     // Reviewer can approve/reject content in 'for_approval' status
-    if ((currentUser?.role === 'reviewer' || currentUser?.isSuperuser) && item.status === 'for_approval') {
+    if ((currentUser?.role === 'reviewer' || currentUser?.is_superuser) && item.status === 'for_approval') {
       actions.push('Approve', 'Reject');
     }
     
     // Approver can publish content in 'for_publishing' status
-    if ((currentUser?.role === 'approver' || currentUser?.isSuperuser) && item.status === 'for_publishing') {
+    if ((currentUser?.role === 'approver' || currentUser?.is_superuser) && item.status === 'for_publishing') {
       actions.push('Publish');
     }
     
@@ -97,7 +102,7 @@ const ContentList = () => {
     }
     
     // Approver can archive published content
-    if ((currentUser?.role === 'approver' || currentUser?.isSuperuser) && item.status === 'published') {
+    if ((currentUser?.role === 'approver' || currentUser?.is_superuser) && item.status === 'published') {
       actions.push('Archive');
     }
     
@@ -107,7 +112,6 @@ const ContentList = () => {
   // Handler functions for different actions
   const handleAction = async (action, record) => {
     try {
-      const token = localStorage.getItem('token');
       const item = record.item; // Get the original item
       
       switch(action) {
@@ -116,31 +120,35 @@ const ContentList = () => {
           window.location.href = `/dashboard/content/edit/${record.id}`;
           break;
         case 'SubmitForApproval':
-          await axios.post(`/api/content/items/${record.id}/send_for_approval/`, {}, {
-            headers: { 'Authorization': `Bearer ${token}` }
+          await sendContentForApproval(record.id);
+          api.success({
+            message: 'Success',
+            description: 'Content submitted for approval successfully',
           });
-          message.success('Content submitted for approval successfully');
           fetchContentList(); // Refresh the list
           break;
         case 'Approve':
-          await axios.post(`/api/content/items/${record.id}/approve/`, {}, {
-            headers: { 'Authorization': `Bearer ${token}` }
+          await approveContentItem(record.id);
+          api.success({
+            message: 'Success',
+            description: 'Content approved successfully',
           });
-          message.success('Content approved successfully');
           fetchContentList(); // Refresh the list
           break;
         case 'Reject':
-          await axios.post(`/api/content/items/${record.id}/deny/`, {}, {
-            headers: { 'Authorization': `Bearer ${token}` }
+          await denyContentItem(record.id);
+          api.success({
+            message: 'Success',
+            description: 'Content rejected',
           });
-          message.success('Content rejected');
           fetchContentList(); // Refresh the list
           break;
         case 'Publish':
-          await axios.post(`/api/content/items/${record.id}/publish/`, {}, {
-            headers: { 'Authorization': `Bearer ${token}` }
+          await publishContentItem(record.id);
+          api.success({
+            message: 'Success',
+            description: 'Content published successfully',
           });
-          message.success('Content published successfully');
           fetchContentList(); // Refresh the list
           break;
         case 'Delete':
@@ -150,19 +158,22 @@ const ContentList = () => {
             okText: 'Yes',
             cancelText: 'No',
             onOk: async () => {
-              await axios.delete(`/api/content/items/${record.id}/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+              await deleteContentItem(record.id);
+              api.success({
+                message: 'Success',
+                description: 'Content deleted successfully',
               });
-              message.success('Content deleted successfully');
               fetchContentList(); // Refresh the list
             }
           });
           break;
         case 'Archive':
-          await axios.patch(`/api/content/items/${record.id}/`, { status: 'deleted' }, {
-            headers: { 'Authorization': `Bearer ${token}` }
+          // For archiving, we update the status to 'deleted'
+          await updateContentItem(record.id, { status: 'deleted' });
+          api.success({
+            message: 'Success',
+            description: 'Content archived successfully',
           });
-          message.success('Content archived successfully');
           fetchContentList(); // Refresh the list
           break;
         default:
@@ -170,7 +181,10 @@ const ContentList = () => {
       }
     } catch (error) {
       console.error(`Error performing ${action}:`, error);
-      message.error(`Failed to perform ${action}. Please try again.`);
+      api.error({
+        message: 'Error',
+        description: `Failed to perform ${action}. Please try again.`,
+      });
     }
   };
 
@@ -471,29 +485,14 @@ const ContentList = () => {
   const mediaContents = contents.filter(item => ['image', 'video'].includes(item.type));
 
   return (
-    <div className="content-list-page">
-      <Card title="Content Management" className="page-card">
-        <h2 className="section-title">All Content</h2>
-        <Table
-          dataSource={contents}
-          columns={getTextColumns} // Using the same columns for all content
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-          }}
-          rowKey="id"
-          className="content-table"
-        />
-      </Card>
-
-      {textContents.length > 0 && (
-        <Card title="Text Contents" className="section-card">
+    <>
+      {contextHolder}
+      <div className="content-list-page">
+        <Card title="Content Management" className="page-card">
+          <h2 className="section-title">All Content</h2>
           <Table
-            dataSource={textContents}
-            columns={getTextColumns}
+            dataSource={contents}
+            columns={getTextColumns} // Using the same columns for all content
             loading={loading}
             pagination={{
               pageSize: 10,
@@ -505,26 +504,44 @@ const ContentList = () => {
             className="content-table"
           />
         </Card>
-      )}
 
-      {mediaContents.length > 0 && (
-        <Card title="Media Contents (Images & Videos)" className="section-card">
-          <Table
-            dataSource={mediaContents}
-            columns={getMediaColumns}
-            loading={loading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-            }}
-            rowKey="id"
-            className="content-table"
-          />
-        </Card>
-      )}
-    </div>
+        {textContents.length > 0 && (
+          <Card title="Text Contents" className="section-card">
+            <Table
+              dataSource={textContents}
+              columns={getTextColumns}
+              loading={loading}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+              }}
+              rowKey="id"
+              className="content-table"
+            />
+          </Card>
+        )}
+
+        {mediaContents.length > 0 && (
+          <Card title="Media Contents (Images & Videos)" className="section-card">
+            <Table
+              dataSource={mediaContents}
+              columns={getMediaColumns}
+              loading={loading}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+              }}
+              rowKey="id"
+              className="content-table"
+            />
+          </Card>
+        )}
+      </div>
+    </>
   );
 };
 

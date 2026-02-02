@@ -75,29 +75,53 @@ class ContentItem(models.Model):
             self.slug = slug
         super().save(*args, **kwargs)
 
+    def transition_status(self, new_status, user=None):
+        """Generic method to transition status and update relevant fields."""
+        status_transitions = {
+            self.STATUS_FOR_APPROVAL: {
+                'status_field': 'edited',
+                'timestamp_field': 'edited_at',
+                'user_field': 'edited_by'
+            },
+            self.STATUS_FOR_PUBLISHING: {
+                'status_field': 'approved',
+                'timestamp_field': 'approved_at',
+                'user_field': 'approved_by'
+            },
+            self.STATUS_PUBLISHED: {
+                'status_field': 'published',
+                'timestamp_field': 'published_at',
+                'user_field': 'published_by'
+            }
+        }
+
+        if new_status not in status_transitions:
+            raise ValueError(f"Invalid status transition to {new_status}")
+
+        self.status = new_status
+        transition_data = status_transitions[new_status]
+
+        timestamp_field = transition_data['timestamp_field']
+        user_field = transition_data['user_field']
+
+        setattr(self, timestamp_field, timezone.now())
+        if user:
+            setattr(self, user_field, user)
+
+        update_fields = ['status', timestamp_field, user_field]
+        self.save(update_fields=update_fields)
+
     def send_for_approval(self, user=None):
         # Move from For editing -> For approval
-        self.status = self.STATUS_FOR_APPROVAL
-        self.edited_at = timezone.now()
-        if user:
-            self.edited_by = user
-        self.save(update_fields=['status', 'edited_at', 'edited_by'])
+        self.transition_status(self.STATUS_FOR_APPROVAL, user)
 
     def approve(self, user=None):
         # Move from For approval -> For publishing
-        self.status = self.STATUS_FOR_PUBLISHING
-        self.approved_at = timezone.now()
-        if user:
-            self.approved_by = user
-        self.save(update_fields=['status', 'approved_at', 'approved_by'])
+        self.transition_status(self.STATUS_FOR_PUBLISHING, user)
 
     def publish(self, user=None):
         # Move from For publishing -> Published
-        self.status = self.STATUS_PUBLISHED
-        self.published_at = timezone.now()
-        if user:
-            self.published_by = user
-        self.save(update_fields=['status', 'published_at', 'published_by'])
+        self.transition_status(self.STATUS_PUBLISHED, user)
 
     def soft_delete(self, user=None):
         self.is_deleted = True

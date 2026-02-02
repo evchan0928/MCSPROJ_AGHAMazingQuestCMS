@@ -231,23 +231,9 @@ export const createContentItem = async (data) => {
  */
 export const updateContentItem = async (id, data) => {
   try {
-    const formData = new FormData();
-    
-    // Map the frontend field names to backend field names
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined && data[key] !== null) {
-        // Convert boolean values to strings as Django expects
-        if (typeof data[key] === 'boolean') {
-          formData.append(key, data[key].toString());
-        } else {
-          formData.append(key, data[key]);
-        }
-      }
-    });
-    
-    const response = await apiClient.patch(`/content/items/${id}/`, formData, {
+    const response = await apiClient.patch(`/content/items/${id}/`, data, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/json',
       }
     });
     
@@ -263,6 +249,54 @@ export const updateContentItem = async (id, data) => {
 export const deleteContentItem = async (id) => {
   try {
     const response = await apiClient.delete(`/content/items/${id}/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Send content item for approval
+ */
+export const sendContentForApproval = async (id) => {
+  try {
+    const response = await apiClient.post(`/content/items/${id}/send_for_approval/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Approve content item
+ */
+export const approveContentItem = async (id) => {
+  try {
+    const response = await apiClient.post(`/content/items/${id}/approve/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Deny content item
+ */
+export const denyContentItem = async (id) => {
+  try {
+    const response = await apiClient.post(`/content/items/${id}/deny/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Publish content item
+ */
+export const publishContentItem = async (id) => {
+  try {
+    const response = await apiClient.post(`/content/items/${id}/publish/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
