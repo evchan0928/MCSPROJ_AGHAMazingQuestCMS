@@ -60,37 +60,21 @@ except Exception:
 # Support switching between sqlite and PostgreSQL via environment variables.
 # DB_ENGINE: 'sqlite' | 'postgres'/'postgresql' (default when DEBUG is False)
 # For local development (DEBUG=True) default to sqlite to avoid requiring a DB server.
-default_db = 'sqlite' if DEBUG else 'postgres'
-DB_ENGINE = os.environ.get('DB_ENGINE', default_db).lower()
-
-if DB_ENGINE == 'sqlite':
-    engine = 'django.db.backends.sqlite3'
-    DATABASES = {
-        'default': {
-            'ENGINE': engine,
-            'NAME': os.environ.get('DB_NAME', str(BASE_DIR / 'db.sqlite3')),
-        }
+# Removed conditional logic - always use PostgreSQL
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
+        'USER': os.environ.get('DB_USER', 'admin'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5439'),  # Default to 5439 as configured in docker
+        'OPTIONS': {
+            # PostgreSQL specific options
+            'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
+        },
     }
-else:
-    if DB_ENGINE in ('postgres', 'postgresql'):
-        engine = 'django.db.backends.postgresql'
-    else:
-        engine = DB_ENGINE
-
-    DATABASES = {
-        'default': {
-            'ENGINE': engine,
-            'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
-            'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'admin123'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-            'OPTIONS': {
-                # PostgreSQL specific options
-                'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
-            },
-        }
-    }
+}
 
 
 # Application definition
@@ -106,8 +90,7 @@ INSTALLED_APPS = [
 ]
 
 # Add postgres contrib if using PostgreSQL
-if DB_ENGINE in ('postgres', 'postgresql'):
-    INSTALLED_APPS.append('django.contrib.postgres')
+INSTALLED_APPS.append('django.contrib.postgres')
 
 # Add Wagtail and other apps
 INSTALLED_APPS.extend([
