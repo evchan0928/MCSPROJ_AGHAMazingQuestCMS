@@ -1,71 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Card, Modal, message, Tag, Space } from 'antd';
-import { DeleteOutlined, ExclamationCircleOutlined, EyeOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { Table, Button, Card, Modal, message, Tag, Space, Spin } from 'antd';
+import { DeleteOutlined, ExclamationCircleOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
+import { getContentItems, deleteContentItem, updateContentItem } from '../api/django-api';
 
 const DeleteContentPage = () => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     fetchContentForDeletion();
-  }, []);
+  }, [refreshTrigger]);
 
   const fetchContentForDeletion = async () => {
     try {
-      // In a real implementation, this would fetch from the API
-      // const token = localStorage.getItem('token');
-      // const response = await axios.get('/api/content/', {
-      //   headers: { 'Authorization': `Bearer ${token}` }
-      // });
-      
-      // Mock data for demonstration - showing content that can be deleted
-      const mockData = [
-        {
-          id: 1,
-          title: 'Outdated Research Data',
-          author: 'John Smith',
-          status: 'draft',
-          type: 'article',
-          createdAt: '2023-01-15',
-          lastModified: '2023-05-20',
-          description: 'Research data that is no longer relevant to current studies.'
-        },
-        {
-          id: 2,
-          title: 'Old Event Coverage',
-          author: 'Maria Garcia',
-          status: 'published',
-          type: 'article',
-          createdAt: '2023-02-10',
-          lastModified: '2023-06-15',
-          description: 'Coverage of an event that happened over a year ago.'
-        },
-        {
-          id: 3,
-          title: 'Deprecated Guidelines',
-          author: 'Robert Johnson',
-          status: 'published',
-          type: 'document',
-          createdAt: '2022-11-05',
-          lastModified: '2023-01-12',
-          description: 'Guidelines that have been superseded by newer versions.'
-        },
-        {
-          id: 4,
-          title: 'Test Content',
-          author: 'David Wilson',
-          status: 'draft',
-          type: 'image',
-          createdAt: '2023-10-22',
-          lastModified: '2023-10-22',
-          description: 'Test content created during development.'
-        }
-      ];
-      
-      setContents(mockData);
+      setLoading(true);
+      const data = await getContentItems();
+      // Filter content based on status to show for deletion options
+      setContents(data.map(item => ({
+        id: item.id,
+        title: item.title,
+        author: item.author?.first_name ? `${item.author.first_name} ${item.author.last_name || ''}` : 'Unknown Author',
+        status: item.status,
+        type: item.content_type || 'document',
+        createdAt: item.created_at || item.created_date,
+        lastModified: item.updated_at || item.last_modified,
+        description: item.description || 'No description available',
+        body: item.body || item.content || ''
+      })));
       setLoading(false);
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -83,17 +47,12 @@ const DeleteContentPage = () => {
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          // In a real implementation, this would make an API call
-          // const token = localStorage.getItem('token');
-          // await axios.delete(`/api/content/${id}/`, {
-          //   headers: { 'Authorization': `Bearer ${token}` }
-          // });
-          
+          await deleteContentItem(id);
           message.success('Content deleted successfully');
-          fetchContentForDeletion(); // Refresh the list
+          setRefreshTrigger(prev => prev + 1); // Trigger refresh
         } catch (error) {
           console.error('Error deleting content:', error);
-          message.error('Failed to delete content');
+          message.error(`Failed to delete content: ${error.message}`);
         }
       }
     });
@@ -108,17 +67,13 @@ const DeleteContentPage = () => {
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          // In a real implementation, this would make an API call
-          // const token = localStorage.getItem('token');
-          // await axios.patch(`/api/content/${id}/`, { status: 'archived' }, {
-          //   headers: { 'Authorization': `Bearer ${token}` }
-          // });
-          
+          // Update the status to archived
+          await updateContentItem(id, { status: 'archived' });
           message.success('Content archived successfully');
-          fetchContentForDeletion(); // Refresh the list
+          setRefreshTrigger(prev => prev + 1); // Trigger refresh
         } catch (error) {
           console.error('Error archiving content:', error);
-          message.error('Failed to archive content');
+          message.error(`Failed to archive content: ${error.message}`);
         }
       }
     });
@@ -239,23 +194,40 @@ const DeleteContentPage = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Card title="Content Management - Delete/Archive" style={{ marginBottom: '24px' }}>
+      <Card 
+        title="Content Management - Delete/Archive" 
+        style={{ marginBottom: '24px' }}
+        extra={
+          <Button 
+            icon={<ReloadOutlined />} 
+            onClick={() => setRefreshTrigger(prev => prev + 1)}
+          >
+            Refresh
+          </Button>
+        }
+      >
         <p>Select content to delete or archive. Draft content can be permanently deleted, published content should be archived.</p>
       </Card>
 
       <Card>
-        <Table
-          dataSource={contents}
-          columns={columns}
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-          }}
-          rowKey="id"
-        />
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <Spin size="large" />
+            <p>Loading content...</p>
+          </div>
+        ) : (
+          <Table
+            dataSource={contents}
+            columns={columns}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+            }}
+            rowKey="id"
+          />
+        )}
       </Card>
 
       <Modal
@@ -274,10 +246,12 @@ const DeleteContentPage = () => {
             <p><strong>Created:</strong> {selectedContent.createdAt}</p>
             <p><strong>Last Modified:</strong> {selectedContent.lastModified}</p>
             <p><strong>Description:</strong> {selectedContent.description}</p>
-            <div style={{ marginTop: '16px', padding: '16px', background: '#f5f5f5', borderRadius: '4px' }}>
-              <h4>Content Preview</h4>
-              <p>This would show a detailed preview of the content in a real implementation.</p>
-            </div>
+            {selectedContent.body && (
+              <div style={{ marginTop: '16px', padding: '16px', background: '#f5f5f5', borderRadius: '4px' }}>
+                <h4>Content Preview</h4>
+                <div dangerouslySetInnerHTML={{ __html: selectedContent.body }} />
+              </div>
+            )}
           </div>
         )}
       </Modal>

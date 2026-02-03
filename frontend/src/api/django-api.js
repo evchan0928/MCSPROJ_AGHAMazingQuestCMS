@@ -94,7 +94,7 @@ export const getApiClient = () => {
  */
 export const signInWithEmail = async (email, password) => {
   try {
-    const response = await apiClient.post('/auth/login/', {
+    const response = await apiClient.post(`${BACKEND_API_URL}/auth/login/`, {
       email,
       password
     });
@@ -115,7 +115,7 @@ export const signInWithEmail = async (email, password) => {
  */
 export const signUpWithEmail = async (email, password, userData = {}) => {
   try {
-    const response = await apiClient.post('/auth/register/', {
+    const response = await apiClient.post(`${BACKEND_API_URL}/auth/register/`, {
       email,
       password,
       ...userData
@@ -138,7 +138,7 @@ export const signOut = async () => {
     
     // Optionally notify the backend
     try {
-      await apiClient.post('/auth/logout/');
+      await apiClient.post(`${BACKEND_API_URL}/auth/logout/`);
     } catch (err) {
       // Ignore logout errors
     }
@@ -152,7 +152,7 @@ export const signOut = async () => {
  */
 export const getCurrentUser = async () => {
   try {
-    const response = await apiClient.get('/auth/user/');
+    const response = await apiClient.get(`${BACKEND_API_URL}/auth/user/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -164,7 +164,7 @@ export const getCurrentUser = async () => {
  */
 export const getContentItems = async () => {
   try {
-    const response = await apiClient.get('/content/items/');
+    const response = await apiClient.get(`${BACKEND_API_URL}/content/items/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -176,7 +176,7 @@ export const getContentItems = async () => {
  */
 export const getDashboardStats = async () => {
   try {
-    const response = await apiClient.get('/dashboard/stats/');
+    const response = await apiClient.get(`${BACKEND_API_URL}/dashboard/stats/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -188,7 +188,7 @@ export const getDashboardStats = async () => {
  */
 export const getRecentContent = async () => {
   try {
-    const response = await apiClient.get('/content/recent/');
+    const response = await apiClient.get(`${BACKEND_API_URL}/content/recent/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -214,7 +214,7 @@ export const createContentItem = async (data) => {
       }
     });
     
-    const response = await apiClient.post('/content/items/', formData, {
+    const response = await apiClient.post(`${BACKEND_API_URL}/content/items/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       }
@@ -231,7 +231,7 @@ export const createContentItem = async (data) => {
  */
 export const updateContentItem = async (id, data) => {
   try {
-    const response = await apiClient.patch(`/content/items/${id}/`, data, {
+    const response = await apiClient.patch(`${BACKEND_API_URL}/content/items/${id}/`, data, {
       headers: {
         'Content-Type': 'application/json',
       }
@@ -248,7 +248,7 @@ export const updateContentItem = async (id, data) => {
  */
 export const deleteContentItem = async (id) => {
   try {
-    const response = await apiClient.delete(`/content/items/${id}/`);
+    const response = await apiClient.delete(`${BACKEND_API_URL}/content/items/${id}/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -260,7 +260,7 @@ export const deleteContentItem = async (id) => {
  */
 export const sendContentForApproval = async (id) => {
   try {
-    const response = await apiClient.post(`/content/items/${id}/send_for_approval/`);
+    const response = await apiClient.post(`${BACKEND_API_URL}/content/items/${id}/send_for_approval/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -272,7 +272,7 @@ export const sendContentForApproval = async (id) => {
  */
 export const approveContentItem = async (id) => {
   try {
-    const response = await apiClient.post(`/content/items/${id}/approve/`);
+    const response = await apiClient.post(`${BACKEND_API_URL}/content/items/${id}/approve/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -284,7 +284,7 @@ export const approveContentItem = async (id) => {
  */
 export const denyContentItem = async (id) => {
   try {
-    const response = await apiClient.post(`/content/items/${id}/deny/`);
+    const response = await apiClient.post(`${BACKEND_API_URL}/content/items/${id}/deny/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -296,7 +296,7 @@ export const denyContentItem = async (id) => {
  */
 export const publishContentItem = async (id) => {
   try {
-    const response = await apiClient.post(`/content/items/${id}/publish/`);
+    const response = await apiClient.post(`${BACKEND_API_URL}/content/items/${id}/publish/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -308,7 +308,7 @@ export const publishContentItem = async (id) => {
  */
 export const getUsers = async () => {
   try {
-    const response = await apiClient.get('/users/');
+    const response = await apiClient.get(`${BACKEND_API_URL}/users/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -320,7 +320,7 @@ export const getUsers = async () => {
  */
 export const getUserById = async (id) => {
   try {
-    const response = await apiClient.get(`/users/${id}/`);
+    const response = await apiClient.get(`${BACKEND_API_URL}/users/${id}/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -332,7 +332,7 @@ export const getUserById = async (id) => {
  */
 export const createUser = async (userData) => {
   try {
-    const response = await apiClient.post('/users/', userData);
+    const response = await apiClient.post(`${BACKEND_API_URL}/users/`, userData);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -344,7 +344,7 @@ export const createUser = async (userData) => {
  */
 export const updateUser = async (id, userData) => {
   try {
-    const response = await apiClient.patch(`/users/${id}/`, userData);
+    const response = await apiClient.patch(`${BACKEND_API_URL}/users/${id}/`, userData);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -356,7 +356,7 @@ export const updateUser = async (id, userData) => {
  */
 export const deleteUser = async (id) => {
   try {
-    const response = await apiClient.delete(`/users/${id}/`);
+    const response = await apiClient.delete(`${BACKEND_API_URL}/users/${id}/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -368,7 +368,7 @@ export const deleteUser = async (id) => {
  */
 export const getRoles = async () => {
   try {
-    const response = await apiClient.get('/users/roles/');
+    const response = await apiClient.get(`${BACKEND_API_URL}/users/roles/`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
