@@ -6,6 +6,11 @@ from datetime import timedelta, datetime
 from apps.contentmanagement.models import ContentItem, ContentPage
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
+from django.http import HttpResponse
+import json
+import io
+import csv
+from datetime import datetime
 
 
 @api_view(['GET'])
@@ -199,7 +204,7 @@ def generate_analytics_report(request):
             'total_views': sum([item['views'] for item in top_content]) if top_content else 0,
             'new_users': User.objects.filter(date_joined__gte=timezone.now() - timedelta(days=30)).count(),
             'active_content': published_count,
-            'engagement_rate': f"{(published_count / max(total_content, 1)) * 100:.0f}%" if total_content > 0 else "0%"
+            'engagement_rate': f"{(published_count / max(total_content, 1) * 100):.0f}%" if total_content > 0 else "0%"
         }
         
         # Return the report data
@@ -219,5 +224,155 @@ def generate_analytics_report(request):
         }
         
         return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def download_analytics_report(request):
+    """Generate and download an analytics report in the requested format."""
+    try:
+        # Extract parameters from the request
+        report_type = request.data.get('report_type', 'comprehensive')
+        date_from_str = request.data.get('date_from')
+        date_to_str = request.data.get('date_to')
+        format_type = request.data.get('format', 'pdf')
+        included_data = request.data.get('included_data', 'summary,visualizations,detailed-data')
+        content_type = request.data.get('content_type', 'all')
+        options = request.data.get('options', '')
+        delivery_method = request.data.get('delivery_method', 'download')  # 'download' or 'email'
+        
+        # Parse dates if provided
+        date_from = None
+        date_to = None
+        if date_from_str:
+            date_from = datetime.strptime(date_from_str, '%Y-%m-%d')
+        if date_to_str:
+            date_to = datetime.strptime(date_to_str, '%Y-%m-%d')
+        
+        # Build query filters
+        content_filter = Q()
+        
+        if date_from:
+            content_filter &= Q(created_at__gte=date_from)
+        if date_to:
+            content_filter &= Q(created_at__lte=date_to)
+        if content_type and content_type != 'all':
+            content_filter &= Q(content_type=content_type)
+        
+        # Query content items based on filters
+        filtered_content = ContentItem.objects.filter(content_filter)
+        
+        # Prepare report data
+        report_data = {
+            'report_type': report_type,
+            'date_range': f"{date_from_str} to {date_to_str}" if date_from_str and date_to_str else "All time",
+            'content_type_filter': content_type,
+            'generated_at': timezone.now().isoformat(),
+            'summary': {
+                'total_content': filtered_content.count(),
+                'published_content': filtered_content.filter(status=ContentItem.STATUS_PUBLISHED).count(),
+                'draft_content': filtered_content.filter(status=ContentItem.STATUS_FOR_EDITING).count(),
+                'pending_approval': filtered_content.filter(status=ContentItem.STATUS_FOR_APPROVAL).count(),
+                'for_publishing': filtered_content.filter(status=ContentItem.STATUS_FOR_PUBLISHING).count(),
+            }
+        }
+        
+        # Generate report based on requested format
+        if format_type.lower() == 'csv':
+            # Create CSV content
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow(['Report Type', 'Date Range', 'Content Type Filter', 'Generated At'])
+            writer.writerow([
+                report_data['report_type'],
+                report_data['date_range'],
+                report_data['content_type_filter'],
+                report_data['generated_at']
+            ])
+            
+            # Write summary section
+            writer.writerow([])
+            writer.writerow(['Summary Metrics'])
+            writer.writerow(['Metric', 'Count'])
+            for key, value in report_data['summary'].items():
+                writer.writerow([key.replace('_', ' ').title(), value])
+            
+            # Write content details if requested
+            if 'detailed-data' in included_data:
+                writer.writerow([])
+                writer.writerow(['Content Details'])
+                writer.writerow(['ID', 'Title', 'Status', 'Type', 'Created At', 'Published At'])
+                for item in filtered_content[:100]:  # Limit to 100 items for performance
+                    writer.writerow([
+                        item.id,
+                        item.title,
+                        item.status,
+                        item.content_type,
+                        item.created_at.isoformat() if item.created_at else '',
+                        item.published_at.isoformat() if item.published_at else ''
+                    ])
+            
+            # Convert StringIO to bytes
+            output.seek(0)
+            response = HttpResponse(output.getvalue(), content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="analytics-report-{datetime.now().strftime("%Y%m%d")}.csv"'
+            return response
+            
+        elif format_type.lower() in ['excel', 'xlsx']:
+            # For now, we'll return a simple CSV since we don't have pandas installed
+            # In a production environment, you'd use pandas and openpyxl to create Excel files
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow(['Report Type', 'Date Range', 'Content Type Filter', 'Generated At'])
+            writer.writerow([
+                report_data['report_type'],
+                report_data['date_range'],
+                report_data['content_type_filter'],
+                report_data['generated_at']
+            ])
+            
+            # Write summary section
+            writer.writerow([])
+            writer.writerow(['Summary Metrics'])
+            writer.writerow(['Metric', 'Count'])
+            for key, value in report_data['summary'].items():
+                writer.writerow([key.replace('_', ' ').title(), value])
+            
+            # Write content details if requested
+            if 'detailed-data' in included_data:
+                writer.writerow([])
+                writer.writerow(['Content Details'])
+                writer.writerow(['ID', 'Title', 'Status', 'Type', 'Created At', 'Published At'])
+                for item in filtered_content[:100]:  # Limit to 100 items for performance
+                    writer.writerow([
+                        item.id,
+                        item.title,
+                        item.status,
+                        item.content_type,
+                        item.created_at.isoformat() if item.created_at else '',
+                        item.published_at.isoformat() if item.published_at else ''
+                    ])
+            
+            # Convert StringIO to bytes
+            output.seek(0)
+            response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = f'attachment; filename="analytics-report-{datetime.now().strftime("%Y%m%d")}.xlsx"'
+            return response
+            
+        else:  # Default to JSON for PDF generation simulation
+            # For PDF, we would normally use a library like reportlab or weasyprint
+            # Since this is a simulation, we'll return the JSON data
+            response = HttpResponse(
+                json.dumps(report_data, indent=2), 
+                content_type='application/json'
+            )
+            response['Content-Disposition'] = f'attachment; filename="analytics-report-{datetime.now().strftime("%Y%m%d")}.json"'
+            return response
+            
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

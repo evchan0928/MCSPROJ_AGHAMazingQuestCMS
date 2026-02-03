@@ -7,7 +7,7 @@ const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://127.0.0
 // Create an axios instance with default settings
 const apiClient = axios.create({
   baseURL: BACKEND_API_URL,
-  timeout: 30000,
+  timeout: 60000, // Increased timeout for report generation
   headers: {
     'Content-Type': 'application/json',
     'X-CSRFToken': getCookie('csrftoken'), // Get CSRF token from cookies
@@ -417,6 +417,21 @@ export const getUserActivityAnalytics = async () => {
 export const generateAnalyticsReport = async (params) => {
   try {
     const response = await apiClient.post('/analytics/generate/', params);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Download analytics report
+ */
+export const downloadAnalyticsReport = async (params) => {
+  try {
+    const response = await apiClient.post('/analytics/download/', params, {
+      responseType: 'blob', // Important for file downloads
+      timeout: 120000 // Extended timeout for report generation
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
