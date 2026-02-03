@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: agha-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-aghamazing_db}
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Expose container port 5432 to host port 5433
+    networks:
+      - agha-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: agha-pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aghama.com
+      PGADMIN_DEFAULT_PASSWORD: admin1234
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - agha-network
+    depends_on:
+      - postgres
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: agha-backend
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    networks:
+      - agha-network
+    depends_on:
+      - postgres
+
+  frontend:
+    build: 
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: agha-frontend
+    restart: unless-stopped
+    volumes:
+      - /app/node_modules
+      - ../frontend:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true  # Needed for file watching in some environments
+      - NODE_ENV=development
+    networks:
+      - agha-network
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+
+networks:
+  agha-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  static_volume:
+  media_volume:
