@@ -333,6 +333,111 @@ def user_roles_view(request):
     
     # Get all unique role names from the CustomUserRole model
     roles = CustomUserRole.objects.values('role_name').distinct()
-    role_list = [{'name': role['role_name']} for role in roles]
+    # Create a list of roles with synthetic IDs (position-based)
+    role_list = []
+    for idx, role in enumerate(roles):
+        # Get a representative role object to use its actual ID
+        actual_role_obj = CustomUserRole.objects.filter(role_name=role['role_name']).first()
+        role_list.append({
+            'id': actual_role_obj.id,
+            'name': actual_role_obj.role_name
+        })
     
     return JsonResponse(role_list, safe=False)
+
+
+@login_required
+@csrf_exempt
+def create_role_view(request):
+    """View to create a new role."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        role_name = data.get('name')
+        
+        if not role_name:
+            return JsonResponse({'error': 'Role name is required'}, status=400)
+        
+        # Check if role already exists
+        if CustomUserRole.objects.filter(role_name=role_name).exists():
+            return JsonResponse({'error': 'Role already exists'}, status=400)
+        
+        # Create the role with a placeholder user (we'll use the requesting user)
+        role = CustomUserRole.objects.create(
+            user=request.user,  # Use the current logged-in user as a placeholder
+            role_name=role_name
+        )
+        
+        response_data = {
+            'id': role.id,
+            'name': role.role_name
+        }
+        
+        return JsonResponse(response_data, status=201)
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def role_detail_view(request, role_id):
+    """View to retrieve, update, or delete a specific role."""
+    try:
+        # Find all role instances with this role name
+        role_instances = CustomUserRole.objects.filter(id=role_id)
+        if not role_instances.exists():
+            return JsonResponse({'error': 'Role not found.'}, status=404)
+        
+        # Get the role name from any instance
+        role_name = role_instances.first().role_name
+    except CustomUserRole.DoesNotExist:
+        return JsonResponse({'error': 'Role not found.'}, status=404)
+    
+    if request.method == 'GET':
+        # Return role details
+        role_info = {
+            'id': role_id,
+            'name': role_name,
+        }
+        return JsonResponse(role_info)
+    
+    elif request.method == 'PUT':
+        # Update role name
+        try:
+            data = json.loads(request.body)
+            new_name = data.get('name')
+            
+            if not new_name:
+                return JsonResponse({'error': 'Role name is required'}, status=400)
+            
+            # Check if the new name already exists
+            if CustomUserRole.objects.filter(role_name=new_name).exclude(id=role_id).exists():
+                return JsonResponse({'error': 'A role with this name already exists'}, status=400)
+            
+            # Update all instances of this role
+            CustomUserRole.objects.filter(id=role_id).update(role_name=new_name)
+            
+            role_info = {
+                'id': role_id,
+                'name': new_name,
+            }
+            
+            return JsonResponse(role_info)
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    elif request.method == 'DELETE':
+        # Delete all instances of this role
+        CustomUserRole.objects.filter(id=role_id).delete()
+        return JsonResponse({'message': 'Role deleted successfully.'})
+    
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)

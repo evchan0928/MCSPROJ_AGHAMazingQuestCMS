@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchAuth } from '../api';
+import { getRoles, getUsers, createRole, updateRole, deleteRole } from '../api/django-api'; // Import the API functions
 import { Card, Row, Col, Statistic, Table, Button, Space, Input, Tag, Popconfirm, notification, Typography } from 'antd';
 import { PlusOutlined, TeamOutlined, UserOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -38,27 +38,15 @@ export default function RolesPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const [rRes, uRes] = await Promise.all([
-          fetchAuth('/api/users/roles/'),
-          fetchAuth('/api/users/'),
+        // Load roles and users using API service functions
+        const [rolesData, usersData] = await Promise.all([
+          getRoles(),
+          getUsers()
         ]);
         
-        if (rRes.status === 401 || rRes.status === 403) {
-          throw new Error('Authentication required. Please log in to access roles.');
-        }
-        
-        if (uRes.status === 401 || uRes.status === 403) {
-          throw new Error('Authentication required. Please log in to access users.');
-        }
-        
-        if (!rRes.ok) throw new Error('Failed to load roles');
-        if (!uRes.ok) throw new Error('Failed to load users');
-        
-        const rData = await rRes.json();
-        const uData = await uRes.json();
         if (!mounted) return;
-        setRoles(rData || []);
-        setUsers(uData || []);
+        setRoles(rolesData || []);
+        setUsers(usersData || []);
       } catch (err) {
         console.error(err);
         if (mounted) {
@@ -77,15 +65,8 @@ export default function RolesPage() {
     setLoading(true);
     setError(null);
     try {
-      const rRes = await fetchAuth('/api/users/roles/');
-      
-      if (rRes.status === 401 || rRes.status === 403) {
-        throw new Error('Authentication required. Please log in to access roles.');
-      }
-      
-      if (!rRes.ok) throw new Error('Failed to load roles');
-      const rData = await rRes.json();
-      setRoles(rData || []);
+      const rolesData = await getRoles();
+      setRoles(rolesData || []);
     } catch (err) {
       console.error(err);
       setError(String(err));
@@ -111,24 +92,7 @@ export default function RolesPage() {
     }
     
     try {
-      const res = await fetchAuth('/api/users/roles/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newRoleName.trim() }),
-      });
-      
-      if (res.status === 401 || res.status === 403) {
-        throw new Error('Authentication required. Please log in to create roles.');
-      }
-      
-      if (res.status === 405 || res.status === 404) {
-        // API not supported on backend
-        setError('Role creation via API is not enabled on the backend. Use Django admin or contact the server admin.');
-        openNotification('Error', 'Role creation via API is not enabled on the backend. Use Django admin or contact the server admin.', 'error');
-        return;
-      }
-      if (!res.ok) throw new Error(`Failed to create role: ${res.status}`);
-      
+      await createRole({ name: newRoleName.trim() });
       await refresh();
       setShowCreate(false);
       setNewRoleName('');
@@ -161,23 +125,7 @@ export default function RolesPage() {
     }
     
     try {
-      const res = await fetchAuth(`/api/users/roles/${id}/`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editRoleName.trim() }),
-      });
-      
-      if (res.status === 401 || res.status === 403) {
-        throw new Error('Authentication required. Please log in to edit roles.');
-      }
-      
-      if (res.status === 405 || res.status === 404) {
-        setError('Role editing via API is not enabled on the backend. Use Django admin.');
-        openNotification('Error', 'Role editing via API is not enabled on the backend. Use Django admin.', 'error');
-        return;
-      }
-      if (!res.ok) throw new Error(`Failed to edit role: ${res.status}`);
-      
+      await updateRole(id, { name: editRoleName.trim() });
       await refresh();
       setEditingRole(null);
       setEditRoleName('');
@@ -199,19 +147,7 @@ export default function RolesPage() {
     }
     
     try {
-      const res = await fetchAuth(`/api/users/roles/${id}/`, { method: 'DELETE' });
-      
-      if (res.status === 401 || res.status === 403) {
-        throw new Error('Authentication required. Please log in to delete roles.');
-      }
-      
-      if (res.status === 405 || res.status === 404) {
-        setError('Role deletion via API is not enabled on the backend. Use Django admin.');
-        openNotification('Error', 'Role deletion via API is not enabled on the backend. Use Django admin.', 'error');
-        return;
-      }
-      if (!res.ok) throw new Error(`Failed to delete role: ${res.status}`);
-      
+      await deleteRole(id);
       await refresh();
       openNotification('Success', `Role "${role.name}" deleted successfully`, 'success');
     } catch (err) {

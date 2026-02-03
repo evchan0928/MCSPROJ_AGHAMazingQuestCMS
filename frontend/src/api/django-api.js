@@ -376,6 +376,42 @@ export const getRoles = async () => {
 };
 
 /**
+ * Create a new role
+ */
+export const createRole = async (roleData) => {
+  try {
+    const response = await apiClient.post('/users/roles/create/', roleData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Update a role
+ */
+export const updateRole = async (id, roleData) => {
+  try {
+    const response = await apiClient.put(`/users/roles/${id}/`, roleData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Delete a role
+ */
+export const deleteRole = async (id) => {
+  try {
+    const response = await apiClient.delete(`/users/roles/${id}/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
  * Get analytics summary
  */
 export const getAnalyticsSummary = async () => {

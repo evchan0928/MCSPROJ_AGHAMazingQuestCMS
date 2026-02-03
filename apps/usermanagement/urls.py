@@ -6,6 +6,8 @@ urlpatterns = [
     path('', views.user_list_view, name='user-list'),
     path('<int:user_id>/', views.user_detail_view, name='user-detail'),
     path('roles/', views.user_roles_view, name='user-roles'),
+    path('roles/create/', views.create_role_view, name='create-role'),
+    path('roles/<int:role_id>/', views.role_detail_view, name='role-detail'),
     
     # New dashboard URLs
     path('dashboard/stats/', views.get_dashboard_stats, name='dashboard-stats'),
