@@ -1,10 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
@@ -16,13 +13,19 @@ from .models import CustomUserRole  # Changed to import from the local models mo
 from django.db.models import Count, Q
 import json
 
+# Import DRF decorators for JWT authentication
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework import status
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_dashboard_stats(request):
     """
     API endpoint to get dashboard statistics
     """
-    if request.method != 'GET':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
     try:
         # Get published content count
         published_count = ContentItem.objects.filter(status='published').count()
@@ -43,18 +46,17 @@ def get_dashboard_stats(request):
             'notifications': notifications_count
         }
         
-        return JsonResponse(stats_data, status=200)
+        return Response(stats_data, status=status.HTTP_200_OK)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_recent_content(request):
     """
     API endpoint to get recent content items
     """
-    if request.method != 'GET':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
     try:
         # Get the 10 most recently created content items
         recent_content = ContentItem.objects.order_by('-created_at')[:10]
@@ -73,15 +75,15 @@ def get_recent_content(request):
                 'status': item.get_status_display(),  # Using the display value of the status choice
             })
         
-        return JsonResponse(content_list, safe=False, status=200)
+        return Response(content_list, status=status.HTTP_200_OK)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@login_required
-@csrf_exempt
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def user_list_view(request):
-    """View to list, create, update, or delete users."""
+    """View to list, create, or retrieve users."""
     if request.method == 'GET':
         # Return a list of all users with basic info
         users = User.objects.all()
@@ -102,19 +104,19 @@ def user_list_view(request):
             
             # Add role information if available
             try:
-                custom_role = CustomUserRole.objects.get(user=user)
-                user_info['roles'] = [{'id': custom_role.id, 'name': custom_role.role_name}]
+                custom_roles = CustomUserRole.objects.filter(user=user)
+                user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in custom_roles]
             except CustomUserRole.DoesNotExist:
                 user_info['roles'] = []
                 
             user_data.append(user_info)
         
-        return JsonResponse(user_data, safe=False)
+        return Response(user_data)
     
     elif request.method == 'POST':
         # Create a new user
         try:
-            data = json.loads(request.body)
+            data = request.data
             username = data.get('username')
             email = data.get('email')
             password = data.get('password')
@@ -127,20 +129,20 @@ def user_list_view(request):
             
             # Validate required fields
             if not username or not email or not password:
-                return JsonResponse({'error': 'Username, email, and password are required.'}, status=400)
+                return Response({'error': 'Username, email, and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
             
             # Validate password
             try:
                 validate_password(password)
             except ValidationError as e:
-                return JsonResponse({'error': e.messages[0]}, status=400)
+                return Response({'error': e.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
             
             # Check if user already exists
             if User.objects.filter(username=username).exists():
-                return JsonResponse({'error': 'Username already exists.'}, status=400)
+                return Response({'error': 'Username already exists.'}, status=status.HTTP_400_BAD_REQUEST)
             
             if User.objects.filter(email=email).exists():
-                return JsonResponse({'error': 'Email already exists.'}, status=400)
+                return Response({'error': 'Email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
             
             # Create the user
             user = User.objects.create_user(
@@ -185,21 +187,19 @@ def user_list_view(request):
             user_roles = CustomUserRole.objects.filter(user=user)
             user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in user_roles]
             
-            return JsonResponse(user_info, status=201)
+            return Response(user_info, status=status.HTTP_201_CREATED)
         
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON.'}, status=400)
         except ValidationError as e:
-            return JsonResponse({'error': e.messages[0]}, status=400)
+            return Response({'error': e.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-@login_required
-@csrf_exempt
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def user_detail_view(request, user_id):
     """View to retrieve, update, or delete a specific user."""
     try:
@@ -325,7 +325,8 @@ def user_detail_view(request, user_id):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-@login_required
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def user_roles_view(request):
     """View to get all available roles."""
     if request.method != 'GET':
@@ -346,8 +347,8 @@ def user_roles_view(request):
     return JsonResponse(role_list, safe=False)
 
 
-@login_required
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_role_view(request):
     """View to create a new role."""
     if request.method != 'POST':
@@ -383,8 +384,8 @@ def create_role_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@login_required
-@csrf_exempt
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def role_detail_view(request, role_id):
     """View to retrieve, update, or delete a specific role."""
     try:
