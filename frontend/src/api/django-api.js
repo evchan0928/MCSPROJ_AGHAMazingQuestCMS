@@ -376,6 +376,42 @@ export const getRoles = async () => {
 };
 
 /**
+ * Get analytics summary
+ */
+export const getAnalyticsSummary = async () => {
+  try {
+    const response = await apiClient.get('/analytics/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Get content analytics
+ */
+export const getContentAnalytics = async () => {
+  try {
+    const response = await apiClient.get('/analytics/content/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Get user activity analytics
+ */
+export const getUserActivityAnalytics = async () => {
+  try {
+    const response = await apiClient.get('/analytics/users/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
  * Generate analytics report
  */
 export const generateAnalyticsReport = async (params) => {
