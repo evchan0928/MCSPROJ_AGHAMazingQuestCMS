@@ -8,11 +8,29 @@ This project follows a modern full-stack architecture:
 
 - **Backend**: Django + Wagtail CMS with PostgreSQL database
 - **Frontend**: React application
+- **Authentication**: JWT-based authentication system
 - **Deployment**: Docker and Docker Compose
 
 ## Database Configuration
 
 This project is configured to use **PostgreSQL as the sole database**. All data persistence occurs in PostgreSQL with no fallback to SQLite.
+
+## Authentication System
+
+The application implements a robust JWT-based authentication system:
+
+- **Backend**: Django REST Framework with SimpleJWT
+- **Tokens**: Access tokens (15 min expiry) and Refresh tokens (7 day expiry)
+- **Frontend**: React with automatic token management and refresh
+- **Security**: CSRF protection and CORS configuration for safe cross-origin requests
+- **Role-based Access Control**: Custom user roles with different permissions
+
+### Login Flow
+- Root path (`/`) directs to the login page ([SignInScreen.jsx](file:///home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/frontend/src/SignInScreen.jsx))
+- Supports username or email authentication
+- Stores JWT tokens in localStorage
+- Automatically redirects to dashboard after successful authentication
+- Implements automatic token refresh for seamless user experience
 
 ## Prerequisites
 
@@ -53,7 +71,12 @@ This project is configured to use **PostgreSQL as the sole database**. All data 
    python manage.py migrate
    ```
 
-6. Start the development servers:
+6. Create a superuser account:
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+7. Start the development servers:
    ```bash
    # Terminal 1: Start the backend
    cd backend

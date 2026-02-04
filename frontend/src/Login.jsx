@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signInWithEmail } from './api/django-api';
 import './styles.css';
 
 export default function Login({ onLogin }) {
@@ -14,34 +15,25 @@ export default function Login({ onLogin }) {
     setLoading(true);
     setError(null);
     try {
-      const API_BASE = process.env.REACT_APP_API_URL || ((window.location.hostname === 'localhost' && window.location.port === '3000') ? 'http://localhost:8000' : '');
-      const res = await fetch(`${API_BASE}/api/auth/login/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      const ct = (res.headers.get('content-type') || '').toLowerCase();
-      if (ct.includes('application/json')) {
-        const data = await res.json();
-        if (!res.ok) {
-          const message = data.detail || data.message || JSON.stringify(data);
-          console.error('Login failed:', res.status, data);
-          setError(message);
-        } else {
-          try { localStorage.setItem('access', data.access); localStorage.setItem('refresh', data.refresh); } catch (e) { }
-          if (onLogin) {
-            try { onLogin({ access: data.access, refresh: data.refresh }); } catch (e) { console.error('onLogin callback threw', e); }
-          } else {
-            try { window.location.href = '/dashboard'; } catch (e) { console.error(e); }
-          }
+      // Use the API function to sign in
+      const response = await signInWithEmail(username, password);
+      
+      if (onLogin) {
+        try { 
+          onLogin({ access: response.access, refresh: response.refresh }); 
+        } catch (e) { 
+          console.error('onLogin callback threw', e); 
         }
       } else {
-        const text = await res.text();
-        setError(`Expected JSON response but received HTML/text from server:\n${text.substring(0, 1000)}`);
+        try { 
+          window.location.href = '/dashboard'; 
+        } catch (e) { 
+          console.error(e); 
+        }
       }
     } catch (err) {
       console.error('Login request error', err);
-      setError(String(err));
+      setError(err.message || String(err));
     } finally {
       setLoading(false);
     }

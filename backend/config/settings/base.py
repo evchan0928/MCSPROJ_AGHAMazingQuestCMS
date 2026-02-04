@@ -44,7 +44,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"  # Default to True for 
 # accepted when no explicit env var is provided.
 _raw_allowed = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1,hosting-pc.tail013787.ts.net",
+    "localhost,127.0.0.1,hosting-pc.tail013787.ts.net,0.0.0.0,[::],192.168.0.0/16,10.0.0.0/8,172.16.0.0/12",
 )
 ALLOWED_HOSTS = [h.strip() for h in _raw_allowed.split(",") if h.strip()]
 try:
@@ -217,13 +217,66 @@ SITE_ID = int(os.environ.get('DJANGO_SITE_ID', 1))
 # Base URL for Wagtail admin (used in notifications and user bar links)
 WAGTAILADMIN_BASE_URL = os.environ.get('WAGTAILADMIN_BASE_URL', 'http://localhost:8000')
 
-# CORS (for React frontend running on localhost:3000)
+# CORS (for React frontend)
+# Read allowed origins from environment variable for flexibility.
+# Default to common development values if not set.
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://[::1]:3000',      # IPv6 localhost
+    'http://192.168.0.1:3000',  # Common router IP
+    'http://192.168.1.1:3000',  # Another common router IP
+    'http://10.0.0.1:3000',     # Private network
+    'http://172.16.0.1:3000',   # Private network
     'http://172.19.91.23:3000',  # Staging environment IP for frontend
 ]
 CORS_ALLOW_CREDENTIALS = True
+# You can override this with a comma-separated list in the environment variable
+if os.environ.get('CORS_ALLOWED_ORIGINS'):
+    additional_origins = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if origin.strip()]
+    CORS_ALLOWED_ORIGINS.extend(additional_origins)
+
+# Allow all origins if CORS_ALLOWED_ORIGINS is not set (for development)
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
+
+# CSRF Trusted Origins for development
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',  # React development server
+    'http://127.0.0.1:3000',  # IPv4 localhost
+    'http://localhost:8000',  # Django development server
+    'http://127.0.0.1:8000',  # IPv4 localhost
+]
+
+# Add additional trusted origins from environment variable if set
+# This is important for production/staging environments
+if os.environ.get('CSRF_TRUSTED_ORIGINS'):
+    additional_origins = [origin.strip() for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()]
+    CSRF_TRUSTED_ORIGINS.extend(additional_origins)
+    
+# Note: Browsers cache CORS preflight responses (OPTIONS) for 5-15 minutes by default.
+# Use Vary: Origin header in responses to ensure proper caching behavior.
+# Consider adding Cache-Control header with max-age directive if needed.
+
+# Security settings for CORS
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Django REST Framework + Simple JWT configuration
 REST_FRAMEWORK = {

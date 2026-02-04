@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Initialize Django API client
-const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://127.0.0.1:8000/api';
+const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000/api';
 
 // Create an axios instance with default settings
 const apiClient = axios.create({
@@ -59,7 +59,7 @@ apiClient.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
-          const response = await axios.post(`${BACKEND_API_URL}/token/refresh/`, {
+          const response = await axios.post(`${BACKEND_API_URL}/auth/refresh/`, {
             refresh: refreshToken,
           });
           
@@ -90,12 +90,13 @@ export const getApiClient = () => {
 };
 
 /**
- * Sign in with email and password
+ * Sign in with username/email and password
  */
-export const signInWithEmail = async (email, password) => {
+export const signInWithEmail = async (usernameOrEmail, password) => {
   try {
+    // Note: Django backend expects 'username' field which can be either username or email
     const response = await apiClient.post('/auth/login/', {
-      email,
+      username: usernameOrEmail,  // Django backend expects 'username' field which can be either username or email
       password
     });
 
@@ -140,9 +141,11 @@ export const signOut = async () => {
     try {
       await apiClient.post('/auth/logout/');
     } catch (err) {
-      // Ignore logout errors
+      // Ignore logout errors - just ensure local tokens are cleared
+      console.log('Logout notification to backend failed (this is OK):', err);
     }
   } catch (error) {
+    console.error('Error during sign out:', error);
     throw new Error(error.message);
   }
 };
@@ -153,6 +156,18 @@ export const signOut = async () => {
 export const getCurrentUser = async () => {
   try {
     const response = await apiClient.get('/auth/user/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Get the current user profile
+ */
+export const getCurrentUserProfile = async () => {
+  try {
+    const response = await apiClient.get('/auth/me/');
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
