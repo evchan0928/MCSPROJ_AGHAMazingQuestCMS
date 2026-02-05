@@ -63,15 +63,22 @@ def get_recent_content(request):
         
         content_list = []
         for item in recent_content:
-            # Get the author information
-            author_name = item.author.get_full_name() if item.author.get_full_name() else item.author.username
+            # Get the author information using the correct field name
+            author_name = item.created_by.get_full_name() if item.created_by and item.created_by.get_full_name() else (item.created_by.username if item.created_by else 'Unknown')
+            
+            # Get reviewer information using the correct field name
+            reviewer_name = ''
+            if hasattr(item, 'edited_by') and item.edited_by:
+                reviewer_name = item.edited_by.get_full_name() if item.edited_by.get_full_name() else item.edited_by.username
+            else:
+                reviewer_name = 'Auto-assigned'
             
             content_list.append({
                 'id': item.id,
                 'title': item.title,
                 'timestamp': item.created_at.strftime('%d-%B-%Y | %H:%M %p'),
                 'encoded_by': author_name,
-                'reviewed_by': 'Auto-assigned' if not item.reviewer else item.reviewer.get_full_name(),
+                'reviewed_by': reviewer_name,
                 'status': item.get_status_display(),  # Using the display value of the status choice
             })
         

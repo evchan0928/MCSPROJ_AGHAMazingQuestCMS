@@ -1,11 +1,31 @@
 // src/Dashboard.jsx (The complete and correct file structure)
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx';
-import { Card, Statistic, Table, Row, Col, Button, DatePicker, Select } from 'antd';
-import { UserOutlined, FileTextOutlined, ClockCircleOutlined, NotificationOutlined } from '@ant-design/icons';
-import { getDashboardStats, getRecentContent } from './api/django-api';
+import { Card, Statistic, Table, Row, Col, Button, DatePicker, Select, Tabs, Badge, Progress, Skeleton, Alert, notification } from 'antd';
+import { 
+  UserOutlined, 
+  FileTextOutlined, 
+  ClockCircleOutlined, 
+  NotificationOutlined, 
+  TeamOutlined, 
+  BarChartOutlined, 
+  CheckCircleOutlined, 
+  SyncOutlined,
+  EyeOutlined,
+  MessageOutlined
+} from '@ant-design/icons';
+import { 
+  getDashboardStats, 
+  getRecentContent, 
+  getCurrentUser,
+  getUsers,
+  getRoles,
+  getContentAnalytics,
+  getUserActivityAnalytics,
+  getAnalyticsSummary
+} from './api/django-api';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -14,6 +34,7 @@ const Dashboard = () => { // <-- Opening brace for the function body
     const location = useLocation();
     const isIndexRoute = location.pathname === '/dashboard';
 
+    // State for dashboard data
     const [dashboardStats, setDashboardStats] = useState({
         published: 0,
         pendingApproval: 0,
@@ -22,15 +43,36 @@ const Dashboard = () => { // <-- Opening brace for the function body
     });
     
     const [recentContent, setRecentContent] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [contentAnalytics, setContentAnalytics] = useState({});
+    const [userActivity, setUserActivity] = useState({});
+    const [analyticsSummary, setAnalyticsSummary] = useState({});
+    const [loadingStats, setLoadingStats] = useState(true);
     const [loadingContent, setLoadingContent] = useState(true);
+    const [loadingUsers, setLoadingUsers] = useState(true);
+    const [loadingRoles, setLoadingRoles] = useState(true);
+    const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [error, setError] = useState(null);
+    const [api, contextHolder] = notification.useNotification();
 
-    const currentUser = {
-        name: "Super Boss",
-        initials: "SB",
-        roles: ['Super Admin'],
-        is_superuser: true 
+    // Fetch current user data
+    useEffect(() => {
+        fetchCurrentUser();
+    }, []);
+
+    const fetchCurrentUser = async () => {
+        try {
+            const userData = await getCurrentUser();
+            setCurrentUser(userData);
+        } catch (err) {
+            console.error('Error fetching current user:', err);
+            setError('Failed to fetch user information');
+        }
     };
 
+    // Fetch all dashboard data
     useEffect(() => {
         if (isIndexRoute) {
             fetchDashboardData();
@@ -38,25 +80,50 @@ const Dashboard = () => { // <-- Opening brace for the function body
     }, [isIndexRoute]);
 
     const fetchDashboardData = async () => {
+        setError(null);
+        setLoadingStats(true);
         setLoadingContent(true);
+        setLoadingUsers(true);
+        setLoadingRoles(true);
+        setLoadingAnalytics(true);
         
         try {
-            // Fetch dashboard statistics
-            const statsData = await getDashboardStats();
-            setDashboardStats(statsData);
+            // Fetch all data in parallel
+            const [statsData, contentData, usersData, rolesData, contentAnalyticsData, userActivityData, analyticsSummaryData] = await Promise.all([
+                getDashboardStats(),
+                getRecentContent(),
+                getUsers(),
+                getRoles(),
+                getContentAnalytics(),
+                getUserActivityAnalytics(),
+                getAnalyticsSummary()
+            ]);
             
-            // Fetch recent content
-            const contentData = await getRecentContent();
+            setDashboardStats(statsData);
             setRecentContent(contentData);
+            setUsers(usersData);
+            setRoles(rolesData);
+            setContentAnalytics(contentAnalyticsData);
+            setUserActivity(userActivityData);
+            setAnalyticsSummary(analyticsSummaryData);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
+            setError('Failed to load dashboard data. Please try again later.');
+            api.error({
+                message: 'Data Loading Error',
+                description: 'Could not fetch dashboard data. Please refresh the page.',
+            });
         } finally {
+            setLoadingStats(false);
             setLoadingContent(false);
+            setLoadingUsers(false);
+            setLoadingRoles(false);
+            setLoadingAnalytics(false);
         }
     };
 
     // Define table columns for recent content
-    const columns = [
+    const contentColumns = [
         {
             title: 'ID',
             dataIndex: 'id',
@@ -69,17 +136,18 @@ const Dashboard = () => { // <-- Opening brace for the function body
             render: (text) => <span className="table-title">{text}</span>,
         },
         {
-            title: 'Time Stamp',
+            title: 'Timestamp',
             dataIndex: 'timestamp',
             key: 'timestamp',
+            render: (date) => date, // The date is already formatted by the backend
         },
         {
-            title: 'Encoded By',
+            title: 'Author',
             dataIndex: 'encoded_by',
             key: 'encoded_by',
         },
         {
-            title: 'To be Reviewed By',
+            title: 'Reviewer',
             dataIndex: 'reviewed_by',
             key: 'reviewed_by',
         },
@@ -87,27 +155,56 @@ const Dashboard = () => { // <-- Opening brace for the function body
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
-            render: (status) => (
-                <span className={`status-cell status-${status.toLowerCase().replace(' ', '-')}`}>
-                    <span className="status-dot"></span>
-                    {status}
-                </span>
-            ),
+            render: (status) => {
+                const statusColors = {
+                    'For editing': '#9e9e9e',
+                    'For approval': '#ff9800',
+                    'For publishing': '#2196f3',
+                    'Published': '#4caf50',
+                    'Deleted': '#607d8b'
+                };
+                
+                return (
+                    <span className={`status-cell status-${status.toLowerCase().replace(/\s+/g, '-')}`} 
+                          style={{ color: statusColors[status] || '#9e9e9e' }}>
+                        <span 
+                            className="status-dot" 
+                            style={{ 
+                                backgroundColor: statusColors[status] || '#9e9e9e',
+                                display: 'inline-block',
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                marginRight: '6px'
+                            }}
+                        ></span>
+                        {status}
+                    </span>
+                );
+            },
         },
     ];
 
     // 🔑 START OF EXPLICIT RETURN STATEMENT
     return ( 
         <div className="dashboard-layout">
+            {contextHolder}
             {/* 1. Sidebar */}
             <Sidebar user={currentUser} /> 
 
             {/* 2. Main Content */}
             <div className="main-content">
                 <div className="main-header">
-                    <h1>{isIndexRoute ? 'Dashboard' : 'Content Management'}</h1> 
+                    <h1>Dashboard</h1> 
                     <div className="header-controls">
-                        {/* The search, content, and status controls have been removed from here. */}
+                        <Button 
+                            type="primary" 
+                            icon={<SyncOutlined spin={isLoading} />} 
+                            onClick={fetchDashboardData}
+                            disabled={isLoading}
+                        >
+                            Refresh Data
+                        </Button>
                     </div>
                 </div>
 
@@ -117,95 +214,168 @@ const Dashboard = () => { // <-- Opening brace for the function body
                 {/* Dynamic Dashboard Content only rendered on the index route */}
                 {isIndexRoute && (
                     <React.Fragment>
-                        {/* Date and Product Filters (EDITED BLOCK START) */}
-                        <div className="filter-row">
-                            {/* START DATE FILTER GROUP */}
-                            <div className="filter-group">
-                                <label htmlFor="startDate">Start Date</label>
-                                <div className="date-filter">
-                                    <RangePicker />
-                                </div>
-                            </div>
-                            
-                            {/* PRODUCT TYPE FILTER GROUP */}
-                            <div className="filter-group">
-                                <label htmlFor="productType">Product Type</label>
-                                <Select defaultValue="AR Marker" style={{ width: '100%' }} allowClear>
-                                    <Option value="AR Marker">AR Marker</Option>
-                                    <Option value="Video Content">Video Content</Option>
-                                    <Option value="Image Content">Image Content</Option>
-                                    <Option value="Document">Document</Option>
-                                </Select>
-                            </div>
-                            
-                            <Button type="primary" className="get-data-btn">Get Data</Button>
-                        </div>
-                        {/* Date and Product Filters (EDITED BLOCK END) */}
-
-                        {/* Stat Cards */}
-                        <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
-                            <Col xs={24} sm={12} md={6}>
-                                <Card>
-                                    <Statistic
-                                        title="Published"
-                                        value={dashboardStats.published || 0}
-                                        prefix={<FileTextOutlined />}
-                                        valueStyle={{ color: '#4CAF50' }}
-                                    />
-                                </Card>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Card>
-                                    <Statistic
-                                        title="Pending Approval"
-                                        value={dashboardStats.pendingApproval || 0}
-                                        prefix={<ClockCircleOutlined />}
-                                        valueStyle={{ color: '#FFC107' }}
-                                    />
-                                </Card>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Card>
-                                    <Statistic
-                                        title="Active Users"
-                                        value={dashboardStats.activeUsers || 0}
-                                        prefix={<UserOutlined />}
-                                        valueStyle={{ color: '#2196F3' }}
-                                    />
-                                </Card>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Card>
-                                    <Statistic
-                                        title="Notifications"
-                                        value={dashboardStats.notifications || 0}
-                                        prefix={<NotificationOutlined />}
-                                        valueStyle={{ color: '#FF9800' }}
-                                    />
-                                </Card>
-                            </Col>
-                        </Row>
-
-                        {/* Recent Content Table */}
-                        <div className="data-table-container">
-                            <Table
-                                dataSource={recentContent}
-                                columns={columns}
-                                rowKey="id"
-                                loading={loadingContent}
-                                pagination={{
-                                    pageSize: 10,
-                                    showSizeChanger: true,
-                                    showQuickJumper: true,
-                                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-                                }}
+                        {/* Error message if any */}
+                        {error && (
+                            <Alert 
+                                message="Error" 
+                                description={error} 
+                                type="error" 
+                                closable 
+                                style={{ marginBottom: '16px' }}
                             />
-                        </div>
+                        )}
+
+                        {/* Loading indicator */}
+                        {isLoading && (
+                            <div style={{ textAlign: 'center', padding: '20px' }}>
+                                <SyncOutlined spin style={{ fontSize: '24px' }} />
+                                <p>Loading dashboard data...</p>
+                            </div>
+                        )}
+
+                        {!isLoading && (
+                            <React.Fragment>
+                                {/* Date and Product Filters (EDITED BLOCK START) */}
+                                <div className="filter-row">
+                                    {/* START DATE FILTER GROUP */}
+                                    <div className="filter-group">
+                                        <label htmlFor="startDate">Start Date</label>
+                                        <div className="date-filter">
+                                            <RangePicker />
+                                        </div>
+                                    </div>
+                                    
+                                    {/* PRODUCT TYPE FILTER GROUP */}
+                                    <div className="filter-group">
+                                        <label htmlFor="productType">Product Type</label>
+                                        <Select defaultValue="All Content" style={{ width: '100%' }} allowClear>
+                                            <Option value="All Content">All Content</Option>
+                                            <Option value="AR Marker">AR Marker</Option>
+                                            <Option value="Video Content">Video Content</Option>
+                                            <Option value="Image Content">Image Content</Option>
+                                            <Option value="Document">Document</Option>
+                                        </Select>
+                                    </div>
+                                    
+                                    <Button type="primary" className="get-data-btn">Get Data</Button>
+                                </div>
+                                {/* Date and Product Filters (EDITED BLOCK END) */}
+
+                                {/* Stat Cards */}
+                                <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+                                    <Col xs={24} sm={12} md={6}>
+                                        <Card>
+                                            <Statistic
+                                                title="Published Content"
+                                                value={dashboardStats.published || 0}
+                                                prefix={<FileTextOutlined />}
+                                                valueStyle={{ color: '#4CAF50' }}
+                                            />
+                                        </Card>
+                                    </Col>
+                                    <Col xs={24} sm={12} md={6}>
+                                        <Card>
+                                            <Statistic
+                                                title="Pending Approval"
+                                                value={dashboardStats.pendingApproval || 0}
+                                                prefix={<ClockCircleOutlined />}
+                                                valueStyle={{ color: '#FFC107' }}
+                                            />
+                                        </Card>
+                                    </Col>
+                                    <Col xs={24} sm={12} md={6}>
+                                        <Card>
+                                            <Statistic
+                                                title="Active Users"
+                                                value={dashboardStats.activeUsers || 0}
+                                                prefix={<UserOutlined />}
+                                                valueStyle={{ color: '#2196F3' }}
+                                            />
+                                        </Card>
+                                    </Col>
+                                    <Col xs={24} sm={12} md={6}>
+                                        <Card>
+                                            <Statistic
+                                                title="Notifications"
+                                                value={dashboardStats.notifications || 0}
+                                                prefix={<NotificationOutlined />}
+                                                valueStyle={{ color: '#FF9800' }}
+                                            />
+                                        </Card>
+                                    </Col>
+                                </Row>
+
+                                {/* Tabs for different data views */}
+                                <Tabs defaultActiveKey="overview" style={{ marginBottom: '24px' }}>
+                                    <TabPane tab={<span><BarChartOutlined /> Overview</span>} key="overview">
+                                        <Row gutter={[24, 24]}>
+                                            <Col xs={24} md={16}>
+                                                {/* Recent Content Table */}
+                                                <Card title="Recent Content" extra={<EyeOutlined />}>
+                                                    <Table
+                                                        dataSource={recentContent}
+                                                        columns={contentColumns}
+                                                        rowKey="id"
+                                                        loading={loadingContent}
+                                                        pagination={{
+                                                            pageSize: 10,
+                                                            showSizeChanger: true,
+                                                            showQuickJumper: true,
+                                                            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                                                        }}
+                                                    />
+                                                </Card>
+                                            </Col>
+                                            <Col xs={24} md={8}>
+                                                {/* Activity Chart */}
+                                                <Card title="User Activity" extra={<MessageOutlined />}>
+                                                    <ActivityChart />
+                                                </Card>
+                                            </Col>
+                                        </Row>
+                                    </TabPane>
+                                    
+                                    <TabPane tab={<span><TeamOutlined /> Users</span>} key="users">
+                                        <Card title="User Management">
+                                            <Table
+                                                dataSource={users}
+                                                columns={userColumns}
+                                                rowKey="id"
+                                                loading={loadingUsers}
+                                                pagination={{
+                                                    pageSize: 10,
+                                                    showSizeChanger: true,
+                                                    showQuickJumper: true,
+                                                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                                                }}
+                                            />
+                                        </Card>
+                                    </TabPane>
+                                    
+                                    <TabPane tab={<span><CheckCircleOutlined /> Roles</span>} key="roles">
+                                        <Card title="Role Management">
+                                            <Table
+                                                dataSource={roles}
+                                                columns={roleColumns}
+                                                rowKey="id"
+                                                loading={loadingRoles}
+                                                pagination={{
+                                                    pageSize: 10,
+                                                    showSizeChanger: true,
+                                                    showQuickJumper: true,
+                                                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                                                }}
+                                            />
+                                        </Card>
+                                    </TabPane>
+                                </Tabs>
+                            </React.Fragment>
+                        )}
                     </React.Fragment>
                 )}
             </div>
         </div>
-    ); // <-- Closing parenthesis for the return statement
-}; // <-- Closing brace for the Dashboard function body
+    );
+}; 
 
 export default Dashboard;

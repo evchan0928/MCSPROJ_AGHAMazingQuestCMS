@@ -1,84 +1,40 @@
 # AGHAMazingQuestCMS
 
-A comprehensive content management system for educational content and quests.
+An educational content management system built with React frontend and Django/Wagtail backend, featuring comprehensive dashboard and role-based access control.
 
-## Project Structure
+## Features
 
-This project follows a modern full-stack architecture:
+- **Full-Stack Dashboard**: Comprehensive dashboard with real-time data from all system components
+- **Role-Based Access Control**: Different permissions for encoders, editors, approvers, admins, and super admins
+- **Content Lifecycle Management**: Complete workflow from creation to publication
+- **Advanced Analytics**: Detailed reports and insights
+- **Secure Authentication**: JWT-based authentication with refresh token support
 
-- **Backend**: Django + Wagtail CMS with PostgreSQL database
-- **Frontend**: React application
-- **Deployment**: Docker and Docker Compose
+## Dashboard Overview
 
-## Database Configuration
+The dashboard provides real-time visibility into:
 
-This project is configured to use **PostgreSQL as the sole database**. All data persistence occurs in PostgreSQL with no fallback to SQLite.
+- **Content Metrics**: Published content, pending approvals, and content lifecycle tracking
+- **User Management**: Active users, roles, and permissions overview
+- **System Analytics**: Usage statistics and performance metrics
+- **Recent Activity**: Latest content updates and user actions
 
-## Prerequisites
+## Architecture
 
-- Python 3.11+
-- Node.js 18+
-- Docker and Docker Compose
-- PostgreSQL (either local installation or via Docker)
-
-## Installation and Setup
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd MCSPROJ_AGHAMazingQuestCMS
-   ```
-
-2. Install backend dependencies:
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
-
-3. Install frontend dependencies:
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-4. Configure your environment:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your PostgreSQL connection details
-   ```
-
-5. Run database migrations:
-   ```bash
-   cd ../backend
-   python manage.py migrate
-   ```
-
-6. Start the development servers:
-   ```bash
-   # Terminal 1: Start the backend
-   cd backend
-   python manage.py runserver
-   
-   # Terminal 2: Start the frontend
-   cd frontend
-   npm start
-   ```
-
-## Docker Deployment
-
-To run the entire stack using Docker:
-
-```bash
-cd devops
-docker-compose -f docker-compose-fullstack.yml up -d
+```
+Internet -> nginx (Port 80/443) -> React Frontend & Django/Wagtail Backend
+                     |
+              -------------------
+              |                 |
+       Django/Wagtail      React App
+       PostgreSQL          (Served by nginx)
 ```
 
-## Database Management
+## Setup
 
-With PostgreSQL configured as the primary database:
-- Access pgAdmin at http://localhost:5050 (credentials in [.env](file:///home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS/.env))
-- All migrations are applied to PostgreSQL
-- Data integrity is maintained through PostgreSQL constraints
+See [FULL_STACK_SETUP.md](FULL_STACK_SETUP.md) for detailed setup instructions.
+
+
 
 ## Environment Variables
 

@@ -198,7 +198,7 @@ export const getContentItems = async () => {
  */
 export const getDashboardStats = async () => {
   try {
-    const response = await apiClient.get('/dashboard/stats/');
+    const response = await apiClient.get('/users/dashboard/stats/');  // Updated to use the correct endpoint
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -210,7 +210,7 @@ export const getDashboardStats = async () => {
  */
 export const getRecentContent = async () => {
   try {
-    const response = await apiClient.get('/content/recent/');
+    const response = await apiClient.get('/users/content/recent/');  // Updated to use the correct endpoint
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
