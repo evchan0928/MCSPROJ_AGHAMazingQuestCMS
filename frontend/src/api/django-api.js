@@ -206,6 +206,18 @@ export const getDashboardStats = async () => {
 };
 
 /**
+ * Get recent content items
+ */
+export const getRecentContent = async () => {
+  try {
+    const response = await apiClient.get('/users/content/recent/');  // Updated to use the correct endpoint
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
  * Get recent content items with optional filters
  */
 export const getFilteredContent = async (filters = {}) => {
