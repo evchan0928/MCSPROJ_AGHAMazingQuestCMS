@@ -27,6 +27,7 @@ export default function UploadContentPage() {
 
   const [imageFile, setImageFile] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
+  const [audioFile, setAudioFile] = useState(null);  // Adding audio file state
   const [loading, setLoading] = useState(false);
 
   // Generic handler for all input changes
@@ -46,6 +47,11 @@ export default function UploadContentPage() {
     setPdfFile(e.target.files[0]);
   };
 
+  // Handle audio file changes
+  const handleAudioFileChange = (e) => {
+    setAudioFile(e.target.files[0]);
+  };
+
   // Handle rich text editor changes
   const handleRichTextChange = (field, content) => {
     setFormData(prev => ({
@@ -57,6 +63,22 @@ export default function UploadContentPage() {
   const [api, contextHolder] = notification.useNotification();
 
   const handleSaveDraft = async () => {
+    // Validate required fields
+    if (!formData.title.trim()) {
+      message.error('Title is required');
+      return;
+    }
+    
+    if (!formData.meta_keywords.trim()) {
+      message.error('Meta Keywords are required');
+      return;
+    }
+    
+    if (!formData.meta_description.trim()) {
+      message.error('Meta Description is required');
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -65,17 +87,24 @@ export default function UploadContentPage() {
       
       // Add all form fields to FormData
       Object.entries(formData).forEach(([key, value]) => {
-        contentData.append(key, value);
+        // Special handling for booleans - convert to strings as Django expects
+        if(typeof value === 'boolean') {
+          contentData.append(key, value.toString());
+        } else {
+          contentData.append(key, value);
+        }
       });
       
-      // Add file if available
-      if (imageFile) {
-        contentData.append('file', imageFile);
+      // Add file if available - prioritize audio file if content type is audio
+      if (formData.content_type === 'audio' && audioFile) {
+        contentData.append('file', audioFile, audioFile.name);
+      } else if (imageFile) {
+        contentData.append('file', imageFile, imageFile.name);
       } else if (pdfFile) {
-        contentData.append('file', pdfFile);
+        contentData.append('file', pdfFile, pdfFile.name);
       }
       
-      // Set status to draft
+      // Set status to for editing (draft state)
       contentData.set('status', 'for_editing');
 
       const result = await createContentItem(contentData);
@@ -83,7 +112,8 @@ export default function UploadContentPage() {
       navigate('/dashboard/content/list'); // Redirect to content list
     } catch (error) {
       console.error('Error saving draft:', error);
-      message.error(`Failed to save draft: ${error.message}`);
+      console.error('Error details:', error.response?.data);
+      message.error(`Failed to save draft: ${error.message || error.response?.data?.detail || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -91,6 +121,23 @@ export default function UploadContentPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.title.trim()) {
+      message.error('Title is required');
+      return;
+    }
+    
+    if (!formData.meta_keywords.trim()) {
+      message.error('Meta Keywords are required');
+      return;
+    }
+    
+    if (!formData.meta_description.trim()) {
+      message.error('Meta Description is required');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -99,14 +146,21 @@ export default function UploadContentPage() {
       
       // Add all form fields to FormData
       Object.entries(formData).forEach(([key, value]) => {
-        contentData.append(key, value);
+        // Special handling for booleans - convert to strings as Django expects
+        if(typeof value === 'boolean') {
+          contentData.append(key, value.toString());
+        } else {
+          contentData.append(key, value);
+        }
       });
       
-      // Add file if available
-      if (imageFile) {
-        contentData.append('file', imageFile);
+      // Add file if available - prioritize audio file if content type is audio
+      if (formData.content_type === 'audio' && audioFile) {
+        contentData.append('file', audioFile, audioFile.name);
+      } else if (imageFile) {
+        contentData.append('file', imageFile, imageFile.name);
       } else if (pdfFile) {
-        contentData.append('file', pdfFile);
+        contentData.append('file', pdfFile, pdfFile.name);
       }
       
       // Set status to for approval
@@ -118,7 +172,8 @@ export default function UploadContentPage() {
       navigate('/dashboard/content/approve'); // Redirect to approve content page
     } catch (error) {
       console.error('Error submitting content:', error);
-      message.error(`Failed to submit content: ${error.message}`);
+      console.error('Error details:', error.response?.data);
+      message.error(`Failed to submit content: ${error.message || error.response?.data?.detail || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -228,6 +283,7 @@ export default function UploadContentPage() {
               <option value="image">Image</option>
               <option value="video">Video</option>
               <option value="document">Document</option>
+              <option value="audio">Audio</option>  {/* Adding audio option */}
             </select>
           </div>
 
@@ -520,24 +576,45 @@ export default function UploadContentPage() {
               </label>
             </div>
 
-            {/* Row 7: PDF Upload (Full Width) */}
+          {/* Row 7: PDF Upload (Full Width) */}
+          <div className="grid-item-1-6">
+            <div className="file-upload-box pdf-upload-box">
+              <input
+                type="file"
+                id="pdfFile"
+                name="pdfFile"
+                className="file-upload-input"
+                onChange={handlePdfFileChange}
+                accept="application/pdf"
+              />
+              <label htmlFor="pdfFile" className="file-upload-label">
+                <span className="material-icons upload-icon">picture_as_pdf</span>
+                <p>Drag and drop PDF file here, or <span>Browse</span></p>
+                <p className="upload-hint">Max PDF file size is 10MB</p>
+              </label>
+            </div>
+          </div>
+
+          {/* Row 7: Audio Upload (Full Width) - conditionally rendered if content type is audio */}
+          {formData.content_type === 'audio' && (
             <div className="grid-item-1-6">
-              <div className="file-upload-box pdf-upload-box">
+              <div className="file-upload-box audio-upload-box">
                 <input
                   type="file"
-                  id="pdfFile"
-                  name="pdfFile"
+                  id="audioFile"
+                  name="audioFile"
                   className="file-upload-input"
-                  onChange={handlePdfFileChange}
-                  accept="application/pdf"
+                  onChange={(e) => setAudioFile(e.target.files[0])}
+                  accept="audio/mp3,audio/mpeg,audio/wav,audio/flac"
                 />
-                <label htmlFor="pdfFile" className="file-upload-label">
-                  <span className="material-icons upload-icon">picture_as_pdf</span>
-                  <p>Drag and drop PDF file here, or <span>Browse</span></p>
-                  <p className="upload-hint">Max PDF file size is 10MB</p>
+                <label htmlFor="audioFile" className="file-upload-label">
+                  <span className="material-icons upload-icon">audiotrack</span>
+                  <p>Drag and drop audio file here, or <span>Browse</span></p>
+                  <p className="upload-hint">Supported formats: MP3, WAV, FLAC. Max file size is 50MB</p>
                 </label>
               </div>
             </div>
+          )}
 
           </div> {/* End form-grid */}
         </form>

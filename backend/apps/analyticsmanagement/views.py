@@ -200,6 +200,7 @@ def generate_analytics_report(request):
                 })
         
         # Create summary data
+        User = get_user_model()  # Define User model in this function scope
         summary = {
             'total_views': sum([item['views'] for item in top_content]) if top_content else 0,
             'new_users': User.objects.filter(date_joined__gte=timezone.now() - timedelta(days=30)).count(),

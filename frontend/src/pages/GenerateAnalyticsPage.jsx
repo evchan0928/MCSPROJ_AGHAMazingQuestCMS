@@ -63,21 +63,21 @@ const GenerateAnalyticsPage = () => {
       // Add views over time data
       csvContent += "\nViews Over Time:\n";
       csvContent += "Date,Views\n";
-      reportData.viewsOverTime.forEach(item => {
+      (reportData.views_over_time || []).forEach(item => {
         csvContent += `${item.date},${item.views}\n`;
       });
       
       // Add content distribution
       csvContent += "\nContent Distribution:\n";
       csvContent += "Content Type,Value\n";
-      reportData.contentDistribution.forEach(item => {
+      (reportData.content_distribution || []).forEach(item => {
         csvContent += `${item.name},${item.value}\n`;
       });
       
       // Add top content
       csvContent += "\nTop Performing Content:\n";
       csvContent += "Title,Views\n";
-      reportData.topContent.forEach(item => {
+      (reportData.top_content || []).forEach(item => {
         csvContent += `${item.title},${item.views}\n`;
       });
       

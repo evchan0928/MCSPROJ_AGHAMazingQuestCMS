@@ -29,9 +29,8 @@ import ApproveContentPage from './pages/ApproveContentPage.jsx';
 import PublishContentPage from './pages/PublishContentPage.jsx';
 import DeleteContentPage from './pages/DeleteContentPage.jsx';
 import PublishedContentPage from './pages/PublishedContentPage.jsx';
-
-// 🔑 IMPORT: Roles Page
-import RolesPage from './pages/RolesPage.jsx';
+import ContentDetailPage from './pages/ContentDetailPage.jsx';  // Import the content detail page
+import RolesPage from './pages/RolesPage.jsx';  // Adding the missing import for RolesPage
 
 // 🔑 REMOVED: Generic placeholder component
 
@@ -56,6 +55,7 @@ function App() {
           
           {/* 🔑 ADDED: Route for the actual editing form (requires ID) */}
           <Route path="content/edit/:id" element={<EditContentPage />} />
+          <Route path="content/detail/:id" element={<ContentDetailPage />} />  {/* Adding content detail route */}
 
           <Route path="content/approve" element={<ApproveContentPage />} />
           <Route path="content/publish" element={<PublishContentPage />} />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Tag, Modal, notification, Card } from 'antd';
-import { EditOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, PushpinOutlined, PlayCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import { EditOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, PushpinOutlined, PlayCircleOutlined, UploadOutlined, EyeOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';  // Adding useNavigate import
 import { 
   getContentItems, 
   getCurrentUser, 
@@ -17,6 +18,7 @@ const ContentList = () => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [api, contextHolder] = notification.useNotification();
+  const navigate = useNavigate();  // Initialize navigate hook
 
   // Wrap functions in useCallback to satisfy ESLint requirements
   const fetchUserData = React.useCallback(async () => {
@@ -45,8 +47,10 @@ const ContentList = () => {
         id: item.id,
         title: item.title,
         status: item.status,
-        type: item.file ? (item.file.endsWith('.mp4') || item.file.endsWith('.mov') ? 'video' : 
-                          item.file.endsWith('.jpg') || item.file.endsWith('.png') || item.file.endsWith('.jpeg') ? 'image' : 'text') : 'text',
+        type: item.content_type ? item.content_type : 
+             item.file ? (item.file.endsWith('.mp4') || item.file.endsWith('.mov') ? 'video' : 
+                         item.file.endsWith('.jpg') || item.file.endsWith('.png') || item.file.endsWith('.jpeg') ? 'image' :
+                         item.file.endsWith('.mp3') || item.file.endsWith('.wav') || item.file.endsWith('.flac') ? 'audio' : 'text') : 'text',
         author: item.created_by?.username || 'Unknown',
         createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A',
         item: item // Keep the original item for reference
@@ -228,10 +232,13 @@ const ContentList = () => {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
-      render: (text) => (
-        <div className="title-truncated" title={text}>
+      render: (text, record) => (
+        <a href="#" onClick={(e) => {
+          e.preventDefault();
+          navigate(`/dashboard/content/detail/${record.id}`);
+        }} className="title-truncated" title={text}>
           {text}
-        </div>
+        </a>
       ),
       width: 250,
     },
@@ -352,10 +359,13 @@ const ContentList = () => {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
-      render: (text) => (
-        <div className="title-truncated" title={text}>
+      render: (text, record) => (
+        <a href="#" onClick={(e) => {
+          e.preventDefault();
+          navigate(`/dashboard/content/detail/${record.id}`);
+        }} className="title-truncated" title={text}>
           {text}
-        </div>
+        </a>
       ),
       width: 200,
     },
@@ -369,6 +379,8 @@ const ContentList = () => {
             <PlayCircleOutlined className="preview-icon video-icon" />
           ) : type === 'image' ? (
             <UploadOutlined className="preview-icon image-icon" />
+          ) : type === 'audio' ? (
+            <PlayCircleOutlined className="preview-icon audio-icon" />
           ) : (
             <span>No Preview</span>
           )}
@@ -412,6 +424,16 @@ const ContentList = () => {
                 onClick={() => handleAction('Edit', record)}
               >
                 Edit
+              </Button>
+            )}
+            {/* Add view button for published content */}
+            {record.item && record.item.status === 'published' && (
+              <Button 
+                size="middle" 
+                icon={<EyeOutlined />}
+                onClick={() => navigate(`/dashboard/content/detail/${record.id}`)}
+              >
+                View
               </Button>
             )}
             {availableActions.includes('SubmitForApproval') && (
@@ -483,7 +505,7 @@ const ContentList = () => {
 
   // Separate text and media content
   const textContents = contents.filter(item => item.type === 'text');
-  const mediaContents = contents.filter(item => ['image', 'video'].includes(item.type));
+  const mediaContents = contents.filter(item => ['image', 'video', 'audio'].includes(item.type));  // Including audio in media
 
   return (
     <>

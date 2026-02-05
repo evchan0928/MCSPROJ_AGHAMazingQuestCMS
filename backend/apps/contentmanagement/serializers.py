@@ -9,6 +9,7 @@ User = get_user_model()
 
 class ContentItemSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField(read_only=True)
+    audio_url = serializers.SerializerMethodField(read_only=True)
     # Expose related user objects (read-only) so the frontend can show names
     created_by = UserSerializer(read_only=True)
     edited_by = UserSerializer(read_only=True)
@@ -22,6 +23,7 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'created_by', 'created_at', 'edited_by', 'edited_at',
             'approved_by', 'approved_at', 'published_by', 'published_at', 'is_deleted',
             'file_url',
+            'audio_url',
             # Additional content management fields
             'content_type', 'meta_keywords', 'meta_description', 'photo_caption', 
             'highlights', 'ar_marker', 'quiz', 'enable_badges', 'chat_bot_allow', 'exclude_audio'
@@ -49,6 +51,35 @@ class ContentItemSerializer(serializers.ModelSerializer):
         try:
             if not obj.file:
                 return None
+            request = self.context.get('request') if self.context else None
+            url = obj.file.url
+            if request:
+                return request.build_absolute_uri(url)
+            # Fallback: if url is already absolute, return it; else prefix origin
+            if url.startswith('http'):
+                return url
+            return f"{request.scheme if request else 'https'}://{request.get_host() if request else ''}{url}"
+        except Exception:
+            return None
+
+    def get_audio_url(self, obj):
+        """Return an absolute URL for the attached audio if present.
+
+        Uses request in context when available so the mobile app gets a usable URL.
+        """
+        try:
+            if not obj.audio:
+                return None
+            request = self.context.get('request') if self.context else None
+            url = obj.audio.url
+            if request:
+                return request.build_absolute_uri(url)
+            # Fallback: if url is already absolute, return it; else prefix origin
+            if url.startswith('http'):
+                return url
+            return f"{request.scheme if request else 'https'}://{request.get_host() if request else ''}{url}"
+        except Exception:
+            return None
             request = self.context.get('request') if self.context else None
             url = obj.file.url
             if request:

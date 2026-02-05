@@ -261,21 +261,28 @@ export const getFilteredContent = async (filters = {}) => {
  */
 export const createContentItem = async (data) => {
   try {
-    const formData = new FormData();
-    
-    // Map the frontend field names to backend field names
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined && data[key] !== null) {
-        // Convert boolean values to strings as Django expects
-        if (typeof data[key] === 'boolean') {
-          formData.append(key, data[key].toString());
-        } else {
-          formData.append(key, data[key]);
+    // Check if data is already a FormData instance
+    let formDataToSend;
+    if (data instanceof FormData) {
+      formDataToSend = data;
+    } else {
+      // For backward compatibility, create FormData from plain object
+      formDataToSend = new FormData();
+      
+      // Map the frontend field names to backend field names
+      Object.keys(data).forEach(key => {
+        if (data[key] !== undefined && data[key] !== null) {
+          // Convert boolean values to strings as Django expects
+          if (typeof data[key] === 'boolean') {
+            formDataToSend.append(key, data[key].toString());
+          } else {
+            formDataToSend.append(key, data[key]);
+          }
         }
-      }
-    });
+      });
+    }
     
-    const response = await apiClient.post('/content/items/', formData, {
+    const response = await apiClient.post('/content/items/', formDataToSend, {
       headers: {
         'Content-Type': 'multipart/form-data',
       }
@@ -283,7 +290,8 @@ export const createContentItem = async (data) => {
     
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.detail || error.message);
+    console.error('Error creating content item:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || error.response?.data?.title?.[0] || error.response?.data?.non_field_errors?.[0] || error.message);
   }
 };
 

@@ -3,6 +3,28 @@ from wagtail.models import Page
 from django.conf import settings
 from django.utils import timezone
 from django.utils.text import slugify
+from django.core.exceptions import ValidationError
+import os
+
+
+def validate_audio_file_extension(value):
+    """Validate that uploaded files are audio files when content type is audio"""
+    if hasattr(value, 'name'):  # Check if value has a name attribute
+        ext = os.path.splitext(value.name)[1].lower()
+        valid_extensions = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a']
+        if ext not in valid_extensions:
+            raise ValidationError('Unsupported file extension. Only audio files (.mp3, .wav, .flac, .aac, .ogg, .m4a) are allowed.')
+
+
+def validate_file_extension(value):
+    """Generic file validation based on content_type"""
+    if hasattr(value, 'name'):  # Check if value has a name attribute
+        ext = os.path.splitext(value.name)[1].lower()
+        
+        # Get the content_type from the instance if possible
+        # This will be called during save, so we need to handle this differently
+        pass  # We'll implement validation in the clean method instead
+
 
 class HomePage(Page):
     pass
@@ -34,6 +56,7 @@ class ContentItem(models.Model):
         ('image', 'Image'),
         ('video', 'Video'),
         ('document', 'Document'),
+        ('audio', 'Audio'),  # Adding audio content type
     ])
     meta_keywords = models.TextField(blank=True)
     meta_description = models.TextField(blank=True)
@@ -64,7 +87,32 @@ class ContentItem(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+    def clean(self):
+        """Custom validation for file types based on content_type"""
+        super().clean()
+        
+        if self.file and self.content_type:
+            ext = os.path.splitext(self.file.name)[1].lower()
+            
+            # Define valid extensions for each content type
+            valid_extensions_map = {
+                'text': ['.txt', '.doc', '.docx'],
+                'image': ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg'],
+                'video': ['.mp4', '.avi', '.mov', '.wmv', '.mkv', '.flv'],
+                'document': ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods', '.odp'],
+                'audio': ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a']
+            }
+            
+            valid_extensions = valid_extensions_map.get(self.content_type, [])
+            
+            if valid_extensions and ext not in valid_extensions:
+                raise ValidationError({
+                    'file': f'Invalid file type for {self.content_type} content. Valid extensions are: {", ".join(valid_extensions)}'
+                })
+
     def save(self, *args, **kwargs):
+        # Run validation before saving
+        self.clean()
         if not self.slug:
             base = slugify(self.title) if self.title else 'content'
             slug = base

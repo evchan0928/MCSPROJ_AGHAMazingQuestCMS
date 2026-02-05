@@ -1450,3 +1450,54 @@ html, body, #root, .dashboard-layout {
   font-size: 1.2rem;
   color: #2b3e6e;
 }
+/* Audio upload box specific styling */
+.audio-upload-box {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  background-color: #fafafa;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.audio-upload-box:hover {
+  border-color: #40a9ff;
+  background-color: #e6f7ff;
+}
+
+.audio-upload-box.drag-over {
+  border-color: #1890ff;
+  background-color: #e6f7ff;
+}
+
+/* Additional styles for file upload boxes */
+.file-upload-box {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-upload-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.file-upload-label {
+  display: block;
+  cursor: pointer;
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.file-upload-box:hover .upload-icon {
+  color: #40a9ff;
+}

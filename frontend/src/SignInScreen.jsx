@@ -1,5 +1,5 @@
 // src/SignInScreen.jsx
-import React, { useState } from 'react'; 
+import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmail } from './api/django-api'; // Import the authentication function
 import LogosContainer from './LogosContainer'; 
@@ -17,7 +17,16 @@ const SignInScreen = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleContinue = async () => {
+    // Check if user is already logged in
+    useEffect(() => {
+        const accessToken = localStorage.getItem('access');
+        if (accessToken) {
+            navigate('/dashboard');
+        }
+    }, [navigate]);
+
+    const handleContinue = async (e) => {
+        e.preventDefault();
         setError(''); 
 
         if (!isValidInput(emailOrUsername) || !isValidInput(password)) {
@@ -31,9 +40,26 @@ const SignInScreen = () => {
             // Make the actual API call to authenticate
             const response = await signInWithEmail(emailOrUsername, password);
             console.log('Login successful. Redirecting to Dashboard. Remember Me:', rememberMe);
+            
+            // If rememberMe is unchecked, we could potentially use sessionStorage instead of localStorage
+            // But by default, tokens are stored in localStorage by the signInWithEmail function
+            
             navigate('/dashboard'); 
         } catch (err) {
-            setError('Invalid credentials. Please try again.');
+            // Extract error message from response
+            let errorMessage = 'Invalid credentials. Please try again.';
+            if (err.response) {
+                // Server responded with error status
+                if (err.response.data && err.response.data.detail) {
+                    errorMessage = err.response.data.detail;
+                } else if (err.response.data && typeof err.response.data === 'object') {
+                    errorMessage = Object.values(err.response.data)[0]; // Take first error message
+                }
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            setError(errorMessage);
             console.error('Login failed:', err);
         } finally {
             setLoading(false);
@@ -45,6 +71,13 @@ const SignInScreen = () => {
         navigate('/forgot-password'); 
     }
     
+    // Handle Enter key press
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            handleContinue(e);
+        }
+    }
+    
     // 🗑️ REMOVED: handleSignUpClick function
 
     return (
@@ -54,7 +87,7 @@ const SignInScreen = () => {
                     
                     <h1 className="signin-title">Sign In to AGHAMazing Quest CMS</h1>
                     <p className="welcome-back-subtitle">Welcome Back!</p>
-                    <p className="enter-email-text">Enter your email to sign in for this app</p>
+                    <p className="enter-email-text">Enter your credentials to sign in to this app</p>
 
                     <input 
                         type="text"
@@ -63,6 +96,7 @@ const SignInScreen = () => {
                         value={emailOrUsername}
                         onChange={(e) => setEmailOrUsername(e.target.value)}
                         className="signin-input" 
+                        onKeyPress={handleKeyPress}
                     />
 
                     <input 
@@ -72,6 +106,7 @@ const SignInScreen = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="signin-input" 
+                        onKeyPress={handleKeyPress}
                     />
                     
                     {error && <p style={{ color: '#d93025', fontSize: '0.85em', marginTop: '-10px', marginBottom: '10px' }}>{error}</p>}

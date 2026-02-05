@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Form, Input, Button, Card, message, Spin, Select, Upload } from 'antd';
+import { Form, Input, Button, Card, message, Spin, Select, Upload, Switch } from 'antd';
 import { UploadOutlined, SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
+import { updateContentItem, getContentItems } from '../api/django-api';
 
 const { Option } = Select;
 
@@ -13,44 +14,60 @@ const EditContentPage = () => {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fileList, setFileList] = useState([]);
 
   const fetchContentDetails = useCallback(async () => {
     try {
-      // In a real implementation, this would fetch from the API
-      // const token = localStorage.getItem('token');
-      // const response = await axios.get(`/api/content/${id}/`, {
-      //   headers: { 'Authorization': `Bearer ${token}` }
-      // });
+      // Fetch the actual content from the API
+      const contentList = await getContentItems();
+      const item = contentList.find(c => c.id === parseInt(id));
       
-      // Mock data for demonstration
-      const mockContent = {
-        id: parseInt(id),
-        title: `Content Title ${id}`,
-        body: '<p>This is the content body for editing. It contains <strong>rich text formatting</strong> and can include <em>emphasis</em>, lists, and other HTML elements.</p>',
-        status: 'draft',
-        type: 'article',
-        author: 'Current User',
-        featuredImage: null,
-        documents: [],
-        videoUrl: '',
-        tags: ['science', 'technology']
-      };
+      if (!item) {
+        message.error('Content not found');
+        navigate('/dashboard/content/list');
+        return;
+      }
       
-      setContent(mockContent);
+      setContent(item);
+      
+      // Set form values
       form.setFieldsValue({
-        title: mockContent.title,
-        body: mockContent.body,
-        status: mockContent.status,
-        type: mockContent.type,
-        videoUrl: mockContent.videoUrl,
+        title: item.title,
+        body: item.body,
+        status: item.status,
+        content_type: item.content_type, // Changed to match the backend field
+        meta_keywords: item.meta_keywords,
+        meta_description: item.meta_description,
+        photo_caption: item.photo_caption,
+        highlights: item.highlights,
+        ar_marker: item.ar_marker,
+        quiz: item.quiz,
+        enable_badges: item.enable_badges,
+        chat_bot_allow: item.chat_bot_allow,
+        exclude_audio: item.exclude_audio,
       });
+      
+      // Set file list if there's an attached file
+      if (item.file) {
+        setFileList([{
+          uid: '-1',
+          name: item.file.split('/').pop(),
+          status: 'done',
+          url: item.file_url,
+        }]);
+      }
     } catch (error) {
       message.error('Failed to load content details');
       console.error('Error fetching content details:', error);
     } finally {
       setLoading(false);
     }
-  }, [id, form]);
+  }, [id, form, navigate]);
+
+  // Handle file upload changes
+  const handleFileChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+  };
 
   useEffect(() => {
     fetchContentDetails();
@@ -60,20 +77,32 @@ const EditContentPage = () => {
   const handleSave = async (values) => {
     setSaving(true);
     try {
-      // In a real implementation, this would make an API call
-      // const token = localStorage.getItem('token');
-      // await axios.put(`/api/content/${id}/`, values, {
-      //   headers: { 
-      //     'Authorization': `Bearer ${token}`,
-      //     'Content-Type': 'multipart/form-data'
-      //   }
-      // });
+      // Create form data to send to the API
+      const formData = new FormData();
+      
+      // Add all form values
+      Object.entries(values).forEach(([key, value]) => {
+        if (typeof value === 'boolean') {
+          formData.append(key, value.toString());
+        } else {
+          formData.append(key, value);
+        }
+      });
+      
+      // Add file if it exists
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        formData.append('file', fileList[0].originFileObj);
+      }
+      
+      // Update the content item
+      await updateContentItem(id, formData);
       
       message.success('Content updated successfully!');
       navigate('/dashboard/content/list'); // Redirect to content list after saving
     } catch (error) {
       console.error('Error updating content:', error);
-      message.error('Failed to update content');
+      message.error('Failed to update content: ' + (error.message || 'Unknown error'));
+    } finally {
       setSaving(false);
     }
   };
@@ -147,31 +176,30 @@ const EditContentPage = () => {
           </Form.Item>
 
           <Form.Item
-            label="Type"
-            name="type"
+            label="Content Type"
+            name="content_type"
           >
             <Select placeholder="Select content type">
-              <Option value="article">Article</Option>
+              <Option value="text">Text</Option>
+              <Option value="image">Image</Option>
               <Option value="video">Video</Option>
-              <Option value="image">Image Gallery</Option>
               <Option value="document">Document</Option>
+              <Option value="audio">Audio</Option>  {/* Adding audio option */}
             </Select>
           </Form.Item>
 
           <Form.Item
-            label="Featured Image"
-            name="featuredImage"
+            label="File Upload"
+            name="file"
           >
-            <Upload maxCount={1} beforeUpload={() => false}>
-              <Button icon={<UploadOutlined />}>Click to upload</Button>
+            <Upload 
+              maxCount={1} 
+              fileList={fileList}
+              onChange={handleFileChange}
+              beforeUpload={() => false}  // Disable auto upload
+            >
+              <Button icon={<UploadOutlined />}>Click to upload file</Button>
             </Upload>
-          </Form.Item>
-
-          <Form.Item
-            label="Video URL"
-            name="videoUrl"
-          >
-            <Input placeholder="Enter video URL (optional)" />
           </Form.Item>
 
           <Form.Item
@@ -184,16 +212,93 @@ const EditContentPage = () => {
           </Form.Item>
 
           <Form.Item
-            label="Tags"
-            name="tags"
+            label="Meta Keywords"
+            name="meta_keywords"
           >
-            <Select
-              mode="tags"
-              placeholder="Add tags for categorization"
-              style={{ width: '100%' }}
+            <Input.TextArea placeholder="Enter meta keywords (comma separated)" />
+          </Form.Item>
+
+          <Form.Item
+            label="Meta Description"
+            name="meta_description"
+          >
+            <Input.TextArea placeholder="Enter meta description" />
+          </Form.Item>
+
+          <Form.Item
+            label="Photo Caption"
+            name="photo_caption"
+          >
+            <Input placeholder="Enter photo caption (if applicable)" />
+          </Form.Item>
+
+          <Form.Item
+            label="Highlights"
+            name="highlights"
+          >
+            <Editor
+              apiKey="your-api-key" // In a real implementation, you'd use a proper TinyMCE API key
+              init={{
+                height: 200,
+                menubar: false,
+                plugins: [
+                  'advlist autolink lists link charmap print preview anchor',
+                  'searchreplace visualblocks code fullscreen',
+                  'insertdatetime table paste code help wordcount'
+                ],
+                toolbar:
+                  'undo redo | formatselect | bold italic | ' +
+                  'alignleft aligncenter alignright alignjustify | ' +
+                  'bullist numlist outdent indent | removeformat | help'
+              }}
+            />
+          </Form.Item>
+
+          <Form.Item label="Options" style={{ marginBottom: 0 }}>
+            <Form.Item 
+              name="ar_marker" 
+              label="AR Marker" 
+              valuePropName="checked"
+              style={{ display: 'inline-block', width: 'calc(50%)', paddingRight: '8px' }}
             >
-              {/* Options are dynamically added as tags */}
-            </Select>
+              <Switch />
+            </Form.Item>
+            <Form.Item 
+              name="quiz" 
+              label="Quiz" 
+              valuePropName="checked"
+              style={{ display: 'inline-block', width: 'calc(50%)', paddingLeft: '8px' }}
+            >
+              <Switch />
+            </Form.Item>
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Form.Item 
+              name="enable_badges" 
+              label="Enable Badges" 
+              valuePropName="checked"
+              style={{ display: 'inline-block', width: 'calc(50%)', paddingRight: '8px' }}
+            >
+              <Switch />
+            </Form.Item>
+            <Form.Item 
+              name="exclude_audio" 
+              label="Exclude Audio" 
+              valuePropName="checked"
+              style={{ display: 'inline-block', width: 'calc(50%)', paddingLeft: '8px' }}
+            >
+              <Switch />
+            </Form.Item>
+          </Form.Item>
+
+          <Form.Item
+            name="chat_bot_allow"
+            label="Chat Bot Allow"
+            valuePropName="checked"
+            style={{ marginBottom: 24 }}
+          >
+            <Switch />
           </Form.Item>
 
           <Form.Item
@@ -201,11 +306,11 @@ const EditContentPage = () => {
             name="status"
           >
             <Select placeholder="Select status">
-              <Option value="draft">Draft</Option>
-              <Option value="review">For Review</Option>
-              <Option value="approved">Approved</Option>
+              <Option value="for_editing">For Editing</Option>
+              <Option value="for_approval">For Approval</Option>
+              <Option value="for_publishing">For Publishing</Option>
               <Option value="published">Published</Option>
-              <Option value="archived">Archived</Option>
+              <Option value="deleted">Deleted</Option>
             </Select>
           </Form.Item>
 
