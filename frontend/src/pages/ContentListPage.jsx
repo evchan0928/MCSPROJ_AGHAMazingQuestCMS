@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Tag, Modal, notification, Card } from 'antd';
-import { EditOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, DeleteOutlined, PushpinOutlined, PlayCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import { EditOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, PushpinOutlined, PlayCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import { 
   getContentItems, 
   getCurrentUser, 
@@ -18,12 +18,8 @@ const ContentList = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [api, contextHolder] = notification.useNotification();
 
-  useEffect(() => {
-    fetchUserData();
-    fetchContentList();
-  }, []);
-
-  const fetchUserData = async () => {
+  // Wrap functions in useCallback to satisfy ESLint requirements
+  const fetchUserData = React.useCallback(async () => {
     try {
       const userData = await getCurrentUser();
       setCurrentUser(userData);
@@ -35,9 +31,9 @@ const ContentList = () => {
         description: 'Failed to fetch user data',
       });
     }
-  };
+  }, [api]);
 
-  const fetchContentList = async () => {
+  const fetchContentList = React.useCallback(async () => {
     setLoading(true);
     try {
       // Using the correct endpoint through our API service
@@ -66,7 +62,12 @@ const ContentList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api]);
+
+  useEffect(() => {
+    fetchUserData();
+    fetchContentList();
+  }, [fetchUserData, fetchContentList]);
 
   // Determine available actions based on user role and content status
   const determineAvailableActions = (contentItem, currentUser) => {
@@ -125,7 +126,7 @@ const ContentList = () => {
             message: 'Success',
             description: 'Content submitted for approval successfully',
           });
-          fetchContentList(); // Refresh the list
+          await fetchContentList(); // Refresh the list
           break;
         case 'Approve':
           await approveContentItem(record.id);
@@ -133,7 +134,7 @@ const ContentList = () => {
             message: 'Success',
             description: 'Content approved successfully',
           });
-          fetchContentList(); // Refresh the list
+          await fetchContentList(); // Refresh the list
           break;
         case 'Reject':
           await denyContentItem(record.id);
@@ -141,7 +142,7 @@ const ContentList = () => {
             message: 'Success',
             description: 'Content rejected',
           });
-          fetchContentList(); // Refresh the list
+          await fetchContentList(); // Refresh the list
           break;
         case 'Publish':
           await publishContentItem(record.id);
@@ -149,7 +150,7 @@ const ContentList = () => {
             message: 'Success',
             description: 'Content published successfully',
           });
-          fetchContentList(); // Refresh the list
+          await fetchContentList(); // Refresh the list
           break;
         case 'Delete':
           Modal.confirm({
@@ -163,7 +164,7 @@ const ContentList = () => {
                 message: 'Success',
                 description: 'Content deleted successfully',
               });
-              fetchContentList(); // Refresh the list
+              await fetchContentList(); // Refresh the list
             }
           });
           break;
@@ -174,7 +175,7 @@ const ContentList = () => {
             message: 'Success',
             description: 'Content archived successfully',
           });
-          fetchContentList(); // Refresh the list
+          await fetchContentList(); // Refresh the list
           break;
         default:
           break;

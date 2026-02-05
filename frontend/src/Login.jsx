@@ -14,7 +14,7 @@ export default function Login({ onLogin }) {
     setLoading(true);
     setError(null);
     try {
-      const API_BASE = process.env.REACT_APP_API_URL || ((window.location.hostname === 'localhost' && window.location.port === '3000') ? 'http://localhost:8000' : '');
+      const API_BASE = process.env.REACT_APP_BACKEND_API_URL || ((window.location.hostname === 'localhost' && window.location.port === '3000') ? 'http://localhost:8000' : '');
       const res = await fetch(`${API_BASE}/api/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -28,11 +28,21 @@ export default function Login({ onLogin }) {
           console.error('Login failed:', res.status, data);
           setError(message);
         } else {
-          try { localStorage.setItem('access', data.access); localStorage.setItem('refresh', data.refresh); } catch (e) { }
+          try { 
+            localStorage.setItem('access', data.access); 
+            localStorage.setItem('refresh', data.refresh); 
+          } catch (e) { 
+            console.error('Failed to store tokens in localStorage:', e);
+          }
           if (onLogin) {
-            try { onLogin({ access: data.access, refresh: data.refresh }); } catch (e) { console.error('onLogin callback threw', e); }
+            try { 
+              onLogin({ access: data.access, refresh: data.refresh }); 
+            } catch (e) { 
+              console.error('onLogin callback threw', e); 
+            }
           } else {
-            try { window.location.href = '/dashboard'; } catch (e) { console.error(e); }
+            // Redirect to dashboard after successful login
+            navigate('/dashboard');
           }
         }
       } else {

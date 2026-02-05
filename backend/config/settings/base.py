@@ -217,6 +217,9 @@ SITE_ID = int(os.environ.get('DJANGO_SITE_ID', 1))
 # Base URL for Wagtail admin (used in notifications and user bar links)
 WAGTAILADMIN_BASE_URL = os.environ.get('WAGTAILADMIN_BASE_URL', 'http://localhost:8000')
 
+# Registration settings
+REGISTRATION_ENABLED = os.environ.get('REGISTRATION_ENABLED', 'True') == 'True'
+
 # CORS (for React frontend running on localhost:3000)
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',

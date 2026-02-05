@@ -27,7 +27,7 @@ export default function ApproveContentPage() {
     (outletUser.roles || []).includes('Approver') || 
     (outletUser.roles || []).includes('Super Admin'))) || false;
 
-  const fetchPendingContent = async () => {
+  const fetchPendingContent = React.useCallback(async () => {
     if (!allowed) return;
     
     setLoading(true);
@@ -45,11 +45,11 @@ export default function ApproveContentPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [allowed, api]);
 
   useEffect(() => {
     fetchPendingContent();
-  }, [allowed]);
+  }, [fetchPendingContent]);
 
   const handleApprove = async (id) => {
     try {
@@ -111,7 +111,6 @@ export default function ApproveContentPage() {
       for_editing: 'default',
       for_approval: 'orange',
       for_publishing: 'blue',
-      published: 'green',
       deleted: 'gray'
     };
     return colorMap[status] || 'default';

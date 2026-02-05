@@ -33,7 +33,7 @@ function getCookie(name) {
 // Request interceptor to include CSRF token in headers
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('access');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -45,7 +45,7 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor to handle token refresh and authentication failures
 apiClient.interceptors.response.use(
   (response) => {
     return response;
@@ -53,29 +53,51 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const response = await axios.post(`${BACKEND_API_URL}/token/refresh/`, {
-            refresh: refreshToken,
-          });
-          
-          if (response.data.access) {
-            localStorage.setItem('access_token', response.data.access);
-            apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
-            originalRequest.headers['Authorization'] = `Bearer ${response.data.access}`;
-            return apiClient(originalRequest);
+    // Handle unauthorized errors
+    if (error.response?.status === 401) {
+      // If this is not a retry attempt
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+        
+        try {
+          const refreshToken = localStorage.getItem('refresh');
+          if (refreshToken) {
+            // Use the same BACKEND_API_URL for token refresh
+            const response = await axios.post(`${BACKEND_API_URL}/token/refresh/`, {
+              refresh: refreshToken,
+            });
+            
+            if (response.data.access) {
+              // Update tokens and retry the original request
+              localStorage.setItem('access', response.data.access);
+              localStorage.setItem('refresh', response.data.refresh);
+              apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+              originalRequest.headers['Authorization'] = `Bearer ${response.data.access}`;
+              return apiClient(originalRequest);
+            }
           }
+        } catch (refreshError) {
+          // Token refresh failed
+          console.error('Token refresh failed:', refreshError);
         }
-      } catch (refreshError) {
-        // Token refresh failed, redirect to login
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
       }
+      
+      // If we get here, either it was a retry attempt or token refresh failed
+      // Clear tokens and redirect to login
+      localStorage.removeItem('access');
+      localStorage.removeItem('refresh');
+      
+      // Redirect to login page
+      window.location.href = '/signin';
+      return Promise.reject(new Error('Authentication failed - redirected to login'));
+    }
+    
+    // Handle other errors
+    if (error.response?.status === 403) {
+      // For forbidden errors, you might want to redirect to a different page
+      console.error('Forbidden access:', error);
+      // Optionally redirect to an access denied page
+      // window.location.href = '/access-denied';
     }
     
     return Promise.reject(error);
@@ -90,18 +112,18 @@ export const getApiClient = () => {
 };
 
 /**
- * Sign in with email and password
+ * Sign in with username/email and password
  */
-export const signInWithEmail = async (email, password) => {
+export const signInWithEmail = async (username, password) => {
   try {
     const response = await apiClient.post('/auth/login/', {
-      email,
+      username,  // Changed from 'email' to 'username' to support both username and email
       password
     });
 
     if (response.data.access && response.data.refresh) {
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+      localStorage.setItem('access', response.data.access);
+      localStorage.setItem('refresh', response.data.refresh);
     }
 
     return response.data;
@@ -133,8 +155,8 @@ export const signUpWithEmail = async (email, password, userData = {}) => {
 export const signOut = async () => {
   try {
     // Remove tokens from local storage
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
     
     // Optionally notify the backend
     try {
@@ -152,7 +174,7 @@ export const signOut = async () => {
  */
 export const getCurrentUser = async () => {
   try {
-    const response = await apiClient.get('/auth/user/');
+    const response = await apiClient.get('/auth/me/');  // Changed from /auth/user/ to /auth/me/
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);

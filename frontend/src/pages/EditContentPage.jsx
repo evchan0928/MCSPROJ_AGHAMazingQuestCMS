@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, message, Spin, Select, Upload, InputNumber } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Form, Input, Button, Card, message, Spin, Select, Upload } from 'antd';
 import { UploadOutlined, SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
-import axios from 'axios';
 
-const { TextArea } = Input;
 const { Option } = Select;
 
 const EditContentPage = () => {
@@ -16,11 +14,7 @@ const EditContentPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchContentDetails();
-  }, [id]);
-
-  const fetchContentDetails = async () => {
+  const fetchContentDetails = useCallback(async () => {
     try {
       // In a real implementation, this would fetch from the API
       // const token = localStorage.getItem('token');
@@ -49,16 +43,20 @@ const EditContentPage = () => {
         status: mockContent.status,
         type: mockContent.type,
         videoUrl: mockContent.videoUrl,
-        tags: mockContent.tags
       });
-      setLoading(false);
     } catch (error) {
-      console.error('Error fetching content:', error);
       message.error('Failed to load content details');
+      console.error('Error fetching content details:', error);
+    } finally {
       setLoading(false);
     }
-  };
+  }, [id, form]);
 
+  useEffect(() => {
+    fetchContentDetails();
+  }, [fetchContentDetails]);
+
+  // Rest of the component implementation
   const handleSave = async (values) => {
     setSaving(true);
     try {
@@ -141,9 +139,9 @@ const EditContentPage = () => {
                   'insertdatetime media table paste code help wordcount'
                 ],
                 toolbar:
-                  'undo redo | formatselect | bold italic backcolor | \
-                  alignleft aligncenter alignright alignjustify | \
-                  bullist numlist outdent indent | removeformat | help'
+                  'undo redo | formatselect | bold italic backcolor | ' +
+                  'alignleft aligncenter alignright alignjustify | ' +
+                  'bullist numlist outdent indent | removeformat | help'
               }}
             />
           </Form.Item>

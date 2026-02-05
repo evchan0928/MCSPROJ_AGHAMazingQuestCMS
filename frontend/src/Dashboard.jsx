@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx';
-import { Card, Statistic, Table, Row, Col, Button, DatePicker, Select, Space } from 'antd';
+import { Card, Statistic, Table, Row, Col, Button, DatePicker, Select } from 'antd';
 import { UserOutlined, FileTextOutlined, ClockCircleOutlined, NotificationOutlined } from '@ant-design/icons';
 import { getDashboardStats, getRecentContent } from './api/django-api';
 
@@ -22,7 +22,6 @@ const Dashboard = () => { // <-- Opening brace for the function body
     });
     
     const [recentContent, setRecentContent] = useState([]);
-    const [loadingStats, setLoadingStats] = useState(true);
     const [loadingContent, setLoadingContent] = useState(true);
 
     const currentUser = {
@@ -39,7 +38,6 @@ const Dashboard = () => { // <-- Opening brace for the function body
     }, [isIndexRoute]);
 
     const fetchDashboardData = async () => {
-        setLoadingStats(true);
         setLoadingContent(true);
         
         try {
@@ -53,7 +51,6 @@ const Dashboard = () => { // <-- Opening brace for the function body
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
         } finally {
-            setLoadingStats(false);
             setLoadingContent(false);
         }
     };

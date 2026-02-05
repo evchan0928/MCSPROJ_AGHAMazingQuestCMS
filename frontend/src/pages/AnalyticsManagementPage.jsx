@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Typography, Statistic, Table, DatePicker, Select, Button } from 'antd';
 import { UserOutlined, FileTextOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import axios from 'axios';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;

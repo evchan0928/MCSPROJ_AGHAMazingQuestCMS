@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signUpWithEmail } from './api/django-api'; // Import the signup function
 import LogosContainer from './LogosContainer'; // Contains the four horizontal logos
 import './styles.css';
 
@@ -13,7 +14,11 @@ const SignupScreen = () => {
     const navigate = useNavigate();
     // State for the email input and error message
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState(''); // Add password state
+    const [firstName, setFirstName] = useState(''); // Add firstName state
+    const [lastName, setLastName] = useState(''); // Add lastName state
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false); // Loading state
 
     const handleSignInClick = () => {
         navigate('/signin');
@@ -24,19 +29,42 @@ const SignupScreen = () => {
         navigate('/google-auth');
     };
 
-    // Validation logic added here
-    const onDostSignup = () => {
+    // Validation logic and API call
+    const onDostSignup = async (e) => {
+        e.preventDefault(); // Prevent default form submission
         setError(''); // Clear previous errors
+        setLoading(true); // Set loading state
 
         if (!isValidEmail(email)) {
             setError('Please enter a valid email address to sign up.');
+            setLoading(false);
             console.log('Signup failed: Invalid email format.');
             return; // Stop the function if validation fails
         }
         
-        // In a real app, this is where the DOST/APC signup process would begin
-        console.log('DOST Signup successful. Redirecting to /dashboard');
-        navigate('/dashboard'); // Redirects to the Dashboard on successful validation
+        if (!password || password.length < 6) {
+            setError('Password must be at least 6 characters long.');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            // Call the backend API to register the user
+            const userData = {
+                email,
+                first_name: firstName,
+                last_name: lastName
+            };
+            
+            await signUpWithEmail(email, password, userData);
+            console.log('DOST Signup successful. Redirecting to /dashboard');
+            navigate('/dashboard'); // Redirects to the Dashboard on successful registration
+        } catch (err) {
+            console.error('Signup error:', err);
+            setError(err.message || 'An error occurred during signup. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -45,25 +73,66 @@ const SignupScreen = () => {
                 <h1 className="signin-title">Create Your Account</h1>
                 <h2 className="welcome-back-subtitle">Sign up for AGHAMazing Quest</h2>
                 
-                {/* Input is now controlled by state */}
-                <div className="form-group">
-                    <label htmlFor="email" className="sr-only">Email</label>
-                    <input 
-                        id="email"
-                        type="email" 
-                        placeholder="Enter your email" 
-                        className="signin-input"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)} 
-                    />
-                </div>
-                
-                {/* Display Error Message */}
-                {error && <p className="error-message signin-error">{error}</p>}
-                
-                <button className="signin-continue-btn" onClick={onDostSignup}>
-                    Sign Up with DOST or APC Account
-                </button>
+                <form onSubmit={onDostSignup} className="signin-form">
+                    {/* Display Error Message */}
+                    {error && <p className="error-message signin-error">{error}</p>}
+                    
+                    <div className="form-group">
+                        <label htmlFor="firstName" className="sr-only">First Name</label>
+                        <input 
+                            id="firstName"
+                            type="text" 
+                            placeholder="First Name" 
+                            className="signin-input"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)} 
+                            required
+                        />
+                    </div>
+                    
+                    <div className="form-group">
+                        <label htmlFor="lastName" className="sr-only">Last Name</label>
+                        <input 
+                            id="lastName"
+                            type="text" 
+                            placeholder="Last Name" 
+                            className="signin-input"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)} 
+                            required
+                        />
+                    </div>
+                    
+                    <div className="form-group">
+                        <label htmlFor="email" className="sr-only">Email</label>
+                        <input 
+                            id="email"
+                            type="email" 
+                            placeholder="Enter your email" 
+                            className="signin-input"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)} 
+                            required
+                        />
+                    </div>
+                    
+                    <div className="form-group">
+                        <label htmlFor="password" className="sr-only">Password</label>
+                        <input 
+                            id="password"
+                            type="password" 
+                            placeholder="Password (min 6 chars)" 
+                            className="signin-input"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)} 
+                            required
+                        />
+                    </div>
+                    
+                    <button type="submit" className="signin-continue-btn" disabled={loading}>
+                        {loading ? 'Creating Account...' : 'Sign Up with DOST or APC Account'}
+                    </button>
+                </form>
 
                 <div className="divider">or continue with</div>
 

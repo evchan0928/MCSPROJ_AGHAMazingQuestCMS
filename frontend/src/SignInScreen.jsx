@@ -1,7 +1,7 @@
 // src/SignInScreen.jsx
 import React, { useState } from 'react'; 
-// 🔑 UPDATED: Removed /signup from required navigation actions
 import { useNavigate } from 'react-router-dom';
+import { signInWithEmail } from './api/django-api'; // Import the authentication function
 import LogosContainer from './LogosContainer'; 
 import './styles.css';
 
@@ -15,8 +15,9 @@ const SignInScreen = () => {
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(true);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         setError(''); 
 
         if (!isValidInput(emailOrUsername) || !isValidInput(password)) {
@@ -25,8 +26,18 @@ const SignInScreen = () => {
             return;
         }
         
-        console.log('Login successful. Redirecting to Dashboard. Remember Me:', rememberMe);
-        navigate('/dashboard'); 
+        setLoading(true);
+        try {
+            // Make the actual API call to authenticate
+            const response = await signInWithEmail(emailOrUsername, password);
+            console.log('Login successful. Redirecting to Dashboard. Remember Me:', rememberMe);
+            navigate('/dashboard'); 
+        } catch (err) {
+            setError('Invalid credentials. Please try again.');
+            console.error('Login failed:', err);
+        } finally {
+            setLoading(false);
+        }
     };
     
     const handleForgotPasswordClick = (e) => {
@@ -75,8 +86,8 @@ const SignInScreen = () => {
                         <label htmlFor="remember-me">Remember me on this computer</label>
                     </div>
 
-                    <button className="signin-continue-btn" onClick={handleContinue}>
-                        Continue
+                    <button className="signin-continue-btn" onClick={handleContinue} disabled={loading}>
+                        {loading ? 'Signing in...' : 'Continue'}
                     </button>
                     
                     <p className="signin-terms-policy">

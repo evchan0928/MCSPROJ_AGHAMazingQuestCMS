@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { getRoles, getUsers, createRole, updateRole, deleteRole } from '../api/django-api'; // Import the API functions
 import { Card, Row, Col, Statistic, Table, Button, Space, Input, Tag, Popconfirm, notification, Typography } from 'antd';
 import { PlusOutlined, TeamOutlined, UserOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
@@ -18,20 +18,19 @@ export default function RolesPage() {
   // UI state
   const [showCreate, setShowCreate] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
-  const [expandedRoleId, setExpandedRoleId] = useState(null); // for inline preview
   const [editingRole, setEditingRole] = useState(null);
   const [editRoleName, setEditRoleName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   const [api, contextHolder] = notification.useNotification();
 
-  const openNotification = (message, description, type) => {
+  const openNotification = useCallback((message, description, type) => {
     api[type]({
       message: message,
       description: description,
       placement: 'topRight',
     });
-  };
+  }, [api]);
 
   useEffect(() => {
     let mounted = true;
@@ -59,9 +58,9 @@ export default function RolesPage() {
     };
     load();
     return () => { mounted = false; };
-  }, []);
+  }, [openNotification]);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -74,18 +73,18 @@ export default function RolesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [openNotification]);
 
-  const usersInRole = (role) => {
+  const usersInRole = useCallback((role) => {
     if (!role) return [];
     // users may have roles as strings or objects
     return users.filter(u => {
       if (!u.roles) return false;
       return u.roles.some(r => (typeof r === 'string' ? r === role.name || r === role : (r && (r.name === role.name || r.id === role.id))));
     });
-  };
+  }, [users]);
 
-  const handleCreate = async () => {
+  const handleCreate = useCallback(async () => {
     if (!newRoleName.trim()) {
       openNotification('Error', 'Role name is required', 'error');
       return;
@@ -102,14 +101,14 @@ export default function RolesPage() {
       setError(String(err));
       openNotification('Error', err.message, 'error');
     }
-  };
+  }, [newRoleName, refresh, openNotification]);
 
-  const handleEdit = (role) => {
+  const handleEdit = useCallback((role) => {
     setEditingRole(role);
     setEditRoleName(typeof role === 'string' ? role : (role && role.name) || '');
-  };
+  }, []);
 
-  const submitEdit = async () => {
+  const submitEdit = useCallback(async () => {
     if (!editingRole) return;
     const id = typeof editingRole === 'object' ? editingRole.id : null;
     if (!id) {
@@ -135,9 +134,9 @@ export default function RolesPage() {
       setError(String(err));
       openNotification('Error', err.message, 'error');
     }
-  };
+  }, [editingRole, editRoleName, refresh, openNotification]);
 
-  const handleDelete = async (role) => {
+  const handleDelete = useCallback(async (role) => {
     const id = typeof role === 'object' ? role.id : null;
     if (!id) {
       const errorMsg = 'Role delete requires role id';
@@ -155,7 +154,7 @@ export default function RolesPage() {
       setError(String(err));
       openNotification('Error', err.message, 'error');
     }
-  };
+  }, [refresh, openNotification]);
 
   // Filter roles based on search term
   const filteredRoles = roles.filter(role => 
