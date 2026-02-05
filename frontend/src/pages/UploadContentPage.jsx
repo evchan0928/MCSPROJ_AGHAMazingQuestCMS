@@ -8,12 +8,12 @@ import { createContentItem } from '../api/django-api';
 export default function UploadContentPage() {
   const navigate = useNavigate();
   
-  // State to manage all form fields
+  // State to manage all form fields - using backend field names
   const [formData, setFormData] = useState({
     title: '',
     body: '', 
     status: 'for_editing', // Default status matching backend workflow
-    type: 'text', // Default type
+    content_type: 'text', // Changed to snake_case to match backend
     meta_keywords: '',  // Changed to snake_case to match backend
     meta_description: '', // Changed to snake_case to match backend
     photo_caption: '', // Changed to snake_case to match backend
@@ -34,7 +34,7 @@ export default function UploadContentPage() {
     const { name, type, value, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' || type === 'radio' ? checked || value : value,
+      [name]: type === 'checkbox' || type === 'radio' ? (type === 'radio' ? checked && value : checked) : value,
     }));
   };
 
@@ -60,12 +60,24 @@ export default function UploadContentPage() {
     setLoading(true);
     
     try {
-      const contentData = {
-        ...formData,
-        status: 'draft',
-        file: imageFile || pdfFile || null
-      };
+      // Create form data for file upload
+      const contentData = new FormData();
       
+      // Add all form fields to FormData
+      Object.entries(formData).forEach(([key, value]) => {
+        contentData.append(key, value);
+      });
+      
+      // Add file if available
+      if (imageFile) {
+        contentData.append('file', imageFile);
+      } else if (pdfFile) {
+        contentData.append('file', pdfFile);
+      }
+      
+      // Set status to draft
+      contentData.set('status', 'for_editing');
+
       const result = await createContentItem(contentData);
       message.success('Content saved as draft successfully!');
       navigate('/dashboard/content/list'); // Redirect to content list
@@ -82,11 +94,23 @@ export default function UploadContentPage() {
     setLoading(true);
 
     try {
-      const contentData = {
-        ...formData,
-        status: 'pending', // Submitting for review changes status to pending
-        file: imageFile || pdfFile || null
-      };
+      // Create form data for file upload
+      const contentData = new FormData();
+      
+      // Add all form fields to FormData
+      Object.entries(formData).forEach(([key, value]) => {
+        contentData.append(key, value);
+      });
+      
+      // Add file if available
+      if (imageFile) {
+        contentData.append('file', imageFile);
+      } else if (pdfFile) {
+        contentData.append('file', pdfFile);
+      }
+      
+      // Set status to for approval
+      contentData.set('status', 'for_approval');
 
       const result = await createContentItem(contentData);
       
@@ -133,8 +157,8 @@ export default function UploadContentPage() {
             <label className="checkbox-container">
               <input
                 type="checkbox"
-                name="arMarker"
-                checked={formData.arMarker}
+                name="ar_marker"
+                checked={formData.ar_marker}
                 onChange={handleChange}
               />
               <span className="checkbox-custom"></span>
@@ -155,8 +179,8 @@ export default function UploadContentPage() {
             <label className="checkbox-container">
               <input
                 type="checkbox"
-                name="enableBadges"
-                checked={formData.enableBadges}
+                name="enable_badges"
+                checked={formData.enable_badges}
                 onChange={handleChange}
               />
               <span className="checkbox-custom"></span>
@@ -192,11 +216,11 @@ export default function UploadContentPage() {
 
           {/* Row 2: Type Selection */}
           <div className="form-group grid-item-1-6">
-            <label htmlFor="type">Content Type *</label>
+            <label htmlFor="content_type">Content Type *</label>
             <select
-              id="type"
-              name="type"
-              value={formData.type}
+              id="content_type"
+              name="content_type"
+              value={formData.content_type}
               onChange={handleChange}
               required
             >
@@ -305,11 +329,11 @@ export default function UploadContentPage() {
 
           {/* Row 5: Meta Keywords & Meta Description (2 columns) */}
           <div className="form-group grid-item-1-3">
-            <label htmlFor="metaKeywords">Meta Keywords *</label>
+            <label htmlFor="meta_keywords">Meta Keywords *</label>
             <textarea
-              id="metaKeywords"
-              name="metaKeywords"
-              value={formData.metaKeywords}
+              id="meta_keywords"
+              name="meta_keywords"
+              value={formData.meta_keywords}
               onChange={handleChange}
               rows="4"
               placeholder=""
@@ -317,11 +341,11 @@ export default function UploadContentPage() {
             ></textarea>
           </div>
           <div className="form-group grid-item-4-6">
-            <label htmlFor="metaDescription">Meta Description *</label>
+            <label htmlFor="meta_description">Meta Description *</label>
             <textarea
-              id="metaDescription"
-              name="metaDescription"
-              value={formData.metaDescription}
+              id="meta_description"
+              name="meta_description"
+              value={formData.meta_description}
               onChange={handleChange}
               rows="4"
               placeholder=""
@@ -350,12 +374,12 @@ export default function UploadContentPage() {
 
           {/* Row 7: Photo Caption (Full Width) */}
           <div className="form-group grid-item-1-6">
-            <label htmlFor="photoCaption">Photo Caption</label>
+            <label htmlFor="photo_caption">Photo Caption</label>
             <input
               type="text"
-              id="photoCaption"
-              name="photoCaption"
-              value={formData.photoCaption}
+              id="photo_caption"
+              name="photo_caption"
+              value={formData.photo_caption}
               onChange={handleChange}
               placeholder=""
             />
@@ -464,10 +488,10 @@ export default function UploadContentPage() {
               <label className="radio-container">
                 <input
                   type="radio"
-                  name="chatBotAllow"
+                  name="chat_bot_allow"
                   value="true"
-                  checked={formData.chatBotAllow === true}
-                  onChange={() => setFormData(prev => ({ ...prev, chatBotAllow: true }))}
+                  checked={formData.chat_bot_allow === true}
+                  onChange={() => setFormData(prev => ({ ...prev, chat_bot_allow: true }))}
                 />
                 <span className="radio-custom"></span>
                 Allow
@@ -475,10 +499,10 @@ export default function UploadContentPage() {
               <label className="radio-container">
                 <input
                   type="radio"
-                  name="chatBotAllow"
+                  name="chat_bot_allow"
                   value="false"
-                  checked={formData.chatBotAllow === false}
-                  onChange={() => setFormData(prev => ({ ...prev, chatBotAllow: false }))}
+                  checked={formData.chat_bot_allow === false}
+                  onChange={() => setFormData(prev => ({ ...prev, chat_bot_allow: false }))}
                 />
                 <span className="radio-custom"></span>
                 Disallow
@@ -487,8 +511,8 @@ export default function UploadContentPage() {
             <label className="checkbox-container exclude-audio-checkbox">
               <input
                 type="checkbox"
-                name="excludeAudio"
-                checked={formData.excludeAudio}
+                name="exclude_audio"
+                checked={formData.exclude_audio}
                 onChange={handleChange}
               />
               <span className="checkbox-custom"></span>
