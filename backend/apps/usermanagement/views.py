@@ -55,11 +55,36 @@ def get_dashboard_stats(request):
 @permission_classes([IsAuthenticated])
 def get_recent_content(request):
     """
-    API endpoint to get recent content items
+    API endpoint to get recent content items with optional filters
     """
     try:
-        # Get the 10 most recently created content items
-        recent_content = ContentItem.objects.order_by('-created_at')[:10]
+        # Get query parameters for filtering
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        content_type_filter = request.GET.get('content_type')
+        
+        # Start with the base queryset
+        recent_content = ContentItem.objects.all()
+        
+        # Apply date filters if provided
+        if start_date:
+            from datetime import datetime
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+            recent_content = recent_content.filter(created_at__date__gte=start_date_obj)
+        
+        if end_date:
+            from datetime import datetime
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            recent_content = recent_content.filter(created_at__date__lte=end_date_obj)
+        
+        # Apply content type filter if provided
+        if content_type_filter:
+            # For now, filter based on title containing the content type
+            # In a real implementation, you would have a proper content_type field
+            recent_content = recent_content.filter(title__icontains=content_type_filter)
+        
+        # Order by creation date and limit to 10 items
+        recent_content = recent_content.order_by('-created_at')[:10]
         
         content_list = []
         for item in recent_content:
@@ -69,7 +94,7 @@ def get_recent_content(request):
             # Get reviewer information using the correct field name
             reviewer_name = ''
             if hasattr(item, 'edited_by') and item.edited_by:
-                reviewer_name = item.edited_by.get_full_name() if item.edited_by.get_full_name() else item.edited_by.username
+                reviewer_name = item.edited_by.get_full_name() if item.edited_by and item.edited_by.get_full_name() else (item.edited_by.username if item.edited_by else 'Unknown')
             else:
                 reviewer_name = 'Auto-assigned'
             

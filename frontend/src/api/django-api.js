@@ -206,11 +206,38 @@ export const getDashboardStats = async () => {
 };
 
 /**
- * Get recent content items
+ * Get recent content items with optional filters
  */
-export const getRecentContent = async () => {
+export const getFilteredContent = async (filters = {}) => {
   try {
-    const response = await apiClient.get('/users/content/recent/');  // Updated to use the correct endpoint
+    // Build query parameters from filters
+    const queryParams = new URLSearchParams();
+    
+    if (filters.startDate) {
+      queryParams.append('start_date', filters.startDate);
+    }
+    
+    if (filters.endDate) {
+      queryParams.append('end_date', filters.endDate);
+    }
+    
+    if (filters.contentType) {
+      queryParams.append('content_type', filters.contentType);
+    }
+    
+    // Add pagination if needed
+    if (filters.page) {
+      queryParams.append('page', filters.page);
+    }
+    
+    if (filters.pageSize) {
+      queryParams.append('page_size', filters.pageSize);
+    }
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/users/content/recent/?${queryString}` : '/users/content/recent/';
+    
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);

@@ -24,11 +24,13 @@ import {
   getRoles,
   getContentAnalytics,
   getUserActivityAnalytics,
-  getAnalyticsSummary
+  getAnalyticsSummary,
+  getFilteredContent
 } from './api/django-api';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+const { TabPane } = Tabs;
 
 const Dashboard = () => { // <-- Opening brace for the function body
     const location = useLocation();
@@ -56,6 +58,13 @@ const Dashboard = () => { // <-- Opening brace for the function body
     const [currentUser, setCurrentUser] = useState(null);
     const [error, setError] = useState(null);
     const [api, contextHolder] = notification.useNotification();
+    
+    // Filter states
+    const [dateRange, setDateRange] = useState(null);
+    const [productType, setProductType] = useState('All Content');
+
+    // Combined loading state
+    const isLoading = loadingStats || loadingContent || loadingUsers || loadingRoles || loadingAnalytics;
 
     // Fetch current user data
     useEffect(() => {
@@ -122,6 +131,51 @@ const Dashboard = () => { // <-- Opening brace for the function body
         }
     };
 
+    // Handler for the filter section
+    const handleGetData = async () => {
+        setLoadingContent(true);
+        setError(null);
+        
+        try {
+            // Prepare filter parameters
+            let params = {};
+            
+            // Add date range filter if selected
+            if (dateRange) {
+                params.startDate = dateRange[0].format('YYYY-MM-DD');
+                params.endDate = dateRange[1].format('YYYY-MM-DD');
+            }
+            
+            // Add product type filter if not "All Content"
+            if (productType !== 'All Content') {
+                params.contentType = productType;
+            }
+            
+            // Call the API with filters
+            const contentData = await getFilteredContent(params);
+            
+            setRecentContent(contentData);
+        } catch (error) {
+            console.error('Error applying filters:', error);
+            setError('Failed to apply filters. Showing all content.');
+            // Fetch all content again in case of error
+            const contentData = await getRecentContent();
+            setRecentContent(contentData);
+        } finally {
+            setLoadingContent(false);
+        }
+    };
+
+    // Handle date range change
+    const handleDateChange = (dates, dateStrings) => {
+        setDateRange(dates);
+    };
+
+    // Handle product type change
+    const handleProductTypeChange = (value) => {
+        setProductType(value);
+    };
+
     // Define table columns for recent content
     const contentColumns = [
         {
@@ -185,7 +239,121 @@ const Dashboard = () => { // <-- Opening brace for the function body
         },
     ];
 
-    // 🔑 START OF EXPLICIT RETURN STATEMENT
+    // Define table columns for users
+    const userColumns = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: 'Username',
+            dataIndex: 'username',
+            key: 'username',
+        },
+        {
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email',
+        },
+        {
+            title: 'Roles',
+            dataIndex: 'roles',
+            key: 'roles',
+            render: (roles) => (
+                <div>
+                    {roles && roles.map(role => (
+                        <Badge key={role.id} color="#1890ff" text={role.name} style={{ display: 'block', marginBottom: '4px' }} />
+                    ))}
+                </div>
+            ),
+        },
+        {
+            title: 'Status',
+            dataIndex: 'is_active',
+            key: 'is_active',
+            render: (active) => (
+                <span style={{ color: active ? '#52c41a' : '#ff4d4f' }}>
+                    {active ? 'Active' : 'Inactive'}
+                </span>
+            ),
+        },
+    ];
+
+    // Define table columns for roles
+    const roleColumns = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+        },
+    ];
+
+    // Activity chart component
+    const ActivityChart = () => {
+        const activityData = userActivity.daily_activity || [];
+        
+        if (!activityData || !activityData.length) {
+            return <div>No activity data available</div>;
+        }
+        
+        const totalActivities = activityData.reduce((sum, day) => sum + day.count, 0);
+        
+        return (
+            <div style={{ padding: '16px' }}>
+                <h4>Weekly Activity Overview</h4>
+                <div style={{ marginTop: '12px' }}>
+                    {activityData.slice(0, 7).map((day, index) => (
+                        <div key={index} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                            <span style={{ width: '80px', fontSize: '12px', color: '#666' }}>
+                                {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                            </span>
+                            <Progress 
+                                percent={Math.min(100, Math.round((day.count / (totalActivities / 7)) * 100))} 
+                                size="small" 
+                                status="active"
+                                style={{ flex: 1, margin: '0 12px' }}
+                            />
+                            <span style={{ width: '40px', textAlign: 'right', fontSize: '12px' }}>
+                                {day.count}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    // Render skeleton loaders when data is loading
+    const renderLoadingSkeleton = () => (
+        <div style={{ padding: '24px' }}>
+            <Skeleton active paragraph={{ rows: 4 }} />
+            <Skeleton active paragraph={{ rows: 4 }} style={{ marginTop: '24px' }} />
+            <Skeleton active paragraph={{ rows: 4 }} style={{ marginTop: '24px' }} />
+        </div>
+    );
+
+    // Return early if not on dashboard index
+    if (!isIndexRoute) {
+        return (
+            <div className="dashboard-layout">
+                <Sidebar user={currentUser} /> 
+                <div className="main-content">
+                    <div className="main-header">
+                        <h1>Content Management</h1> 
+                        <div className="header-controls"></div>
+                    </div>
+                    <Outlet /> 
+                </div>
+            </div>
+        );
+    }
+
     return ( 
         <div className="dashboard-layout">
             {contextHolder}
@@ -241,14 +409,23 @@ const Dashboard = () => { // <-- Opening brace for the function body
                                     <div className="filter-group">
                                         <label htmlFor="startDate">Start Date</label>
                                         <div className="date-filter">
-                                            <RangePicker />
+                                            <RangePicker 
+                                                onChange={handleDateChange}
+                                                value={dateRange}
+                                            />
                                         </div>
                                     </div>
                                     
                                     {/* PRODUCT TYPE FILTER GROUP */}
                                     <div className="filter-group">
                                         <label htmlFor="productType">Product Type</label>
-                                        <Select defaultValue="All Content" style={{ width: '100%' }} allowClear>
+                                        <Select 
+                                            defaultValue="All Content" 
+                                            style={{ width: '100%' }} 
+                                            allowClear
+                                            value={productType}
+                                            onChange={handleProductTypeChange}
+                                        >
                                             <Option value="All Content">All Content</Option>
                                             <Option value="AR Marker">AR Marker</Option>
                                             <Option value="Video Content">Video Content</Option>
@@ -257,7 +434,14 @@ const Dashboard = () => { // <-- Opening brace for the function body
                                         </Select>
                                     </div>
                                     
-                                    <Button type="primary" className="get-data-btn">Get Data</Button>
+                                    <Button 
+                                        type="primary" 
+                                        className="get-data-btn" 
+                                        onClick={handleGetData}
+                                        loading={loadingContent && dateRange !== null}
+                                    >
+                                        Get Data
+                                    </Button>
                                 </div>
                                 {/* Date and Product Filters (EDITED BLOCK END) */}
 
@@ -375,7 +559,7 @@ const Dashboard = () => { // <-- Opening brace for the function body
                 )}
             </div>
         </div>
-    );
-}; 
+    ); // <-- Closing parenthesis for the return statement
+}; // <-- Closing brace for the Dashboard function body
 
 export default Dashboard;
