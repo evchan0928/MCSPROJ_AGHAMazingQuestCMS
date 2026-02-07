@@ -57,7 +57,7 @@ const PublishContentPage = () => {
         message: 'Success',
         description: 'Content published successfully'
       });
-      fetchContentForPublishing(); // Refresh the list
+      fetchContentForPublishing();
     } catch (error) {
       console.error('Error publishing content:', error);
       api.error({
@@ -206,8 +206,11 @@ const PublishContentPage = () => {
   // Check if user has permission to publish content
   const hasPermission = currentUser && (
     currentUser.is_superuser || 
-    currentUser.role === 'approver' || 
-    currentUser.role === 'super_admin'
+    (currentUser.roles || []).some(role => 
+      role.name === 'Publisher' || 
+      role.name === 'Super Admin' ||
+      role.name === 'Admin'
+    )
   );
 
   if (!hasPermission) {

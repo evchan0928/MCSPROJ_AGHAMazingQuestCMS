@@ -1,9 +1,10 @@
 // src/Dashboard.jsx (The complete and correct file structure)
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx';
-import { Card, Statistic, Table, Row, Col, Button, DatePicker, Select, Tabs, Badge, Progress, Skeleton, Alert, notification } from 'antd';
+import NavigationHeader from './components/NavigationHeader.jsx';
+import { Card, Statistic, Table, Row, Col, Button, DatePicker, Select, Tabs, Badge, Progress, Skeleton, Alert, notification, Drawer, Layout, Menu, Dropdown } from 'antd';
 import { 
   UserOutlined, 
   FileTextOutlined, 
@@ -14,7 +15,9 @@ import {
   CheckCircleOutlined, 
   SyncOutlined,
   EyeOutlined,
-  MessageOutlined
+  MessageOutlined,
+  MenuOutlined,
+  MoreOutlined
 } from '@ant-design/icons';
 import { 
   getDashboardStats, 
@@ -31,6 +34,7 @@ import {
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { TabPane } = Tabs;
+const { Header, Content, Sider } = Layout;
 
 const Dashboard = () => { // <-- Opening brace for the function body
     const location = useLocation();
@@ -59,12 +63,30 @@ const Dashboard = () => { // <-- Opening brace for the function body
     const [error, setError] = useState(null);
     const [api, contextHolder] = notification.useNotification();
     
+    // Mobile responsive state
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    
     // Filter states
     const [dateRange, setDateRange] = useState(null);
     const [productType, setProductType] = useState('All Content');
 
     // Combined loading state
     const isLoading = loadingStats || loadingContent || loadingUsers || loadingRoles || loadingAnalytics;
+
+    // Handle window resize for responsive behavior
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            if (!mobile) {
+                setSidebarCollapsed(false);
+            }
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Fetch current user data
     useEffect(() => {
@@ -338,18 +360,84 @@ const Dashboard = () => { // <-- Opening brace for the function body
         </div>
     );
 
+    // Define title for the current page
+    const getPageTitle = () => {
+      switch(location.pathname) {
+        case '/dashboard/content/upload':
+          return 'Upload Content';
+        case '/dashboard/content/list':
+          return 'Content List';
+        case '/dashboard/content/approve':
+          return 'Approve Content';
+        case '/dashboard/content/publish':
+          return 'Publish Content';
+        case '/dashboard/content/published':
+          return 'Published Content';
+        case '/dashboard/content/delete':
+          return 'Delete Content';
+        case '/dashboard/analytics/generate':
+          return 'Generate Analytics';
+        case '/dashboard/analytics/view':
+          return 'View Analytics';
+        case '/dashboard/analytics/download':
+          return 'Download Analytics';
+        case '/dashboard/users':
+          return 'User Management';
+        case '/dashboard/users/roles':
+          return 'Role Management';
+        default:
+          return 'Content Management';
+      }
+    };
+
+    // Toggle sidebar for mobile
+    const toggleSidebar = () => {
+        setSidebarCollapsed(!sidebarCollapsed);
+    };
+
     // Return early if not on dashboard index
     if (!isIndexRoute) {
         return (
             <div className="dashboard-layout">
-                <Sidebar user={currentUser} /> 
-                <div className="main-content">
-                    <div className="main-header">
-                        <h1>Content Management</h1> 
-                        <div className="header-controls"></div>
+                {isMobile ? (
+                    <Drawer
+                        placement="left"
+                        closable={true}
+                        onClose={() => setSidebarCollapsed(false)}
+                        open={!sidebarCollapsed}
+                        width={240}
+                        style={{ padding: 0 }}
+                    >
+                        <Sidebar user={currentUser} />
+                    </Drawer>
+                ) : (
+                    <Sidebar 
+                        user={currentUser} 
+                        className={sidebarCollapsed ? 'collapsed' : ''}
+                    />
+                )}
+                
+                <div className="main-content" style={{ marginLeft: isMobile ? '0' : (sidebarCollapsed ? '80px' : '260px') }}>
+                    <NavigationHeader title={getPageTitle()} />
+                    <div className="content-wrapper">
+                        <Outlet /> 
                     </div>
-                    <Outlet /> 
                 </div>
+                
+                {isMobile && (
+                    <Button
+                        type="primary"
+                        icon={<MenuOutlined />}
+                        onClick={toggleSidebar}
+                        style={{
+                            position: 'fixed',
+                            top: 20,
+                            left: 20,
+                            zIndex: 99,
+                            display: 'block'
+                        }}
+                    />
+                )}
             </div>
         );
     }
@@ -358,7 +446,23 @@ const Dashboard = () => { // <-- Opening brace for the function body
         <div className="dashboard-layout">
             {contextHolder}
             {/* 1. Sidebar */}
-            <Sidebar user={currentUser} /> 
+            {isMobile ? (
+                <Drawer
+                    placement="left"
+                    closable={true}
+                    onClose={() => setSidebarCollapsed(false)}
+                    open={sidebarCollapsed}
+                    width={260}
+                    style={{ padding: 0 }}
+                    className="sidebar-drawer"
+                >
+                    <Sidebar user={currentUser} />
+                </Drawer>
+            ) : (
+                <Sidebar 
+                    user={currentUser} 
+                />
+            )}
 
             {/* 2. Main Content */}
             <div className="main-content">
@@ -370,9 +474,19 @@ const Dashboard = () => { // <-- Opening brace for the function body
                             icon={<SyncOutlined spin={isLoading} />} 
                             onClick={fetchDashboardData}
                             disabled={isLoading}
+                            style={{ borderRadius: '8px' }}
                         >
                             Refresh Data
                         </Button>
+                        
+                        {isMobile && (
+                            <Button
+                                type="text"
+                                icon={<MenuOutlined />}
+                                onClick={() => setSidebarCollapsed(true)}
+                                style={{ fontSize: '18px' }}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -404,24 +518,34 @@ const Dashboard = () => { // <-- Opening brace for the function body
                         {!isLoading && (
                             <React.Fragment>
                                 {/* Date and Product Filters (EDITED BLOCK START) */}
-                                <div className="filter-row">
+                                <div className="filter-row" style={{ 
+                                    display: 'flex', 
+                                    gap: '20px', 
+                                    marginBottom: '24px',
+                                    flexWrap: 'wrap',
+                                    padding: '20px',
+                                    backgroundColor: 'white',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                                }}>
                                     {/* START DATE FILTER GROUP */}
-                                    <div className="filter-group">
-                                        <label htmlFor="startDate">Start Date</label>
+                                    <div className="filter-group" style={{ flex: 1, minWidth: '200px' }}>
+                                        <label htmlFor="startDate" style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#334155' }}>Date Range</label>
                                         <div className="date-filter">
                                             <RangePicker 
                                                 onChange={handleDateChange}
                                                 value={dateRange}
+                                                style={{ width: '100%', borderRadius: '8px' }}
                                             />
                                         </div>
                                     </div>
                                     
                                     {/* PRODUCT TYPE FILTER GROUP */}
-                                    <div className="filter-group">
-                                        <label htmlFor="productType">Product Type</label>
+                                    <div className="filter-group" style={{ flex: 1, minWidth: '200px' }}>
+                                        <label htmlFor="productType" style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#334155' }}>Content Type</label>
                                         <Select 
                                             defaultValue="All Content" 
-                                            style={{ width: '100%' }} 
+                                            style={{ width: '100%', borderRadius: '8px' }} 
                                             allowClear
                                             value={productType}
                                             onChange={handleProductTypeChange}
@@ -434,14 +558,16 @@ const Dashboard = () => { // <-- Opening brace for the function body
                                         </Select>
                                     </div>
                                     
-                                    <Button 
-                                        type="primary" 
-                                        className="get-data-btn" 
-                                        onClick={handleGetData}
-                                        loading={loadingContent && dateRange !== null}
-                                    >
-                                        Get Data
-                                    </Button>
+                                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                        <Button 
+                                            type="primary" 
+                                            onClick={handleGetData}
+                                            icon={<BarChartOutlined />}
+                                            style={{ borderRadius: '8px', height: '40px' }}
+                                        >
+                                            Apply Filters
+                                        </Button>
+                                    </div>
                                 </div>
                                 {/* Date and Product Filters (EDITED BLOCK END) */}
 
@@ -490,7 +616,20 @@ const Dashboard = () => { // <-- Opening brace for the function body
                                 </Row>
 
                                 {/* Tabs for different data views */}
-                                <Tabs defaultActiveKey="overview" style={{ marginBottom: '24px' }}>
+                                <Tabs defaultActiveKey="overview" style={{ marginBottom: '24px' }} tabBarExtraContent={
+                                    <Dropdown overlay={
+                                        <Menu>
+                                            <Menu.Item key="export">
+                                                Export Data
+                                            </Menu.Item>
+                                            <Menu.Item key="settings">
+                                                Settings
+                                            </Menu.Item>
+                                        </Menu>
+                                    }>
+                                        <Button type="text" icon={<MoreOutlined />} />
+                                    </Dropdown>
+                                }>
                                     <TabPane tab={<span><BarChartOutlined /> Overview</span>} key="overview">
                                         <Row gutter={[24, 24]}>
                                             <Col xs={24} md={16}>

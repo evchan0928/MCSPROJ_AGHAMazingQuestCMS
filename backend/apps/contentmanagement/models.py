@@ -78,6 +78,7 @@ class ContentItem(models.Model):
 
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_content')
     approved_at = models.DateTimeField(null=True, blank=True)
+    approval_notes = models.TextField(blank=True, help_text="Notes from the approver about the approval or rejection")
 
     published_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='published_content')
     published_at = models.DateTimeField(null=True, blank=True)

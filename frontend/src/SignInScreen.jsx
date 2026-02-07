@@ -1,7 +1,7 @@
 // src/SignInScreen.jsx
 import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmail } from './api/django-api'; // Import the authentication function
+import { signInWithEmail, getCurrentUser } from './api/django-api'; // Import the authentication function
 import LogosContainer from './LogosContainer'; 
 import './styles.css';
 
@@ -39,11 +39,25 @@ const SignInScreen = () => {
         try {
             // Make the actual API call to authenticate
             const response = await signInWithEmail(emailOrUsername, password);
-            console.log('Login successful. Redirecting to Dashboard. Remember Me:', rememberMe);
+            console.log('Login successful. Fetching user data. Remember Me:', rememberMe);
             
-            // If rememberMe is unchecked, we could potentially use sessionStorage instead of localStorage
-            // But by default, tokens are stored in localStorage by the signInWithEmail function
+            // Fetch user data to get user initials and name for the UI
+            const userData = await getCurrentUser();
             
+            // Store user initials and name in localStorage for the UI
+            localStorage.setItem('currentUserInitials', 
+              userData.first_name && userData.last_name 
+                ? `${userData.first_name.charAt(0)}${userData.last_name.charAt(0)}`.toUpperCase()
+                : userData.username.charAt(0).toUpperCase()
+            );
+            
+            localStorage.setItem('currentUserName', 
+              userData.first_name && userData.last_name 
+                ? `${userData.first_name} ${userData.last_name}`
+                : userData.username
+            );
+            
+            console.log('User data stored. Redirecting to Dashboard.');
             navigate('/dashboard'); 
         } catch (err) {
             // Extract error message from response

@@ -42,7 +42,7 @@ Internet -> nginx (Port 80/443) -> React Frontend & Django/Wagtail Backend
 - **JWT Tokens**: Used for API authentication
 - **Access Token**: Expires in 15 minutes
 - **Refresh Token**: Expires in 7 days
-- **Pre-provisioned Users**: `admin` / `admin123`, `demo_user`, `encoder_user`, `editor_user`, `approver_user`
+- **Pre-provisioned Users**: `admin` / `admin123`, `demo_user`, `encoder_user`, `editor_user`, `approver_user`, `super admin_user`, `admin_user`, `testuser`
 
 ### 3. Frontend Service (React)
 
@@ -50,6 +50,7 @@ Internet -> nginx (Port 80/443) -> React Frontend & Django/Wagtail Backend
 - **URL**: http://localhost:3000 (when running directly) or http://localhost (via nginx)
 - **API Connection**: Points to nginx which proxies to http://localhost:8000
 - **Environment Variable**: `REACT_APP_BACKEND_API_URL=http://localhost/api`
+- **TinyMCE Editor**: Configured with GPL license, no cloud dependency
 
 ### 4. Reverse Proxy (nginx)
 
@@ -104,6 +105,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+> Note: If you encounter a Python PEP 668 error ("externally-managed-environment"), ensure you're using a virtual environment as shown above. Never use `--break-system-packages` flag.
+
 4. Run database migrations:
 ```bash
 python manage.py migrate
@@ -131,7 +134,13 @@ cd frontend
 npm install
 ```
 
-3. Start the development server:
+3. Configure environment variables (copy from example):
+```bash
+cp .env.example .env
+# Edit .env to match your setup if needed
+```
+
+4. Start the development server:
 ```bash
 npm start
 ```
@@ -158,7 +167,7 @@ sudo systemctl reload nginx
 1. Ensure database is running: `docker-compose -f docker-compose-fullstack.yml up -d db`
 2. Ensure backend is running: `cd backend && source venv/bin/activate && python manage.py runserver 8000`
 3. Ensure frontend is running: `cd frontend && npm start`
-4. Access via nginx proxy: http://localhost
+4. Access via http://localhost:3000 for development or http://localhost through nginx proxy
 
 ### Production Mode (Docker Compose with nginx)
 ```bash
@@ -166,15 +175,32 @@ cd devops
 docker-compose -f docker-compose.production.yml up -d
 ```
 
-## Authentication Flow
+## Key Features & UI Navigation
 
-1. Access the application at http://localhost
+### Dashboard Features
+- **Responsive Design**: Works on desktop and mobile devices
+- **User Management**: Add, edit, delete users and manage roles
+- **Content Management**: Upload, edit, approve, and publish various content types
+- **Analytics**: Generate and view content analytics
+- **Navigation**: Home and Back buttons on all pages
+
+### Content Types Supported
+- Documents (PDF)
+- Images (JPG, PNG, GIF)
+- Videos (MP4, MOV)
+- Audio (MP3, WAV)
+- AR Markers
+
+### Authentication Flow
+
+1. Access the application at http://localhost or http://localhost:3000
 2. Navigate to the login page
 3. Enter credentials (e.g., `admin` / `admin123`)
 4. The login API (`/api/auth/login/`) returns JWT tokens
 5. Tokens are stored in localStorage (`access` and `refresh`)
 6. Subsequent API calls include the Authorization header with the access token
 7. When the access token expires, the refresh token is used to get a new access token
+8. Logout clears all tokens and redirects to login page
 
 ## Testing the Deployment
 
@@ -215,12 +241,44 @@ docker-compose -f docker-compose.production.yml up -d
    - Reload nginx after changes: `sudo systemctl reload nginx`
    - Check nginx logs: `sudo tail -f /var/log/nginx/error.log`
 
+6. **TinyMCE API Key Issues**:
+   - The editor is configured with GPL license and no API key required
+   - Check that REACT_APP_TINYMCE_API_KEY is empty in .env file
+
+7. **React Router Context Issues**:
+   - Ensure components that use `useOutletContext` are properly nested in routes
+   - Check that parent components pass context via `<Outlet context={{...}} />`
+
+8. **HTTP Method Not Allowed Errors**:
+   - Verify the backend supports the HTTP method being used (e.g., PUT vs PATCH)
+   - Check backend views for allowed methods
+
 ### Service Management
 
 To stop all services:
 1. Stop the frontend: `pkill -f "npm start"`
 2. Stop the backend: `pkill -f "python manage.py runserver"`
 3. Stop Docker containers: `docker-compose -f docker-compose-fullstack.yml down`
+
+## Development Guidelines
+
+### Adding New Content Types
+When adding new content types:
+1. Update the `CONTENT_TYPE_CHOICES` in the backend model
+2. Add conditional rendering in the frontend upload form
+3. Update serializers to handle new file types
+4. Ensure validation and storage work correctly
+
+### Updating User Roles
+1. Roles are managed through the Roles page in the dashboard
+2. Users can be assigned multiple roles
+3. Permissions are controlled by roles, not individual users
+
+### UI/UX Enhancements
+1. All pages have consistent navigation with Home and Back buttons
+2. Responsive design works on mobile and desktop
+3. Clean, intuitive interface with clear visual hierarchy
+4. Proper error handling and notifications
 
 ## Security Features
 
@@ -229,6 +287,7 @@ To stop all services:
 - Security headers implemented via nginx
 - Input validation on both frontend and backend
 - Secure password handling
+- Role-based access control
 
 ## Production Considerations
 

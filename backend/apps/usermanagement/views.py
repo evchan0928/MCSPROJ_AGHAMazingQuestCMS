@@ -30,8 +30,8 @@ def get_dashboard_stats(request):
         # Get published content count
         published_count = ContentItem.objects.filter(status='published').count()
         
-        # Get pending approval count
-        pending_approval_count = ContentItem.objects.filter(status='pending').count()
+        # Get pending approval count - FIXED: using correct status value
+        pending_approval_count = ContentItem.objects.filter(status='for_approval').count()
         
         # Get active users count
         active_users_count = User.objects.filter(is_active=True).count()

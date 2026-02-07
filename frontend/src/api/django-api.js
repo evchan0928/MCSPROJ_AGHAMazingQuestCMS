@@ -157,13 +157,19 @@ export const signOut = async () => {
     // Remove tokens from local storage
     localStorage.removeItem('access');
     localStorage.removeItem('refresh');
+    localStorage.removeItem('currentUserInitials');
+    localStorage.removeItem('currentUserName');
     
     // Optionally notify the backend
     try {
       await apiClient.post('/auth/logout/');
     } catch (err) {
-      // Ignore logout errors
+      // Ignore logout errors - proceed with client-side logout
+      console.warn('Logout notification to backend failed:', err);
     }
+    
+    // Redirect to sign-in page
+    window.location.href = '/signin';
   } catch (error) {
     throw new Error(error.message);
   }
@@ -339,9 +345,11 @@ export const sendContentForApproval = async (id) => {
 /**
  * Approve content item
  */
-export const approveContentItem = async (id) => {
+export const approveContentItem = async (id, notes = '') => {
   try {
-    const response = await apiClient.post(`/content/items/${id}/approve/`);
+    const response = await apiClient.post(`/content/items/${id}/approve/`, {
+      approval_notes: notes
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -351,9 +359,11 @@ export const approveContentItem = async (id) => {
 /**
  * Deny content item
  */
-export const denyContentItem = async (id) => {
+export const denyContentItem = async (id, notes = '') => {
   try {
-    const response = await apiClient.post(`/content/items/${id}/deny/`);
+    const response = await apiClient.post(`/content/items/${id}/deny/`, {
+      rejection_notes: notes
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -413,7 +423,7 @@ export const createUser = async (userData) => {
  */
 export const updateUser = async (id, userData) => {
   try {
-    const response = await apiClient.patch(`/users/${id}/`, userData);
+    const response = await apiClient.put(`/users/${id}/`, userData);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);

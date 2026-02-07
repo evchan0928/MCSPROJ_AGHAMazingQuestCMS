@@ -21,7 +21,7 @@ class ContentItemSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'body', 'file', 'status',
             'created_by', 'created_at', 'edited_by', 'edited_at',
-            'approved_by', 'approved_at', 'published_by', 'published_at', 'is_deleted',
+            'approved_by', 'approved_at', 'approval_notes', 'published_by', 'published_at', 'is_deleted',
             'file_url',
             'audio_url',
             # Additional content management fields
@@ -68,20 +68,10 @@ class ContentItemSerializer(serializers.ModelSerializer):
         Uses request in context when available so the mobile app gets a usable URL.
         """
         try:
-            if not obj.audio:
+            if not obj.file:  # Using the same 'file' field for all content types including audio
                 return None
             request = self.context.get('request') if self.context else None
-            url = obj.audio.url
-            if request:
-                return request.build_absolute_uri(url)
-            # Fallback: if url is already absolute, return it; else prefix origin
-            if url.startswith('http'):
-                return url
-            return f"{request.scheme if request else 'https'}://{request.get_host() if request else ''}{url}"
-        except Exception:
-            return None
-            request = self.context.get('request') if self.context else None
-            url = obj.file.url
+            url = obj.file.url  # Using the same 'file' field
             if request:
                 return request.build_absolute_uri(url)
             # Fallback: if url is already absolute, return it; else prefix origin

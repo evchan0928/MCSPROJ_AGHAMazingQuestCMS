@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Card, Typography, Tag, Spin } from 'antd';
 import { AudioOutlined, VideoCameraOutlined, PictureOutlined, FileTextOutlined } from '@ant-design/icons';
 import { getContentItems } from '../api/django-api';
+import NavigationHeader from '../components/NavigationHeader.jsx';
 
 const { Title, Paragraph } = Typography;
 
@@ -125,86 +126,89 @@ const ContentDetailPage = () => {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card title="Content Detail" style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        <Title level={2}>{content.title}</Title>
-        
-        <div style={{ marginBottom: '16px' }}>
-          <Tag color={content.content_type === 'audio' ? 'purple' : 
-                     content.content_type === 'video' ? 'blue' : 
-                     content.content_type === 'image' ? 'gold' : 'green'}>
-            {content.content_type.charAt(0).toUpperCase() + content.content_type.slice(1)}
-          </Tag>
-          <Tag color={
-            content.status === 'published' ? 'green' : 
-            content.status === 'for_approval' ? 'orange' : 
-            content.status === 'for_publishing' ? 'blue' : 
-            content.status === 'for_editing' ? 'default' : 'red'
-          }>
-            {content.status.replace(/_/g, ' ').toUpperCase()}
-          </Tag>
-        </div>
-
-        <div style={{ marginBottom: '24px' }}>
-          <strong>Author:</strong> {content.created_by?.username || 'Unknown'} | 
-          <strong> Created:</strong> {new Date(content.created_at).toLocaleDateString()}
-        </div>
-
-        {renderContentPreview(content)}
-
-        <div style={{ marginTop: '24px' }}>
-          <Title level={4}>Additional Information</Title>
+    <div>
+      <NavigationHeader title="Content Detail" />
+      <div style={{ padding: '24px' }}>
+        <Card title="Content Detail" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <Title level={2}>{content.title}</Title>
           
-          {content.meta_description && (
-            <div style={{ marginBottom: '16px' }}>
-              <strong>Meta Description:</strong>
-              <Paragraph>{content.meta_description}</Paragraph>
-            </div>
-          )}
-
-          {content.meta_keywords && (
-            <div style={{ marginBottom: '16px' }}>
-              <strong>Meta Keywords:</strong>
-              <Paragraph>{content.meta_keywords}</Paragraph>
-            </div>
-          )}
-
-          {content.photo_caption && (
-            <div style={{ marginBottom: '16px' }}>
-              <strong>Photo Caption:</strong>
-              <Paragraph>{content.photo_caption}</Paragraph>
-            </div>
-          )}
-
-          {content.highlights && (
-            <div style={{ marginBottom: '16px' }}>
-              <strong>Highlights:</strong>
-              <div 
-                style={{ padding: '16px', background: '#f9f9f9', borderRadius: '4px' }}
-                dangerouslySetInnerHTML={{ __html: content.highlights }}
-              />
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '16px' }}>
-            <Tag color={content.ar_marker ? 'green' : 'default'}>
-              AR Marker: {content.ar_marker ? 'Yes' : 'No'}
+          <div style={{ marginBottom: '16px' }}>
+            <Tag color={content.content_type === 'audio' ? 'purple' : 
+                       content.content_type === 'video' ? 'blue' : 
+                       content.content_type === 'image' ? 'gold' : 'green'}>
+              {content.content_type.charAt(0).toUpperCase() + content.content_type.slice(1)}
             </Tag>
-            <Tag color={content.quiz ? 'green' : 'default'}>
-              Quiz: {content.quiz ? 'Yes' : 'No'}
-            </Tag>
-            <Tag color={content.enable_badges ? 'green' : 'default'}>
-              Enable Badges: {content.enable_badges ? 'Yes' : 'No'}
-            </Tag>
-            <Tag color={content.chat_bot_allow ? 'green' : 'default'}>
-              Chat Bot: {content.chat_bot_allow ? 'Allow' : 'Disallow'}
-            </Tag>
-            <Tag color={content.exclude_audio ? 'green' : 'default'}>
-              Exclude Audio: {content.exclude_audio ? 'Yes' : 'No'}
+            <Tag color={
+              content.status === 'published' ? 'green' : 
+              content.status === 'for_approval' ? 'orange' : 
+              content.status === 'for_publishing' ? 'blue' : 
+              content.status === 'for_editing' ? 'default' : 'red'
+            }>
+              {content.status.replace(/_/g, ' ').toUpperCase()}
             </Tag>
           </div>
-        </div>
-      </Card>
+
+          <div style={{ marginBottom: '24px' }}>
+            <strong>Author:</strong> {content.created_by?.username || 'Unknown'} | 
+            <strong> Created:</strong> {new Date(content.created_at).toLocaleDateString()}
+          </div>
+
+          {renderContentPreview(content)}
+
+          <div style={{ marginTop: '24px' }}>
+            <Title level={4}>Additional Information</Title>
+            
+            {content.meta_description && (
+              <div style={{ marginBottom: '16px' }}>
+                <strong>Meta Description:</strong>
+                <Paragraph>{content.meta_description}</Paragraph>
+              </div>
+            )}
+
+            {content.meta_keywords && (
+              <div style={{ marginBottom: '16px' }}>
+                <strong>Meta Keywords:</strong>
+                <Paragraph>{content.meta_keywords}</Paragraph>
+              </div>
+            )}
+
+            {content.photo_caption && (
+              <div style={{ marginBottom: '16px' }}>
+                <strong>Photo Caption:</strong>
+                <Paragraph>{content.photo_caption}</Paragraph>
+              </div>
+            )}
+
+            {content.highlights && (
+              <div style={{ marginBottom: '16px' }}>
+                <strong>Highlights:</strong>
+                <div 
+                  style={{ padding: '16px', background: '#f9f9f9', borderRadius: '4px' }}
+                  dangerouslySetInnerHTML={{ __html: content.highlights }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '16px' }}>
+              <Tag color={content.ar_marker ? 'green' : 'default'}>
+                AR Marker: {content.ar_marker ? 'Yes' : 'No'}
+              </Tag>
+              <Tag color={content.quiz ? 'green' : 'default'}>
+                Quiz: {content.quiz ? 'Yes' : 'No'}
+              </Tag>
+              <Tag color={content.enable_badges ? 'green' : 'default'}>
+                Enable Badges: {content.enable_badges ? 'Yes' : 'No'}
+              </Tag>
+              <Tag color={content.chat_bot_allow ? 'green' : 'default'}>
+                Chat Bot: {content.chat_bot_allow ? 'Allow' : 'Disallow'}
+              </Tag>
+              <Tag color={content.exclude_audio ? 'green' : 'default'}>
+                Exclude Audio: {content.exclude_audio ? 'Yes' : 'No'}
+              </Tag>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };

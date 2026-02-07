@@ -81,33 +81,36 @@ const ContentList = () => {
     // Check if current user is the creator of the content
     const isCreator = item.created_by && item.created_by.id === currentUser?.id;
     
+    // Extract role names for easier comparison
+    const userRoleNames = (currentUser?.roles || []).map(role => role.name);
+    
     // Encoder can edit their own content if it's in 'for_editing' status
-    if (currentUser?.role === 'encoder' && isCreator && item.status === 'for_editing') {
+    if ((userRoleNames.includes('Encoder') || currentUser?.is_superuser) && isCreator && item.status === 'for_editing') {
       actions.push('Edit');
     }
     
     // Encoder can submit for approval if content is in 'for_editing' status
-    if (currentUser?.role === 'encoder' && isCreator && item.status === 'for_editing') {
+    if ((userRoleNames.includes('Encoder') || currentUser?.is_superuser) && isCreator && item.status === 'for_editing') {
       actions.push('SubmitForApproval');
     }
     
     // Reviewer can approve/reject content in 'for_approval' status
-    if ((currentUser?.role === 'reviewer' || currentUser?.is_superuser) && item.status === 'for_approval') {
+    if ((userRoleNames.includes('Approver') || currentUser?.is_superuser) && item.status === 'for_approval') {
       actions.push('Approve', 'Reject');
     }
     
     // Approver can publish content in 'for_publishing' status
-    if ((currentUser?.role === 'approver' || currentUser?.is_superuser) && item.status === 'for_publishing') {
+    if ((userRoleNames.includes('Approver') || currentUser?.is_superuser) && item.status === 'for_publishing') {
       actions.push('Publish');
     }
     
     // Encoder can delete draft content (for_editing) if they are the creator
-    if (currentUser?.role === 'encoder' && isCreator && item.status === 'for_editing') {
+    if ((userRoleNames.includes('Encoder') || currentUser?.is_superuser) && isCreator && item.status === 'for_editing') {
       actions.push('Delete');
     }
     
     // Approver can archive published content
-    if ((currentUser?.role === 'approver' || currentUser?.is_superuser) && item.status === 'published') {
+    if ((userRoleNames.includes('Approver') || currentUser?.is_superuser) && item.status === 'published') {
       actions.push('Archive');
     }
     
@@ -262,6 +265,20 @@ const ContentList = () => {
       width: 120,
     },
     {
+      title: 'Approval Notes',
+      dataIndex: 'approval_notes',
+      key: 'approval_notes',
+      render: (notes) => {
+        if (!notes) return 'N/A';
+        return (
+          <div style={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {notes}
+          </div>
+        );
+      },
+      width: 200,
+    },
+    {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => {
@@ -406,6 +423,20 @@ const ContentList = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 120,
+    },
+    {
+      title: 'Approval Notes',
+      dataIndex: 'approval_notes',
+      key: 'approval_notes',
+      render: (notes) => {
+        if (!notes) return 'N/A';
+        return (
+          <div style={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {notes}
+          </div>
+        );
+      },
+      width: 200,
     },
     {
       title: 'Actions',

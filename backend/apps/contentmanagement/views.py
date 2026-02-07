@@ -82,6 +82,12 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         # Only users in Approver group or superusers can approve
         if not (request.user.is_superuser or user_in_group(request.user, 'Approver')):
             return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Handle approval notes if provided
+        approval_notes = request.data.get('approval_notes', '').strip()
+        if approval_notes:
+            item.approval_notes = approval_notes
+        
         item.approve(user=request.user)
         return Response(self.get_serializer(item).data)
 
@@ -92,13 +98,19 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         # Only approvers or superusers can deny
         if not (request.user.is_superuser or user_in_group(request.user, 'Approver')):
             return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Handle rejection notes if provided
+        rejection_notes = request.data.get('rejection_notes', '').strip()
+        if rejection_notes:
+            item.approval_notes = rejection_notes  # Store rejection notes in the same field
+        
         # clear approval metadata and move back to editing
         item.status = ContentItem.STATUS_FOR_EDITING
         item.approved_by = None
         item.approved_at = None
         # record that it was sent back for editing
         item.edited_at = item.edited_at or None
-        item.save(update_fields=['status', 'approved_by', 'approved_at', 'edited_at'])
+        item.save(update_fields=['status', 'approved_by', 'approved_at', 'edited_at', 'approval_notes'])
         return Response(self.get_serializer(item).data)
 
     @action(detail=True, methods=['post'])
@@ -107,6 +119,7 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         # Only users in Approver group or superusers can publish
         if not (request.user.is_superuser or user_in_group(request.user, 'Approver')):
             return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
         item.publish(user=request.user)
         return Response(self.get_serializer(item).data)
 

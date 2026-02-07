@@ -1,623 +1,284 @@
-// src/pages/UploadContentPage.jsx
-
 import React, { useState } from 'react';
+import { Form, Input, Button, Card, message, Select, Upload, Switch, Divider, Radio } from 'antd';
+import { UploadOutlined, SaveOutlined, CloseCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { message, notification } from 'antd';
+import { Editor } from '@tinymce/tinymce-react';
 import { createContentItem } from '../api/django-api';
+import NavigationHeader from '../components/NavigationHeader.jsx';
 
-export default function UploadContentPage() {
+const { Option } = Select;
+const { TextArea } = Input;
+
+const UploadContentPage = () => {
+  const [form] = Form.useForm();
   const navigate = useNavigate();
-  
-  // State to manage all form fields - using backend field names
-  const [formData, setFormData] = useState({
-    title: '',
-    body: '', 
-    status: 'for_editing', // Default status matching backend workflow
-    content_type: 'text', // Changed to snake_case to match backend
-    meta_keywords: '',  // Changed to snake_case to match backend
-    meta_description: '', // Changed to snake_case to match backend
-    photo_caption: '', // Changed to snake_case to match backend
-    highlights: '', 
-    ar_marker: false, // Changed to snake_case to match backend
-    quiz: false,
-    enable_badges: false, // Changed to snake_case to match backend
-    chat_bot_allow: true, // Changed to snake_case to match backend
-    exclude_audio: false, // Changed to snake_case to match backend
-  });
+  const [contentData, setContentData] = useState(new FormData());
+  const [contentType, setContentType] = useState('text');
+  const [fileList, setFileList] = useState([]);
+  const [saving, setSaving] = useState(false);
 
-  const [imageFile, setImageFile] = useState(null);
-  const [pdfFile, setPdfFile] = useState(null);
-  const [audioFile, setAudioFile] = useState(null);  // Adding audio file state
-  const [loading, setLoading] = useState(false);
-
-  // Generic handler for all input changes
-  const handleChange = (e) => {
-    const { name, type, value, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' || type === 'radio' ? (type === 'radio' ? checked && value : checked) : value,
-    }));
-  };
-
-  const handleImageFileChange = (e) => {
-    setImageFile(e.target.files[0]);
-  };
-
-  const handlePdfFileChange = (e) => {
-    setPdfFile(e.target.files[0]);
-  };
-
-  // Handle audio file changes
-  const handleAudioFileChange = (e) => {
-    setAudioFile(e.target.files[0]);
-  };
-
-  // Handle rich text editor changes
-  const handleRichTextChange = (field, content) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: content
-    }));
-  };
-
-  const [api, contextHolder] = notification.useNotification();
-
-  const handleSaveDraft = async () => {
-    // Validate required fields
-    if (!formData.title.trim()) {
-      message.error('Title is required');
-      return;
-    }
-    
-    if (!formData.meta_keywords.trim()) {
-      message.error('Meta Keywords are required');
-      return;
-    }
-    
-    if (!formData.meta_description.trim()) {
-      message.error('Meta Description is required');
-      return;
-    }
-    
-    setLoading(true);
-    
+  // Handle form submission
+  const handleSubmit = async (values) => {
+    setSaving(true);
     try {
-      // Create form data for file upload
-      const contentData = new FormData();
+      // Create form data to send to the API
+      const formData = new FormData();
       
-      // Add all form fields to FormData
-      Object.entries(formData).forEach(([key, value]) => {
-        // Special handling for booleans - convert to strings as Django expects
-        if(typeof value === 'boolean') {
-          contentData.append(key, value.toString());
-        } else {
-          contentData.append(key, value);
+      // Add all form values
+      Object.entries(values).forEach(([key, value]) => {
+        if (typeof value === 'boolean') {
+          formData.append(key, value.toString());
+        } else if (value !== undefined && value !== null) {
+          formData.append(key, value);
         }
       });
       
-      // Add file if available - prioritize audio file if content type is audio
-      if (formData.content_type === 'audio' && audioFile) {
-        contentData.append('file', audioFile, audioFile.name);
-      } else if (imageFile) {
-        contentData.append('file', imageFile, imageFile.name);
-      } else if (pdfFile) {
-        contentData.append('file', pdfFile, pdfFile.name);
+      // Add file if it exists
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        formData.append('file', fileList[0].originFileObj);
       }
       
-      // Set status to for editing (draft state)
-      contentData.set('status', 'for_editing');
-
-      const result = await createContentItem(contentData);
-      message.success('Content saved as draft successfully!');
-      navigate('/dashboard/content/list'); // Redirect to content list
+      // Set status to for_approval by default
+      formData.set('status', 'for_approval');
+      
+      // Create the content item
+      await createContentItem(formData);
+      
+      message.success('Content uploaded successfully!');
+      navigate('/dashboard/content/list'); // Redirect to content list after upload
     } catch (error) {
-      console.error('Error saving draft:', error);
-      console.error('Error details:', error.response?.data);
-      message.error(`Failed to save draft: ${error.message || error.response?.data?.detail || 'Unknown error'}`);
+      console.error('Error uploading content:', error);
+      message.error('Failed to upload content: ' + (error.message || 'Unknown error'));
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!formData.title.trim()) {
-      message.error('Title is required');
-      return;
-    }
-    
-    if (!formData.meta_keywords.trim()) {
-      message.error('Meta Keywords are required');
-      return;
-    }
-    
-    if (!formData.meta_description.trim()) {
-      message.error('Meta Description is required');
-      return;
-    }
-    
-    setLoading(true);
-
-    try {
-      // Create form data for file upload
-      const contentData = new FormData();
-      
-      // Add all form fields to FormData
-      Object.entries(formData).forEach(([key, value]) => {
-        // Special handling for booleans - convert to strings as Django expects
-        if(typeof value === 'boolean') {
-          contentData.append(key, value.toString());
-        } else {
-          contentData.append(key, value);
-        }
-      });
-      
-      // Add file if available - prioritize audio file if content type is audio
-      if (formData.content_type === 'audio' && audioFile) {
-        contentData.append('file', audioFile, audioFile.name);
-      } else if (imageFile) {
-        contentData.append('file', imageFile, imageFile.name);
-      } else if (pdfFile) {
-        contentData.append('file', pdfFile, pdfFile.name);
-      }
-      
-      // Set status to for approval
-      contentData.set('status', 'for_approval');
-
-      const result = await createContentItem(contentData);
-      
-      message.success('Content submitted successfully!');
-      navigate('/dashboard/content/approve'); // Redirect to approve content page
-    } catch (error) {
-      console.error('Error submitting content:', error);
-      console.error('Error details:', error.response?.data);
-      message.error(`Failed to submit content: ${error.message || error.response?.data?.detail || 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
+  // Handle file upload changes
+  const handleFileChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
   };
-  
-  // Function to handle formatting commands
-  const formatText = (command, value = null) => {
-    document.execCommand(command, false, value);
-    // Force a re-render to capture the updated content
-    setTimeout(() => {
-      const activeElement = document.activeElement;
-      if (activeElement && activeElement.classList.contains('editor-content')) {
-        handleRichTextChange(activeElement.id, activeElement.innerHTML);
-      }
-    }, 0);
-  };
-  
-  // Function to handle color selection
-  const handleColorChange = (command, color) => {
-    formatText(command, color);
+
+  // Handle content type change
+  const handleContentTypeChange = (value) => {
+    setContentType(value);
   };
 
   return (
-    // The 'card' class provides the main container styling matching your design
-    // The router renders this component directly into the main content area of the layout.
-    <div className="card">
-      <h1 className="card-title">Upload Content</h1> {/* Use H2 for the main title */}
-      <p>Fill out the form below to create and upload new content.</p>
-
-      <form onSubmit={handleSubmit} className="content-form-layout">
-        
-        {/* Top Controls: Checkboxes and Action Buttons */}
-        <div className="form-header-controls">
-          <div className="checkbox-group">
-            {/* Checkbox 1: AR Marker */}
-            <label className="checkbox-container">
-              <input
-                type="checkbox"
-                name="ar_marker"
-                checked={formData.ar_marker}
-                onChange={handleChange}
-              />
-              <span className="checkbox-custom"></span>
-              AR Marker
-            </label>
-            {/* Checkbox 2: Quiz */}
-            <label className="checkbox-container">
-              <input
-                type="checkbox"
-                name="quiz"
-                checked={formData.quiz}
-                onChange={handleChange}
-              />
-              <span className="checkbox-custom"></span>
-              Quiz
-            </label>
-            {/* Checkbox 3: Enable Badges */}
-            <label className="checkbox-container">
-              <input
-                type="checkbox"
-                name="enable_badges"
-                checked={formData.enable_badges}
-                onChange={handleChange}
-              />
-              <span className="checkbox-custom"></span>
-              Enable Badges
-            </label>
-          </div>
-          <div className="action-buttons">
-            <button type="button" className="secondary-action-btn" onClick={handleSaveDraft} disabled={loading}>
-              Save as Draft
-            </button>
-            <button type="submit" className="primary-action-btn" disabled={loading}>
-              {loading ? 'Submitting...' : 'Submit for Review'}
-            </button>
-          </div>
-        </div>
-
-        {/* Main Form Grid Layout */}
-        <div className="form-grid">
-          
-          {/* Row 1: Title (Full Width) */}
-          <div className="form-group grid-item-1-6">
-            <label htmlFor="title">Content Title *</label>
-            <input
-              type="text"
-              id="title"
+    <div>
+      <NavigationHeader title="Upload Content" />
+      <div style={{ padding: '24px' }}>
+        <Card title="Upload New Content" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            initialValues={{
+              title: '',
+              content_type: 'text',
+              ar_marker: false,
+              quiz: false,
+              enable_badges: false,
+              chat_bot_allow: true,
+              exclude_audio: false,
+            }}
+          >
+            <Form.Item
+              label="Title"
               name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Enter content title"
-              required
-            />
-          </div>
-
-          {/* Row 2: Type Selection */}
-          <div className="form-group grid-item-1-6">
-            <label htmlFor="content_type">Content Type *</label>
-            <select
-              id="content_type"
-              name="content_type"
-              value={formData.content_type}
-              onChange={handleChange}
-              required
+              rules={[{ required: true, message: 'Please input the content title!' }]}
             >
-              <option value="text">Text</option>
-              <option value="image">Image</option>
-              <option value="video">Video</option>
-              <option value="document">Document</option>
-              <option value="audio">Audio</option>  {/* Adding audio option */}
-            </select>
-          </div>
+              <Input placeholder="Enter content title" />
+            </Form.Item>
 
-          {/* Row 4: Description (Rich Text Editor with full Word-like functionality, Full Width) */}
-          <div className="form-group grid-item-1-6">
-            <label htmlFor="body">Description</label>
-            <div className="rich-text-editor">
-              <div className="editor-toolbar" onMouseDown={(e) => e.preventDefault()}>
-                <div className="toolbar-group">
-                  <button type="button" title="Bold" onMouseDown={(e) => {e.preventDefault(); formatText('bold')}}>
-                    <b>B</b>
-                  </button>
-                  <button type="button" title="Italic" onMouseDown={(e) => {e.preventDefault(); formatText('italic')}}>
-                    <i>I</i>
-                  </button>
-                  <button type="button" title="Underline" onMouseDown={(e) => {e.preventDefault(); formatText('underline')}}>
-                    <u>U</u>
-                  </button>
-                  <button type="button" title="Strikethrough" onMouseDown={(e) => {e.preventDefault(); formatText('strikethrough')}}>
-                    <span style={{textDecoration: 'line-through'}}>S</span>
-                  </button>
-                </div>
-                
-                <div className="toolbar-group">
-                  <select onChange={(e) => formatText('formatBlock', e.target.value)} defaultValue="">
-                    <option value="">Format</option>
-                    <option value="h1">Heading 1</option>
-                    <option value="h2">Heading 2</option>
-                    <option value="h3">Heading 3</option>
-                    <option value="pre">Preformatted</option>
-                  </select>
-                  
-                  <select onChange={(e) => formatText('fontSize', e.target.value)} defaultValue="3">
-                    <option value="1">Small</option>
-                    <option value="5">Large</option>
-                    <option value="6">Huge</option>
-                  </select>
-                </div>
-                
-                <div className="toolbar-group">
-                  <button type="button" title="Align Left" onMouseDown={(e) => {e.preventDefault(); formatText('justifyLeft')}}>
-                    <span className="material-icons">format_align_left</span>
-                  </button>
-                  <button type="button" title="Align Center" onMouseDown={(e) => {e.preventDefault(); formatText('justifyCenter')}}>
-                    <span className="material-icons">format_align_center</span>
-                  </button>
-                  <button type="button" title="Align Right" onMouseDown={(e) => {e.preventDefault(); formatText('justifyRight')}}>
-                    <span className="material-icons">format_align_right</span>
-                  </button>
-                  <button type="button" title="Justify" onMouseDown={(e) => {e.preventDefault(); formatText('justifyFull')}}>
-                    <span className="material-icons">format_align_justify</span>
-                  </button>
-                </div>
-                
-                <div className="toolbar-group">
-                  <button type="button" title="Bullet List" onMouseDown={(e) => {e.preventDefault(); formatText('insertUnorderedList')}}>
-                    <span className="material-icons">format_list_bulleted</span>
-                  </button>
-                  <button type="button" title="Numbered List" onMouseDown={(e) => {e.preventDefault(); formatText('insertOrderedList')}}>
-                    <span className="material-icons">format_list_numbered</span>
-                  </button>
-                </div>
-                
-                <div className="toolbar-group">
-                  <input 
-                    type="color" 
-                    title="Text Color" 
-                    onChange={(e) => handleColorChange('foreColor', e.target.value)}
-                    style={{width: '30px', height: '30px', border: 'none', backgroundColor: 'transparent'}}
-                  />
-                  <input 
-                    type="color" 
-                    title="Background Color" 
-                    onChange={(e) => handleColorChange('hiliteColor', e.target.value)}
-                    style={{width: '30px', height: '30px', border: 'none', backgroundColor: 'transparent'}}
-                  />
-                </div>
-                
-                <div className="toolbar-group">
-                  <button type="button" title="Undo" onMouseDown={(e) => {e.preventDefault(); formatText('undo')}}>
-                    <span className="material-icons">undo</span>
-                  </button>
-                  <button type="button" title="Redo" onMouseDown={(e) => {e.preventDefault(); formatText('redo')}}>
-                    <span className="material-icons">redo</span>
-                  </button>
-                </div>
-              </div>
-              <div
-                id="body"
-                name="body"
-                contentEditable
-                className="editor-content"
-                style={{ minHeight: '200px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-                dangerouslySetInnerHTML={{ __html: formData.body }}
-                onBlur={(e) => handleRichTextChange('body', e.target.innerHTML)}
-              ></div>
-            </div>
-          </div>
+            <Form.Item
+              label="Content Type"
+              name="content_type"
+              rules={[{ required: true, message: 'Please select content type!' }]}
+            >
+              <Select placeholder="Select content type" onChange={handleContentTypeChange}>
+                <Option value="text">Text</Option>
+                <Option value="image">Image</Option>
+                <Option value="video">Video</Option>
+                <Option value="document">Document</Option>
+                <Option value="audio">Audio</Option>
+              </Select>
+            </Form.Item>
 
-          {/* Row 5: Meta Keywords & Meta Description (2 columns) */}
-          <div className="form-group grid-item-1-3">
-            <label htmlFor="meta_keywords">Meta Keywords *</label>
-            <textarea
-              id="meta_keywords"
+            <Form.Item
+              label="Content Body"
+              name="body"
+            >
+              <Editor
+                apiKey={null} // Disable API key requirement
+                init={{
+                  height: 400,
+                  menubar: false,
+                  plugins: [
+                    'advlist autolink lists link image charmap print preview anchor',
+                    'searchreplace visualblocks code fullscreen',
+                    'insertdatetime media table paste code help wordcount'
+                  ],
+                  toolbar:
+                    'undo redo | formatselect | bold italic backcolor | ' +
+                    'alignleft aligncenter alignright alignjustify | ' +
+                    'bullist numlist outdent indent | removeformat | help',
+                  license_key: 'gpl' // Use GPL license for open source configuration
+                }}
+              />
+            </Form.Item>
+
+            {/* File upload based on content type */}
+            <Form.Item
+              label="File Upload"
+              name="file"
+            >
+              <Upload 
+                maxCount={1} 
+                fileList={fileList}
+                onChange={handleFileChange}
+                beforeUpload={() => false}  // Disable auto upload
+              >
+                <Button icon={<UploadOutlined />}>
+                  Click to upload {contentType === 'image' ? 'image' : 
+                                  contentType === 'video' ? 'video' : 
+                                  contentType === 'audio' ? 'audio file' : 
+                                  contentType === 'document' ? 'document' : 'file'}
+                </Button>
+              </Upload>
+            </Form.Item>
+
+            <Divider orientation="left">Additional Information</Divider>
+
+            <Form.Item
+              label="Meta Keywords"
               name="meta_keywords"
-              value={formData.meta_keywords}
-              onChange={handleChange}
-              rows="4"
-              placeholder=""
-              required
-            ></textarea>
-          </div>
-          <div className="form-group grid-item-4-6">
-            <label htmlFor="meta_description">Meta Description *</label>
-            <textarea
-              id="meta_description"
+            >
+              <TextArea placeholder="Enter meta keywords (comma separated)" />
+            </Form.Item>
+
+            <Form.Item
+              label="Meta Description"
               name="meta_description"
-              value={formData.meta_description}
-              onChange={handleChange}
-              rows="4"
-              placeholder=""
-              required
-            ></textarea>
-          </div>
+            >
+              <TextArea placeholder="Enter meta description" />
+            </Form.Item>
 
-          {/* Row 6: Image Upload (Full Width) */}
-          <div className="grid-item-1-6">
-            <div className="file-upload-box">
-              <input
-                type="file"
-                id="imageFile"
-                name="imageFile"
-                className="file-upload-input"
-                onChange={handleImageFileChange}
-                accept="image/*"
-              />
-              <label htmlFor="imageFile" className="file-upload-label">
-                <span className="material-icons upload-icon">image</span>
-                <p>Drag and drop an image, or <span>Browse</span></p>
-                <p className="upload-hint">Minimum 800px width recommended. Max 10MB each</p>
-              </label>
-            </div>
-          </div>
-
-          {/* Row 7: Photo Caption (Full Width) */}
-          <div className="form-group grid-item-1-6">
-            <label htmlFor="photo_caption">Photo Caption</label>
-            <input
-              type="text"
-              id="photo_caption"
+            <Form.Item
+              label="Photo Caption"
               name="photo_caption"
-              value={formData.photo_caption}
-              onChange={handleChange}
-              placeholder=""
-            />
-          </div>
+            >
+              <Input placeholder="Enter photo caption (if applicable)" />
+            </Form.Item>
 
-          {/* Row 8: Highlights (Rich Text Editor with full Word-like functionality, Full Width) */}
-          <div className="form-group grid-item-1-6">
-            <label htmlFor="highlights">Highlights</label>
-            <div className="rich-text-editor">
-              <div className="editor-toolbar" onMouseDown={(e) => e.preventDefault()}>
-                <div className="toolbar-group">
-                  <button type="button" title="Bold" onMouseDown={(e) => {e.preventDefault(); formatText('bold')}}>
-                    <b>B</b>
-                  </button>
-                  <button type="button" title="Italic" onMouseDown={(e) => {e.preventDefault(); formatText('italic')}}>
-                    <i>I</i>
-                  </button>
-                  <button type="button" title="Underline" onMouseDown={(e) => {e.preventDefault(); formatText('underline')}}>
-                    <u>U</u>
-                  </button>
-                  <button type="button" title="Strikethrough" onMouseDown={(e) => {e.preventDefault(); formatText('strikethrough')}}>
-                    <span style={{textDecoration: 'line-through'}}>S</span>
-                  </button>
-                </div>
-                
-                <div className="toolbar-group">
-                  <select onChange={(e) => formatText('formatBlock', e.target.value)} defaultValue="">
-                    <option value="">Format</option>
-                    <option value="h1">Heading 1</option>
-                    <option value="h2">Heading 2</option>
-                    <option value="h3">Heading 3</option>
-                    <option value="pre">Preformatted</option>
-                  </select>
-                  
-                  <select onChange={(e) => formatText('fontSize', e.target.value)} defaultValue="3">
-                    <option value="1">Small</option>
-                    <option value="5">Large</option>
-                    <option value="6">Huge</option>
-                  </select>
-                </div>
-                
-                <div className="toolbar-group">
-                  <button type="button" title="Align Left" onMouseDown={(e) => {e.preventDefault(); formatText('justifyLeft')}}>
-                    <span className="material-icons">format_align_left</span>
-                  </button>
-                  <button type="button" title="Align Center" onMouseDown={(e) => {e.preventDefault(); formatText('justifyCenter')}}>
-                    <span className="material-icons">format_align_center</span>
-                  </button>
-                  <button type="button" title="Align Right" onMouseDown={(e) => {e.preventDefault(); formatText('justifyRight')}}>
-                    <span className="material-icons">format_align_right</span>
-                  </button>
-                  <button type="button" title="Justify" onMouseDown={(e) => {e.preventDefault(); formatText('justifyFull')}}>
-                    <span className="material-icons">format_align_justify</span>
-                  </button>
-                </div>
-                
-                <div className="toolbar-group">
-                  <button type="button" title="Bullet List" onMouseDown={(e) => {e.preventDefault(); formatText('insertUnorderedList')}}>
-                    <span className="material-icons">format_list_bulleted</span>
-                  </button>
-                  <button type="button" title="Numbered List" onMouseDown={(e) => {e.preventDefault(); formatText('insertOrderedList')}}>
-                    <span className="material-icons">format_list_numbered</span>
-                  </button>
-                </div>
-                
-                <div className="toolbar-group">
-                  <input 
-                    type="color" 
-                    title="Text Color" 
-                    onChange={(e) => handleColorChange('foreColor', e.target.value)}
-                    style={{width: '30px', height: '30px', border: 'none', backgroundColor: 'transparent'}}
-                  />
-                  <input 
-                    type="color" 
-                    title="Background Color" 
-                    onChange={(e) => handleColorChange('hiliteColor', e.target.value)}
-                    style={{width: '30px', height: '30px', border: 'none', backgroundColor: 'transparent'}}
-                  />
-                </div>
-                
-                <div className="toolbar-group">
-                  <button type="button" title="Undo" onMouseDown={(e) => {e.preventDefault(); formatText('undo')}}>
-                    <span className="material-icons">undo</span>
-                  </button>
-                  <button type="button" title="Redo" onMouseDown={(e) => {e.preventDefault(); formatText('redo')}}>
-                    <span className="material-icons">redo</span>
-                  </button>
-                </div>
-              </div>
-              <div
-                id="highlights"
-                name="highlights"
-                contentEditable
-                className="editor-content"
-                style={{ minHeight: '150px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-                dangerouslySetInnerHTML={{ __html: formData.highlights }}
-                onBlur={(e) => handleRichTextChange('highlights', e.target.innerHTML)}
-              ></div>
-            </div>
-          </div>
-
-          {/* Row 5: Chat Bot & Exclude Audio (Full Width control) */}
-          <div className="form-group grid-item-1-6 chatbot-controls">
-            <label className="chat-bot-label">Chat Bot</label>
-            <div className="radio-group">
-              <label className="radio-container">
-                <input
-                  type="radio"
-                  name="chat_bot_allow"
-                  value="true"
-                  checked={formData.chat_bot_allow === true}
-                  onChange={() => setFormData(prev => ({ ...prev, chat_bot_allow: true }))}
-                />
-                <span className="radio-custom"></span>
-                Allow
-              </label>
-              <label className="radio-container">
-                <input
-                  type="radio"
-                  name="chat_bot_allow"
-                  value="false"
-                  checked={formData.chat_bot_allow === false}
-                  onChange={() => setFormData(prev => ({ ...prev, chat_bot_allow: false }))}
-                />
-                <span className="radio-custom"></span>
-                Disallow
-              </label>
-            </div>
-            <label className="checkbox-container exclude-audio-checkbox">
-              <input
-                type="checkbox"
-                name="exclude_audio"
-                checked={formData.exclude_audio}
-                onChange={handleChange}
+            <Form.Item
+              label="Highlights"
+              name="highlights"
+            >
+              <Editor
+                apiKey={null} // Disable API key requirement
+                init={{
+                  height: 200,
+                  width: '100%',
+                  menubar: false,
+                  plugins: [
+                    'advlist autolink lists link charmap print preview anchor',
+                    'searchreplace visualblocks code fullscreen',
+                    'insertdatetime table paste code help wordcount'
+                  ],
+                  toolbar:
+                    'undo redo | formatselect | bold italic | ' +
+                    'alignleft aligncenter alignright alignjustify | ' +
+                    'bullist numlist outdent indent | removeformat | help',
+                  mobile: { // Better mobile experience
+                    menubar: false,
+                    toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist'
+                  },
+                  license_key: 'gpl' // Use GPL license for open source configuration
+                }}
               />
-              <span className="checkbox-custom"></span>
-                Exclude Audio
-              </label>
+            </Form.Item>
+
+            <Divider orientation="left">Options</Divider>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+              <Form.Item 
+                name="ar_marker" 
+                label="AR Marker" 
+                valuePropName="checked"
+                tooltip={{ title: 'Enable AR marker for this content', icon: <InfoCircleOutlined /> }}
+              >
+                <Switch />
+              </Form.Item>
+              
+              <Form.Item 
+                name="quiz" 
+                label="Quiz" 
+                valuePropName="checked"
+                tooltip={{ title: 'Include quiz with this content', icon: <InfoCircleOutlined /> }}
+              >
+                <Switch />
+              </Form.Item>
+              
+              <Form.Item 
+                name="enable_badges" 
+                label="Enable Badges" 
+                valuePropName="checked"
+                tooltip={{ title: 'Enable badge system for this content', icon: <InfoCircleOutlined /> }}
+              >
+                <Switch />
+              </Form.Item>
+              
+              <Form.Item 
+                name="exclude_audio" 
+                label="Exclude Audio" 
+                valuePropName="checked"
+                tooltip={{ title: 'Exclude audio from this content', icon: <InfoCircleOutlined /> }}
+              >
+                <Switch />
+              </Form.Item>
             </div>
 
-          {/* Row 7: PDF Upload (Full Width) */}
-          <div className="grid-item-1-6">
-            <div className="file-upload-box pdf-upload-box">
-              <input
-                type="file"
-                id="pdfFile"
-                name="pdfFile"
-                className="file-upload-input"
-                onChange={handlePdfFileChange}
-                accept="application/pdf"
-              />
-              <label htmlFor="pdfFile" className="file-upload-label">
-                <span className="material-icons upload-icon">picture_as_pdf</span>
-                <p>Drag and drop PDF file here, or <span>Browse</span></p>
-                <p className="upload-hint">Max PDF file size is 10MB</p>
-              </label>
-            </div>
-          </div>
+            <Form.Item
+              name="chat_bot_allow" 
+              label="Chat Bot Allow" 
+              valuePropName="checked"
+              style={{ marginBottom: 24 }}
+              tooltip={{ title: 'Allow chat bot interaction with this content', icon: <InfoCircleOutlined /> }}
+            >
+              <Radio.Group>
+                <Radio value={true}>Allow</Radio>
+                <Radio value={false}>Disallow</Radio>
+              </Radio.Group>
+            </Form.Item>
 
-          {/* Row 7: Audio Upload (Full Width) - conditionally rendered if content type is audio */}
-          {formData.content_type === 'audio' && (
-            <div className="grid-item-1-6">
-              <div className="file-upload-box audio-upload-box">
-                <input
-                  type="file"
-                  id="audioFile"
-                  name="audioFile"
-                  className="file-upload-input"
-                  onChange={(e) => setAudioFile(e.target.files[0])}
-                  accept="audio/mp3,audio/mpeg,audio/wav,audio/flac"
-                />
-                <label htmlFor="audioFile" className="file-upload-label">
-                  <span className="material-icons upload-icon">audiotrack</span>
-                  <p>Drag and drop audio file here, or <span>Browse</span></p>
-                  <p className="upload-hint">Supported formats: MP3, WAV, FLAC. Max file size is 50MB</p>
-                </label>
+            <Form.Item>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  icon={<SaveOutlined />}
+                  loading={saving}
+                  style={{ flex: 1, minWidth: '120px' }}
+                  block // Make buttons take full width on small screens
+                >
+                  Submit for Approval
+                </Button>
+                <Button 
+                  onClick={() => navigate('/dashboard/content/list')}
+                  icon={<CloseCircleOutlined />}
+                  style={{ flex: 1, minWidth: '120px' }}
+                  block // Make buttons take full width on small screens
+                >
+                  Cancel
+                </Button>
               </div>
-            </div>
-          )}
-
-          </div> {/* End form-grid */}
-        </form>
+            </Form.Item>
+          </Form>
+        </Card>
       </div>
-    );
-  }
+    </div>
+  );
+};
+
+export default UploadContentPage;

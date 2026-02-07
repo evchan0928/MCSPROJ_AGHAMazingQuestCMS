@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Card, Modal, notification, Tag, Space, Pagination, Descriptions, Typography } from 'antd';
+import { Table, Button, Card, Modal, notification, Tag, Space, Pagination, Descriptions, Typography, Input, message } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useOutletContext } from 'react-router-dom';
 import { 
@@ -10,12 +10,17 @@ import {
 import statusLabel from '../utils/statusLabels.jsx';
 
 const { Title, Paragraph, Text } = Typography;
+const { TextArea } = Input;
 
 export default function ApproveContentPage() {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [notesModalVisible, setNotesModalVisible] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
+  const [approvalNotes, setApprovalNotes] = useState('');
+  const [rejectionNotes, setRejectionNotes] = useState('');
+  const [currentAction, setCurrentAction] = useState(null); // 'approve' or 'reject'
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [api, contextHolder] = notification.useNotification();
@@ -51,9 +56,51 @@ export default function ApproveContentPage() {
     fetchPendingContent();
   }, [fetchPendingContent]);
 
+  const handleApproveWithNotes = async () => {
+    if (!selectedContent) return;
+    
+    try {
+      await approveContentItem(selectedContent.id, approvalNotes);
+      api.success({
+        message: 'Success',
+        description: 'Content approved successfully'
+      });
+      setApprovalNotes('');
+      setNotesModalVisible(false);
+      fetchPendingContent();
+    } catch (error) {
+      console.error('Error approving content:', error);
+      api.error({
+        message: 'Error',
+        description: 'Failed to approve content'
+      });
+    }
+  };
+
+  const handleRejectWithNotes = async () => {
+    if (!selectedContent) return;
+    
+    try {
+      await denyContentItem(selectedContent.id, rejectionNotes);
+      api.success({
+        message: 'Success',
+        description: 'Content rejected successfully'
+      });
+      setRejectionNotes('');
+      setNotesModalVisible(false);
+      fetchPendingContent();
+    } catch (error) {
+      console.error('Error rejecting content:', error);
+      api.error({
+        message: 'Error',
+        description: 'Failed to reject content'
+      });
+    }
+  };
+
   const handleApprove = async (id) => {
     try {
-      await approveContentItem(id);
+      await approveContentItem(id, ''); // Pass empty string for notes when approving without modal
       api.success({
         message: 'Success',
         description: 'Content approved successfully'
@@ -70,7 +117,7 @@ export default function ApproveContentPage() {
 
   const handleReject = async (id) => {
     try {
-      await denyContentItem(id);
+      await denyContentItem(id, 'Content rejected without specific notes'); // Provide default notes
       api.success({
         message: 'Success',
         description: 'Content rejected successfully'
@@ -92,7 +139,15 @@ export default function ApproveContentPage() {
 
   const hideModal = () => {
     setModalVisible(false);
+    setNotesModalVisible(false);
     setSelectedContent(null);
+    setCurrentAction(null);
+  };
+
+  const showNotesModal = (record, action) => {
+    setSelectedContent(record);
+    setCurrentAction(action);
+    setNotesModalVisible(true);
   };
 
   const handlePageChange = (page, pageSize) => {
@@ -139,6 +194,12 @@ export default function ApproveContentPage() {
       ),
     },
     {
+      title: 'Type',
+      dataIndex: 'content_type',
+      key: 'content_type',
+      render: (type) => type || 'text'
+    },
+    {
       title: 'Created At',
       dataIndex: 'created_at',
       key: 'created_at',
@@ -158,14 +219,14 @@ export default function ApproveContentPage() {
           <Button 
             type="primary" 
             icon={<CheckCircleOutlined />}
-            onClick={() => handleApprove(record.id)}
+            onClick={() => showNotesModal(record, 'approve')}
           >
             Approve
           </Button>
           <Button 
             danger
             icon={<CloseCircleOutlined />}
-            onClick={() => handleReject(record.id)}
+            onClick={() => showNotesModal(record, 'reject')}
           >
             Reject
           </Button>
@@ -221,20 +282,14 @@ export default function ApproveContentPage() {
             <Button 
               key="reject" 
               danger
-              onClick={() => {
-                handleReject(selectedContent?.id);
-                hideModal();
-              }}
+              onClick={() => showNotesModal(selectedContent, 'reject')}
             >
               Reject
             </Button>,
             <Button 
               key="approve" 
               type="primary"
-              onClick={() => {
-                handleApprove(selectedContent?.id);
-                hideModal();
-              }}
+              onClick={() => showNotesModal(selectedContent, 'approve')}
             >
               Approve
             </Button>,
@@ -253,6 +308,11 @@ export default function ApproveContentPage() {
                 <Descriptions.Item label="Author" span={2}>
                   {selectedContent.created_by?.username || 'Unknown'}
                 </Descriptions.Item>
+                {selectedContent.approval_notes && (
+                  <Descriptions.Item label="Previous Approval Notes" span={2}>
+                    {selectedContent.approval_notes}
+                  </Descriptions.Item>
+                )}
               </Descriptions>
 
               <div style={{ marginTop: '16px' }}>
@@ -315,6 +375,51 @@ export default function ApproveContentPage() {
               </div>
             </div>
           )}
+        </Modal>
+
+        {/* Notes Modal */}
+        <Modal
+          title={currentAction === 'approve' ? "Approve Content" : "Reject Content"}
+          open={notesModalVisible}
+          onCancel={hideModal}
+          footer={[
+            <Button key="back" onClick={hideModal}>Cancel</Button>,
+            <Button 
+              key="submit" 
+              type="primary"
+              onClick={currentAction === 'approve' ? handleApproveWithNotes : handleRejectWithNotes}
+            >
+              {currentAction === 'approve' ? 'Approve' : 'Reject'}
+            </Button>,
+          ]}
+        >
+          <div>
+            <Typography.Paragraph strong>
+              {currentAction === 'approve' 
+                ? "Add optional notes for this approval:" 
+                : "Add notes explaining why this content is being rejected:"}
+            </Typography.Paragraph>
+            {currentAction === 'approve' ? (
+              <TextArea
+                rows={4}
+                placeholder="Enter approval notes (optional)"
+                value={approvalNotes}
+                onChange={(e) => setApprovalNotes(e.target.value)}
+              />
+            ) : (
+              <TextArea
+                rows={4}
+                placeholder="Enter rejection notes (required for rejection)"
+                value={rejectionNotes}
+                onChange={(e) => setRejectionNotes(e.target.value)}
+              />
+            )}
+            {currentAction === 'reject' && !rejectionNotes.trim() && (
+              <div style={{ color: 'red', marginTop: '8px' }}>
+                Notes are required for rejection
+              </div>
+            )}
+          </div>
         </Modal>
       </div>
     </>

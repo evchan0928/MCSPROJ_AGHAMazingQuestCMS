@@ -54,7 +54,26 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
       
       // Prepare the payload
       const payload = { ...values };
-      if (!payload.password) delete payload.password;
+      
+      // Format roles properly for backend
+      if (Array.isArray(payload.roles)) {
+        // Convert roles to the format expected by the backend
+        payload.roles = payload.roles.map(role => {
+          if (typeof role === 'string') {
+            return role;
+          } else if (typeof role === 'object' && role !== null) {
+            return role.name || role.role_name || '';
+          }
+          return role;
+        }).filter(role => role !== ''); // Remove empty roles
+      }
+      
+      // Don't send password if it's empty (for updates)
+      if (!payload.password) {
+        if (isUpdate) {
+          delete payload.password;
+        }
+      }
       
       let result;
       if (isUpdate) {
