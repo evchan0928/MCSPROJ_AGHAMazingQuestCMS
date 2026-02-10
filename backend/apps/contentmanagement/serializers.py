@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from wagtail.models import Page  # Updated import for newer Wagtail versions
-from .models import ContentItem, ContentPage
+from .models import ContentItem
 from apps.usermanagement.serializers import UserSerializer
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -24,7 +23,9 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'file_url',
             # Additional content management fields
             'content_type', 'meta_keywords', 'meta_description', 'photo_caption', 
-            'highlights', 'ar_marker', 'quiz', 'enable_badges', 'chat_bot_allow', 'exclude_audio'
+            'highlights', 'ar_marker', 'quiz', 'enable_badges', 'chat_bot_allow', 'exclude_audio',
+            # Quiz-specific fields
+            'quiz_length', 'quiz_badges', 'quiz_number', 'quiz_correct_answers'
         ]
         read_only_fields = ['slug', 'created_at', 'edited_at', 'approved_at', 'published_at', 'is_deleted']
 
@@ -59,36 +60,3 @@ class ContentItemSerializer(serializers.ModelSerializer):
             return f"{request.scheme if request else 'https'}://{request.get_host() if request else ''}{url}"
         except Exception:
             return None
-
-
-class ContentPageSerializer(serializers.ModelSerializer):
-    author_name = serializers.CharField(source='author.username', read_only=True)
-    reviewer_name = serializers.CharField(source='reviewer.username', read_only=True)
-    approver_name = serializers.CharField(source='approver.username', read_only=True)
-    
-    class Meta:
-        model = ContentPage
-        fields = [
-            'id', 'title', 'status', 'version_number', 'created_at', 'updated_at',
-            'author', 'reviewer', 'approver', 'author_name', 'reviewer_name', 'approver_name',
-            'previous_versions', 'featured_image', 'documents', 'video_url', 'body'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'version_number', 'previous_versions']
-
-    def to_representation(self, instance):
-        """Custom representation to handle Wagtail Page specifics"""
-        data = super().to_representation(instance)
-        # Add the specific page content if available
-        if hasattr(instance, 'body'):
-            data['body'] = str(instance.body)
-        if hasattr(instance, 'title'):
-            data['title'] = instance.title
-        return data
-
-    def create(self, validated_data):
-        user = self.context['request'].user
-        # Create a new ContentPage instance with the validated data
-        content_page = ContentPage(**validated_data)
-        content_page.author = user  # Set the author to the current user
-        content_page.save()
-        return content_page

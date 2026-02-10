@@ -1,6 +1,6 @@
 # Monitoring AGHAMazingQuestCMS in pgAdmin4
 
-This guide explains how to monitor your Django/Wagtail application's PostgreSQL database using pgAdmin4.
+This guide explains how to monitor your Django application's PostgreSQL database using pgAdmin4.
 
 ## Database Structure in PostgreSQL
 
@@ -13,16 +13,8 @@ When you run the Django migrations, several schemas and tables are created in Po
 - `django_migrations`: Applied migration records
 - `django_session`: User session data
 
-### Wagtail CMS Tables
-- `wagtailcore_page`: Core page hierarchy
-- `wagtaildocs_document`: Document storage
-- `wagtailimages_image`: Image storage
-- `wagtailsites_site`: Site configuration
-- `wagtailusers_userprofile`: User profiles
-
 ### Application-Specific Tables
 - `contentmanagement_contentitem`: Content items managed in the system
-- `contentmanagement_contentpage`: Wagtail-powered content pages
 - `authentication_*`: Custom authentication tables
 - `usermanagement_*`: User management tables
 - `analyticsmanagement_*`: Analytics tracking tables
@@ -95,22 +87,22 @@ ORDER BY date_joined DESC;
 The connection flow between your frontend, backend, and PostgreSQL is as follows:
 
 1. **Frontend (React)** makes API calls to:
-   - `http://127.0.0.1:8000/api/auth/` - Authentication endpoints
-   - `http://127.0.0.1:8000/api/content/` - Content management endpoints
-   - `http://127.0.0.1:8000/api/users/` - User management endpoints
+   - `http://100.93.255.84:8000/api/auth/` - Authentication endpoints
+   - `http://100.93.255.84:8000/api/content/` - Content management endpoints
+   - `http://100.93.255.84:8000/api/users/` - User management endpoints
 
-2. **Backend (Django/Wagtail)** receives these requests and:
+2. **Backend (Django)** receives these requests and:
    - Authenticates users via JWT tokens
    - Validates data and permissions
-   - Performs CRUD operations on PostgreSQL tables
+   - Performs CRUD operations on PostgreSQL tables via Tailscale
    - Returns JSON responses to the frontend
 
-3. **PostgreSQL** stores all:
+3. **PostgreSQL** (hosted on Tailscale at 100.93.255.84:5433) stores all:
    - User accounts and sessions
    - Content items and pages
    - Authentication tokens
    - Audit logs and analytics
-   - File metadata (actual files are stored in the filesystem)
+   - File metadata (actual files are stored in backend storage)
 
 ## Monitoring Best Practices
 
@@ -147,4 +139,4 @@ The connection flow between your frontend, backend, and PostgreSQL is as follows
 - Check table permissions in pgAdmin4
 - Review application logs for errors
 
-Your Django/Wagtail backend is fully connected to PostgreSQL, and your React frontend communicates with the backend via API calls. All data flows through PostgreSQL, which you can monitor comprehensively using pgAdmin4.
+Your Django backend is fully connected to PostgreSQL via Tailscale, and your React frontend communicates with the backend via API calls. All data flows through PostgreSQL, which you can monitor comprehensively using pgAdmin4.

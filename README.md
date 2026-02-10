@@ -1,126 +1,59 @@
 # AGHAMazingQuestCMS
 
-A comprehensive content management system for educational content and quests.
+A comprehensive content management system for educational content and quests built with Django, React, and PostgreSQL.
 
-## Project Structure
+## 🚀 Quick Start (Docker)
 
-This project follows a modern full-stack architecture:
-
-- **Backend**: Django + Wagtail CMS with PostgreSQL database
-- **Frontend**: React application
-- **Authentication**: JWT-based authentication system
-- **Deployment**: Docker and Docker Compose
-
-## Database Configuration
-
-This project is configured to use **PostgreSQL as the sole database**. All data persistence occurs in PostgreSQL with no fallback to SQLite.
-
-## Authentication System
-
-The application implements a robust JWT-based authentication system:
-
-- **Backend**: Django REST Framework with SimpleJWT
-- **Tokens**: Access tokens (15 min expiry) and Refresh tokens (7 day expiry)
-- **Frontend**: React with automatic token management and refresh
-- **Security**: CSRF protection and CORS configuration for safe cross-origin requests
-- **Role-based Access Control**: Custom user roles with different permissions
-
-### Login Flow
-- Root path (`/`) directs to the login page ([SignInScreen.jsx](file:///home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/frontend/src/SignInScreen.jsx))
-- Supports username or email authentication
-- Stores JWT tokens in localStorage
-- Automatically redirects to dashboard after successful authentication
-- Implements automatic token refresh for seamless user experience
-
-## Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- Docker and Docker Compose
-- PostgreSQL (either local installation or via Docker)
-
-## Installation and Setup
-
-1. Clone the repository:
+1. **Clone and setup environment:**
    ```bash
    git clone <repository-url>
    cd MCSPROJ_AGHAMazingQuestCMS
-   ```
-
-2. Install backend dependencies:
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
-
-3. Install frontend dependencies:
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-4. Configure your environment:
-   ```bash
    cp .env.example .env
-   # Edit .env with your PostgreSQL connection details
+   # Edit .env with your configuration
    ```
 
-5. Run database migrations:
+2. **Start the full stack:**
    ```bash
-   cd ../backend
-   python manage.py migrate
+   cd devops
+   docker-compose -f docker-compose-fullstack.yml up -d
    ```
 
-6. Create a superuser account:
-   ```bash
-   python manage.py createsuperuser
-   ```
+3. **Access the application:**
+   - **Frontend**: `http://100.93.255.84:3000`
+   - **Backend API**: `http://100.93.255.84:8000/api`
+   - **pgAdmin**: `http://100.93.255.84:5050`
+   - **Portainer**: `https://100.93.255.84:9443`
 
-7. Start the development servers:
-   ```bash
-   # Terminal 1: Start the backend
-   cd backend
-   python manage.py runserver
-   
-   # Terminal 2: Start the frontend
-   cd frontend
-   npm start
-   ```
+## 📋 Features
 
-## Docker Deployment
+- **Backend**: Django REST Framework with PostgreSQL
+- **Frontend**: React application with JWT authentication
+- **Authentication**: JWT tokens with automatic refresh
+- **Database**: PostgreSQL with pgAdmin management
+- **Deployment**: Docker Compose with Portainer monitoring
+- **Security**: CSRF protection, CORS, role-based access control
 
-To run the entire stack using Docker:
+## 🛠 Prerequisites
 
-```bash
-cd devops
-docker-compose -f docker-compose-fullstack.yml up -d
-```
+- Docker and Docker Compose
+- Tailscale (for remote access)
 
-## Database Management
+## 📚 Documentation
 
-With PostgreSQL configured as the primary database:
-- Access pgAdmin at http://localhost:5050 (credentials in [.env](file:///home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS/.env))
-- All migrations are applied to PostgreSQL
-- Data integrity is maintained through PostgreSQL constraints
+- [Quick Start Guide](docs/operational/QUICK_START_TAILSCALE.md)
+- [API Architecture](docs/API_ARCHITECTURE.md)
+- [Frontend Integration](docs/FLUTTER_INTEGRATION.md)
+- [Deployment Guide](docs/operational/DEPLOYMENT.md)
 
-## Environment Variables
+## 🔧 Development
 
-Both backend and frontend applications require environment variables to be configured properly. Check the `.env.example` files in each directory for required variables.
+For local development without Docker:
 
-## Running Tests
+1. Install Python 3.11+ and Node.js 18+
+2. Install dependencies: `pip install -r backend/requirements.txt` and `cd frontend && npm install`
+3. Run migrations: `cd backend && python manage.py migrate`
+4. Start servers: `python manage.py runserver` (backend) and `npm start` (frontend)
 
-Backend tests can be run with:
-```bash
-cd backend/
-python manage.py test
-```
+## 📄 License
 
-Frontend tests can be run with:
-```bash
-cd frontend/
-npm test
-```
-
-## Deployment
-
-For deployment instructions, check the files under the [devops](file:///home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS/devops) directory.
+[Add license information here]

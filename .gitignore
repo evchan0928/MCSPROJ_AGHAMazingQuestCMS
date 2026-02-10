@@ -53,3 +53,7 @@ backend/static/
 **/test_credentials*
 **/secrets.json
 **/keys.json
+
+# Environment files
+.env
+devops/.env

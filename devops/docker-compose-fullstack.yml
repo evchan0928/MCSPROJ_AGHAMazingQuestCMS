@@ -22,8 +22,8 @@ services:
     container_name: agha-pgadmin4
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@aghama.com
-      PGADMIN_DEFAULT_PASSWORD: admin1234
+      PGADMIN_DEFAULT_EMAIL: aghamazingdost@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: DOSTAGHAMazingQuestAdmin1234
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     ports:
@@ -35,8 +35,9 @@ services:
 
   backend:
     build:
-      context: ../backend
-      dockerfile: Dockerfile
+      # Use repository root as build context so shared packages (e.g., top-level `middleware/`) are available
+      context: ..
+      dockerfile: backend/Dockerfile
     container_name: agha-backend
     restart: unless-stopped
     env_file:
@@ -68,6 +69,8 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true  # Needed for file watching in some environments
       - NODE_ENV=development
+      # Ensure frontend knows where the backend API is (use Tailscale IP for external access)
+      - REACT_APP_BACKEND_API_URL=http://100.93.255.84:8000/api
     networks:
       - agha-network
     depends_on:

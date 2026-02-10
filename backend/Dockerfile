@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -10,11 +10,13 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+# When build context is repository root, the backend requirements live at `backend/requirements.txt`.
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy application code from backend directory into image root (/app).
+# Build context is repository root, so copy the backend folder contents into /app.
+COPY backend/ /app/
 
 # Create a dedicated user for the application
 RUN useradd --create-home --shell /bin/bash app \

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contentmanagement', '0007_auto_20260129_0948'),
+        ('contentmanagement', '0003_alter_contentitem_status'),
     ]
 
     operations = [

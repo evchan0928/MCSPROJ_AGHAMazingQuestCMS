@@ -14,6 +14,9 @@ const apiClient = axios.create({
   },
 });
 
+// Allow sending cookies (CSRF token) for cross-origin requests when CORS_ALLOW_CREDENTIALS is enabled on the backend
+apiClient.defaults.withCredentials = true;
+
 // Helper function to get CSRF token from cookies
 function getCookie(name) {
   let cookieValue = null;
@@ -180,7 +183,14 @@ export const getCurrentUserProfile = async () => {
 export const getContentItems = async () => {
   try {
     const response = await apiClient.get('/content/items/');
-    return response.data;
+    // Support both paginated responses (e.g. { results: [...] })
+    // and direct array responses. This avoids frontend errors when
+    // the backend uses DRF pagination.
+    if (response && response.data) {
+      // If paginated, return the results array, otherwise return data as-is
+      return Array.isArray(response.data) ? response.data : (response.data.results || response.data);
+    }
+    return [];
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
   }

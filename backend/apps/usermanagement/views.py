@@ -7,9 +7,9 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from datetime import timedelta
-from wagtail.models import Page
 from apps.contentmanagement.models import ContentItem
 from .models import CustomUserRole  # Changed to import from the local models module
+from django.contrib.auth.models import Group
 from django.db.models import Count, Q
 import json
 
@@ -168,6 +168,25 @@ def user_list_view(request):
                         user=user,
                         role_name=role_name.get('name', role_name.get('role_name', ''))
                     )
+
+            # Also synchronize Django Groups for permission checks
+            try:
+                group_names = []
+                for r in roles:
+                    if isinstance(r, str):
+                        group_names.append(r)
+                    elif isinstance(r, dict):
+                        group_names.append(r.get('name', r.get('role_name', '')))
+
+                groups = []
+                for name in set([n for n in group_names if n]):
+                    g, _ = Group.objects.get_or_create(name=name)
+                    groups.append(g)
+                if groups:
+                    user.groups.set(groups)
+            except Exception:
+                # Non-fatal: continue even if group sync fails
+                pass
             
             # Return the created user data
             user_info = {
@@ -198,7 +217,7 @@ def user_list_view(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def user_detail_view(request, user_id):
     """View to retrieve, update, or delete a specific user."""
@@ -228,7 +247,7 @@ def user_detail_view(request, user_id):
         
         return JsonResponse(user_info)
     
-    elif request.method == 'PUT':
+    elif request.method in ('PUT', 'PATCH'):
         # Update user details
         try:
             data = json.loads(request.body)
@@ -286,6 +305,24 @@ def user_detail_view(request, user_id):
                             user=user,
                             role_name=role_name.get('name', role_name.get('role_name', ''))
                         )
+
+                # Synchronize Django Groups for permission checks
+                try:
+                    group_names = []
+                    for r in roles:
+                        if isinstance(r, str):
+                            group_names.append(r)
+                        elif isinstance(r, dict):
+                            group_names.append(r.get('name', r.get('role_name', '')))
+
+                    groups = []
+                    for name in set([n for n in group_names if n]):
+                        g, _ = Group.objects.get_or_create(name=name)
+                        groups.append(g)
+                    # Set user's groups to match roles
+                    user.groups.set(groups)
+                except Exception:
+                    pass
             
             user.save()
             
@@ -370,6 +407,12 @@ def create_role_view(request):
             user=request.user,  # Use the current logged-in user as a placeholder
             role_name=role_name
         )
+
+        # Ensure a corresponding Django Group exists for permissions
+        try:
+            Group.objects.get_or_create(name=role_name)
+        except Exception:
+            pass
         
         response_data = {
             'id': role.id,

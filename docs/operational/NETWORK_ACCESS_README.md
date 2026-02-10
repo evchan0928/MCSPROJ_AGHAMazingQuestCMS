@@ -40,9 +40,10 @@ source venv/bin/activate
 python manage.py runserver 0.0.0.0:8000
 ```
 
-Or use the provided script:
+For Docker deployment (recommended):
 ```bash
-./start_local_network_backend.sh
+cd devops
+docker-compose -f docker-compose-fullstack.yml up -d
 ```
 
 ### 3. Start the Frontend Server
@@ -52,18 +53,17 @@ cd /home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/frontend
 npm start
 ```
 
-Or use the provided script:
-```bash
-./start_local_network_frontend.sh
-```
+For Docker deployment, the frontend is included in the full stack compose.
 
 ### 4. Access from Local Network Devices
 
-Once both servers are running, other devices on your local network can access:
+Once the Docker stack is running, devices on your Tailscale network can access:
 
-- **Frontend Application**: `http://YOUR_LOCAL_IP:3000`
-- **Backend API**: `http://YOUR_LOCAL_IP:8000/api/`
-- **Admin Panel**: `http://YOUR_LOCAL_IP:8000/admin/`
+- **Frontend Application**: `http://100.93.255.84:3000`
+- **Backend API**: `http://100.93.255.84:8000/api/`
+- **Admin Panel**: `http://100.93.255.84:8000/admin/`
+- **pgAdmin**: `http://100.93.255.84:5050`
+- **Portainer**: `https://100.93.255.84:9443`
 
 ## Using Different Backend IPs
 

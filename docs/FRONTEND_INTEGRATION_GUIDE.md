@@ -16,11 +16,10 @@ This document explains how to ensure the frontend is fully functional and connec
 
 ## Running the Full Stack Application
 
-### Option 1: Using the run_both script (Development)
+### Option 1: Docker Deployment (Recommended)
 ```bash
-cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
-chmod +x scripts/run_both.sh
-./scripts/run_both.sh
+cd /home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/devops
+docker-compose -f docker-compose-fullstack.yml up -d
 ```
 
 ### Option 2: Manual startup
@@ -33,22 +32,14 @@ chmod +x scripts/run_both.sh
 
 2. **In a new terminal, start the frontend with network access:**
    ```bash
-   cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS/frontend
+   cd /home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/frontend
    HOST=0.0.0.0 npm start
    ```
 
-### Option 3: Dedicated frontend network script
+### Option 3: Docker Deployment (Recommended)
 ```bash
-cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
-chmod +x start_frontend_network.sh
-./start_frontend_network.sh
-```
-
-### Option 4: Staging environment
-```bash
-cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
-chmod +x start_staging.sh
-./start_staging.sh
+cd /home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/devops
+docker-compose -f docker-compose-fullstack.yml up -d
 ```
 
 ## Verifying the Connection
@@ -56,7 +47,7 @@ chmod +x start_staging.sh
 ### 1. Test Backend Endpoints
 ```bash
 # Test authentication endpoint
-curl -X OPTIONS http://172.19.91.23:8080/api/auth/login/
+curl -X OPTIONS http://100.93.255.84:8000/api/auth/login/
 
 # Test content endpoint
 curl -X OPTIONS http://172.19.91.23:8080/api/content/items/
@@ -82,7 +73,7 @@ If you're accessing `http://172.19.91.23:3000` and seeing a blank white page, th
 2. **The React server is only binding to localhost**: By default, React development server only listens on 127.0.0.1 (localhost), which prevents access from other machines on the network
 3. **Solution**: Start the React server with `HOST=0.0.0.0 npm start` to allow external connections
 
-The updated scripts in this project (run_both.sh and start_frontend_network.sh) now include the HOST environment variable to fix this issue.
+For Docker deployment, the frontend is automatically configured for network access.
 
 ## Troubleshooting Common Issues
 
@@ -93,8 +84,8 @@ If you see CORS errors in the browser console:
 
 ### Issue 2: Cannot Connect to Backend
 If the frontend reports "Network Error":
-1. Check if the backend is running on the correct IP and port
-2. Verify firewall settings allow connections on port 8080
+1. Check if the backend is running on the correct IP and port (8000 for Docker)
+2. Verify firewall settings allow connections on port 8000
 3. Confirm the REACT_APP_BACKEND_API_URL matches the backend address
 
 ### Issue 3: Blank Page on Frontend Access

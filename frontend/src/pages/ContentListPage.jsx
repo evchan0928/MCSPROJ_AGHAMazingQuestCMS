@@ -61,7 +61,7 @@ const ContentList = () => {
       console.error('Error fetching content:', error);
       api.error({
         message: 'Error',
-        description: 'Failed to load content list',
+        description: `Failed to load content list: ${error.message || 'Unknown error'}`,
       });
     } finally {
       setLoading(false);

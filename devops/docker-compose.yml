@@ -11,10 +11,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   web:
-    build: .
+    build:
+      context: ..
+      dockerfile: devops/Dockerfile
     command: /app/docker-entrypoint.sh
     env_file:
-      - .env
+      - ../.env
     depends_on:
       - db
     volumes:

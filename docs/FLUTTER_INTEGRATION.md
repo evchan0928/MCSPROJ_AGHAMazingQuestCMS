@@ -5,8 +5,8 @@ This guide explains how to set up and use the Django-PostgreSQL backend with a F
 ## Architecture Overview
 
 The application consists of:
-1. Django/Wagtail backend serving REST APIs
-2. PostgreSQL database (either standalone or Supabase)
+1. Django backend serving REST APIs
+2. PostgreSQL database (hosted on Tailscale network at 100.93.255.84:5433)
 3. Flutter mobile application consuming the APIs
 
 ## Setting Up the Django-PostgreSQL Backend
@@ -26,29 +26,16 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Database Configuration
+### Database Configuration
 
-Choose one of the following options:
-
-#### Option A: Local PostgreSQL
 ```bash
-# Install PostgreSQL locally, then set environment variables:
+# Production setup with Tailscale remote database:
 export DB_ENGINE=postgres
 export DB_NAME=aghamazing_db
-export DB_USER=your_pg_username
-export DB_PASSWORD=your_pg_password
-export DB_HOST=localhost
-export DB_PORT=5432
-```
-
-#### Option B: Supabase PostgreSQL
-```bash
-# Sign up at supabase.io and create a new project, then:
-export DB_ENGINE=postgres
-export SUPABASE_DB_URL="postgresql://[user]:[password]@[host]:[port]/[database]?sslmode=require"
-export SUPABASE_URL="https://[your-project-ref].supabase.co"
-export SUPABASE_ANON_KEY="[your-anon-key]"
-export SUPABASE_SERVICE_ROLE_KEY="[your-service-key]"
+export DB_USER=admin
+export DB_PASSWORD=password123
+export DB_HOST=100.93.255.84
+export DB_PORT=5433
 ```
 
 ### 3. Run Migrations and Start Server
@@ -86,8 +73,6 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^0.14.0
-  # Optional: For direct Supabase integration
-  supabase_flutter: ^1.0.0
 ```
 
 ### 3. Create API Client

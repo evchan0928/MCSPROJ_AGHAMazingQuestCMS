@@ -1,11 +1,7 @@
 from django.db import models
-from wagtail.models import Page
 from django.conf import settings
 from django.utils import timezone
 from django.utils.text import slugify
-
-class HomePage(Page):
-    pass
 
 class ContentItem(models.Model):
     # Workflow states (storage values chosen for clarity)
@@ -34,6 +30,7 @@ class ContentItem(models.Model):
         ('image', 'Image'),
         ('video', 'Video'),
         ('document', 'Document'),
+        ('quiz', 'Quiz'),
     ])
     meta_keywords = models.TextField(blank=True)
     meta_description = models.TextField(blank=True)
@@ -44,6 +41,12 @@ class ContentItem(models.Model):
     enable_badges = models.BooleanField(default=False)
     chat_bot_allow = models.BooleanField(default=True)
     exclude_audio = models.BooleanField(default=False)
+
+    # Quiz-specific fields
+    quiz_length = models.IntegerField(null=True, blank=True, help_text="Number of questions in the quiz")
+    quiz_badges = models.CharField(max_length=10, choices=[('yes', 'Yes'), ('no', 'No')], default='no', help_text="Whether quiz awards badges")
+    quiz_number = models.IntegerField(null=True, blank=True, help_text="Quiz sequence number")
+    quiz_correct_answers = models.JSONField(default=dict, blank=True, help_text="Quiz correct answers: {1: 'a', 2: 'b', ...}")
 
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=STATUS_FOR_EDITING)
 
@@ -130,80 +133,3 @@ class ContentItem(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.status})"
-
-
-# ContentPage model for the workflow system
-from wagtail.models import Page
-from wagtail.fields import RichTextField
-from wagtail.admin.panels import FieldPanel
-from django.contrib.auth.models import User
-
-
-class ContentPage(Page):
-    # Define workflow states for content management
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('review', 'Review'),
-        ('approved', 'Approved'),
-        ('published', 'Published'),
-        ('archived', 'Archived'),
-    ]
-    
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    version_number = models.IntegerField(default=1)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_authors')
-    reviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_reviewers')
-    approver = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_approvers')
-    
-    # Store version history
-    previous_versions = models.JSONField(default=dict, blank=True)
-    
-    # Media management fields
-    featured_image = models.ForeignKey(
-        'wagtailimages.Image',
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name='+'
-    )
-    documents = models.FileField(upload_to='documents/', blank=True, null=True)
-    video_url = models.URLField(blank=True, null=True)
-    
-    # Main content fields - note: we don't define title since Page already has it
-    body = RichTextField()
-
-    content_panels = Page.content_panels + [
-        # Page model already has title field
-        FieldPanel('body'),
-        FieldPanel('status'),
-        FieldPanel('version_number'),
-        FieldPanel('author'),
-        FieldPanel('reviewer'),
-        FieldPanel('approver'),
-        FieldPanel('featured_image'),
-        FieldPanel('documents'),
-        FieldPanel('video_url'),
-        FieldPanel('previous_versions'),
-    ]
-    
-    def save(self, *args, **kwargs):
-        # Handle versioning when content is updated
-        if self.pk:
-            old_instance = ContentPage.objects.get(pk=self.pk)
-            if old_instance.status != self.status or old_instance.body != self.body:
-                # Create version history entry
-                if not self.previous_versions:
-                    self.previous_versions = {}
-                self.previous_versions[str(self.version_number)] = {
-                    'status': old_instance.status,
-                    'body': old_instance.body,
-                    'updated_at': str(old_instance.updated_at),
-                }
-                self.version_number += 1
-        
-        super().save(*args, **kwargs)
-        
-    def __str__(self):
-        return self.title

@@ -4,18 +4,28 @@ from rest_framework.permissions import IsAuthenticated
 from .permissions import IsContentWorkflowAllowed
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.db import connection
+from django.conf import settings
+import json
+from datetime import datetime
 
 from .models import ContentItem
-from .serializers import ContentItemSerializer, ContentPageSerializer
+from .serializers import ContentItemSerializer
 from .permissions import user_in_group
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes
+from django.db.models import Q
 
 
 class GamePublishedContentList(APIView):
     """Authenticated endpoint to list published content for mobile games.
 
-    GET /api/game/content/ -> returns published items (status=published) with absolute file_url
+    GET /api/content/game/content/ -> returns published items (status=published) with absolute file_url
     Mobile clients must include a valid token (e.g. JWT) in the Authorization header.
     """
     permission_classes = [IsAuthenticated]
@@ -24,6 +34,209 @@ class GamePublishedContentList(APIView):
         qs = ContentItem.objects.filter(is_deleted=False, status=ContentItem.STATUS_PUBLISHED).order_by('-published_at')
         serializer = ContentItemSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
+
+
+class PublicGameContentList(APIView):
+    """Public endpoint to list published content for mobile AR tour app.
+
+    GET /api/content/game/public-content/ -> returns published items (status=published) with absolute file_url
+    No authentication required, only for public content.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        # Filter only public content that is published.
+        # Some deployments may not have an `is_public` field on the model
+        # (older schema). Guard against that to avoid 500 errors.
+        try:
+            qs = ContentItem.objects.filter(
+                is_deleted=False, 
+                status=ContentItem.STATUS_PUBLISHED,
+                is_public=True
+            ).order_by('-published_at')
+        except Exception:
+            # Fallback: return published items and let the mobile client
+            # decide which ones to display. Log the exception server-side.
+            qs = ContentItem.objects.filter(
+                is_deleted=False, 
+                status=ContentItem.STATUS_PUBLISHED,
+            ).order_by('-published_at')
+
+        serializer = ContentItemSerializer(qs, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def mobile_ar_tour_content(request):
+    """
+    Simplified endpoint specifically for mobile AR tour app.
+    Returns only content relevant to AR experiences.
+    """
+    try:
+        content_items = ContentItem.objects.filter(
+            is_deleted=False,
+            status=ContentItem.STATUS_PUBLISHED,
+            is_public=True,
+            content_type='ar_experience'
+        ).order_by('-published_at')
+    except Exception:
+        content_items = ContentItem.objects.filter(
+            is_deleted=False,
+            status=ContentItem.STATUS_PUBLISHED,
+            content_type='ar_experience'
+        ).order_by('-published_at')
+
+    # Serialize the content defensively (some fields may be missing)
+    serialized_data = []
+    for item in content_items:
+        serialized_data.append({
+            'id': item.id,
+            'title': getattr(item, 'title', ''),
+            'description': getattr(item, 'body', '') or getattr(item, 'description', ''),
+            'content_type': getattr(item, 'content_type', ''),
+            'ar_marker': getattr(item, 'ar_marker', False),
+            'chat_bot_allow': getattr(item, 'chat_bot_allow', True),
+            'created_at': item.created_at.isoformat() if getattr(item, 'created_at', None) else None,
+            'published_at': item.published_at.isoformat() if getattr(item, 'published_at', None) else None,
+        })
+    
+    return Response({
+        'success': True,
+        'count': len(serialized_data),
+        'data': serialized_data,
+        'meta': {
+            'timestamp': datetime.now().isoformat(),
+            'version': '1.0.0',
+            'app_type': 'mobile-ar-tour'
+        }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def ar_tour_markers(request):
+    """
+    Endpoint to retrieve AR markers for the mobile app.
+    """
+    try:
+        markers_qs = ContentItem.objects.filter(
+            is_deleted=False,
+            status=ContentItem.STATUS_PUBLISHED,
+            is_public=True,
+            content_type='ar_experience',
+            ar_marker__isnull=False
+        ).values('id', 'title', 'ar_marker', 'description')
+    except Exception:
+        markers_qs = ContentItem.objects.filter(
+            is_deleted=False,
+            status=ContentItem.STATUS_PUBLISHED,
+            content_type='ar_experience',
+            ar_marker__isnull=False
+        ).values('id', 'title', 'ar_marker')
+
+    # Build marker list safely
+    markers = []
+    for m in list(markers_qs):
+        markers.append({
+            'id': m.get('id'),
+            'title': m.get('title'),
+            'ar_marker': m.get('ar_marker'),
+            'description': m.get('description', '')
+        })
+
+    return Response({
+        'success': True,
+        'markers': markers,
+        'count': len(markers)
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """
+    Health check endpoint for monitoring the API status.
+    """
+    try:
+        # Test database connection
+        connection.ensure_connection()
+        db_available = True
+    except Exception:
+        db_available = False
+    
+    # Prepare response data
+    health_data = {
+        'status': 'healthy' if db_available else 'unhealthy',
+        'timestamp': datetime.now().isoformat(),
+        'services': {
+            'database': 'connected' if db_available else 'disconnected',
+            'api_server': 'running',
+        },
+        'version': '1.0.0',
+        'app': 'AGHAMazingQuestCMS',
+        'for': 'Mobile AR Tour Application'
+    }
+    
+    status_code = 200 if db_available else 503
+    return Response(health_data, status=status_code)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def api_status(request):
+    """
+    Detailed API status information for the mobile AR tour app.
+    """
+    try:
+        # Test database connection
+        connection.ensure_connection()
+        db_available = True
+        db_error = None
+    except Exception as e:
+        db_available = False
+        db_error = str(e)
+    
+    # Count published content items (guard for optional `is_public` field)
+    try:
+        try:
+            published_count = ContentItem.objects.filter(
+                is_deleted=False,
+                status=ContentItem.STATUS_PUBLISHED,
+                is_public=True
+            ).count()
+        except Exception:
+            published_count = ContentItem.objects.filter(
+                is_deleted=False,
+                status=ContentItem.STATUS_PUBLISHED
+            ).count()
+    except:
+        published_count = 0
+    
+    status_data = {
+        'api_status': 'operational' if db_available else 'degraded',
+        'timestamp': datetime.now().isoformat(),
+        'uptime': getattr(request, '_request_start_time', datetime.now().isoformat()),
+        'components': {
+            'database': {
+                'status': 'operational' if db_available else 'error',
+                'error': db_error
+            },
+            'content_management': {
+                'status': 'operational',
+                'published_content_count': published_count
+            },
+            'authentication': {
+                'status': 'operational'
+            }
+        },
+        'version': '1.0.0',
+        'environment': 'development' if settings.DEBUG else 'production',
+        'app_purpose': 'Mobile AR Tour Application Backend'
+    }
+    
+    status_code = 200 if db_available else 503
+    return Response(status_data, status=status_code)
 
 
 class ContentItemViewSet(viewsets.ModelViewSet):
@@ -49,161 +262,85 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         """Create endpoint returns a friendly message and the created Content ID.
 
         Successful response example:
-        { "message": "Content Uploaded", "id": 123, "item": { ... } }
-
-        On failure, normal DRF validation errors are returned and the frontend
-        will surface "Content Failed to Upload" to the user.
-        """
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        # serializer.instance is the saved ContentItem
-        response_data = {
-            'message': 'Content Uploaded',
-            'id': serializer.instance.id,
-            'item': self.get_serializer(serializer.instance).data,
+        {
+            "success": true,
+            "message": "Content created successfully",
+            "data": {
+                "id": 123,
+                "title": "New Content Item"
+            }
         }
-        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
+        """
+        try:
+            response = super().create(request, *args, **kwargs)
+            if response.status_code == status.HTTP_201_CREATED:
+                content_item = response.data
+                response.data = {
+                    "success": True,
+                    "message": "Content created successfully",
+                    "data": {
+                        "id": content_item.get('id'),
+                        "title": content_item.get('title'),
+                    }
+                }
+            return response
+        except Exception as e:
+            # Return a helpful error payload for debugging. In production
+            # you may want to log the full traceback instead of returning it.
+            import traceback
+            tb = traceback.format_exc()
+            detail = str(e)
+            payload = {
+                'success': False,
+                'message': 'Failed to create content item',
+                'error': detail,
+            }
+            if getattr(settings, 'DEBUG', False):
+                payload['traceback'] = tb
+            return Response(payload, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def perform_update(self, serializer):
-        obj = serializer.save(edited_by=self.request.user)
-        obj.edited_at = obj.edited_at or None
-
-    @action(detail=True, methods=['post'])
-    def send_for_approval(self, request, pk=None):
-        item = get_object_or_404(ContentItem, pk=pk, is_deleted=False)
-        item.send_for_approval(user=request.user)
-        return Response(self.get_serializer(item).data)
-
-    @action(detail=True, methods=['post'])
-    def approve(self, request, pk=None):
-        item = get_object_or_404(ContentItem, pk=pk, is_deleted=False)
-        # Only users in Approver group or superusers can approve
-        if not (request.user.is_superuser or user_in_group(request.user, 'Approver')):
-            return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        item.approve(user=request.user)
-        return Response(self.get_serializer(item).data)
-
-    @action(detail=True, methods=['post'])
-    def deny(self, request, pk=None):
-        """Deny approval: move item back to 'For editing' so editors can modify and re-submit."""
-        item = get_object_or_404(ContentItem, pk=pk, is_deleted=False)
-        # Only approvers or superusers can deny
-        if not (request.user.is_superuser or user_in_group(request.user, 'Approver')):
-            return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        # clear approval metadata and move back to editing
-        item.status = ContentItem.STATUS_FOR_EDITING
-        item.approved_by = None
-        item.approved_at = None
-        # record that it was sent back for editing
-        item.edited_at = item.edited_at or None
-        item.save(update_fields=['status', 'approved_by', 'approved_at', 'edited_at'])
-        return Response(self.get_serializer(item).data)
-
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def publish(self, request, pk=None):
-        item = get_object_or_404(ContentItem, pk=pk, is_deleted=False)
-        # Only users in Approver group or superusers can publish
-        if not (request.user.is_superuser or user_in_group(request.user, 'Approver')):
-            return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        item.publish(user=request.user)
-        return Response(self.get_serializer(item).data)
+        """Custom action to change the status of a content item to published."""
+        content_item = self.get_object()
+        content_item.status = ContentItem.STATUS_PUBLISHED
+        content_item.save()
+        serializer = self.get_serializer(content_item)
+        return Response({
+            "success": True,
+            "message": f"Content '{content_item.title}' published successfully",
+            "data": serializer.data
+        })
 
-    def destroy(self, request, *args, **kwargs):
-        # soft delete
-        instance = self.get_object()
-        instance.soft_delete(user=request.user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-# New viewset for ContentPage model
-from wagtail.models import Page
-from django.contrib.auth.models import Group
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import Http404
-
-
-class ContentPageViewSet(viewsets.ModelViewSet):
-    serializer_class = ContentPageSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        # Get the actual ContentPage instances
-        from .models import ContentPage
-        return ContentPage.objects.all()
-
-    def perform_create(self, serializer):
-        user = self.request.user
-        # Set the author to the current user
-        instance = serializer.save(author=user)
-        # Add to the appropriate group based on role
-        try:
-            user_group = Group.objects.get(name__iexact=user.role)
-            user.groups.add(user_group)
-        except Group.DoesNotExist:
-            # If no matching group exists, don't assign
-            pass
-
-    def perform_update(self, serializer):
-        user = self.request.user
-        # Update the edited_by field when content is updated
-        instance = serializer.save()
-
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approve(self, request, pk=None):
-        from .models import ContentPage
-        try:
-            content = ContentPage.objects.get(pk=pk)
-            if request.user.role in ['reviewer', 'approver']:
-                content.status = 'approved'
-                content.approver = request.user
-                content.save()
-                return Response({'message': 'Content approved successfully'})
-            else:
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        except ContentPage.DoesNotExist:
-            raise Http404("Content does not exist")
+        """Custom action to approve content for publishing."""
+        content_item = self.get_object()
+        if user_in_group(request.user, 'Approver') or user_in_group(request.user, 'Admin'):
+            content_item.status = ContentItem.STATUS_FOR_PUBLISHING
+            content_item.approved_by = request.user
+            content_item.save()
+            serializer = self.get_serializer(content_item)
+            return Response({
+                "success": True,
+                "message": f"Content '{content_item.title}' approved for publishing",
+                "data": serializer.data
+            })
+        else:
+            return Response({
+                "success": False,
+                "message": "You do not have permission to approve content"
+            }, status=status.HTTP_403_FORBIDDEN)
 
-    @action(detail=True, methods=['post'])
-    def reject(self, request, pk=None):
-        from .models import ContentPage
-        try:
-            content = ContentPage.objects.get(pk=pk)
-            if request.user.role in ['reviewer', 'approver']:
-                content.status = 'rejected'
-                content.reviewer = request.user
-                content.save()
-                return Response({'message': 'Content rejected successfully'})
-            else:
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        except ContentPage.DoesNotExist:
-            raise Http404("Content does not exist")
-
-    @action(detail=True, methods=['post'])
-    def publish(self, request, pk=None):
-        from .models import ContentPage
-        try:
-            content = ContentPage.objects.get(pk=pk)
-            if request.user.role == 'approver':
-                content.status = 'published'
-                content.save()
-                return Response({'message': 'Content published successfully'})
-            else:
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        except ContentPage.DoesNotExist:
-            raise Http404("Content does not exist")
-
-    @action(detail=True, methods=['get'])
-    def version_history(self, request, pk=None):
-        from .models import ContentPage
-        try:
-            content = ContentPage.objects.get(pk=pk)
-            return Response({'versions': content.previous_versions})
-        except ContentPage.DoesNotExist:
-            raise Http404("Content does not exist")
-
-
-from django.shortcuts import render
-
-# Create your views here.
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def archive(self, request, pk=None):
+        """Custom action to archive a content item."""
+        content_item = self.get_object()
+        content_item.is_archived = True
+        content_item.save()
+        serializer = self.get_serializer(content_item)
+        return Response({
+            "success": True,
+            "message": f"Content '{content_item.title}' archived successfully",
+            "data": serializer.data
+        })

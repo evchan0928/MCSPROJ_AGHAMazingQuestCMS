@@ -92,28 +92,15 @@ INSTALLED_APPS = [
 # Add postgres contrib if using PostgreSQL
 INSTALLED_APPS.append('django.contrib.postgres')
 
-# Add Wagtail and other apps
+# Add REST Framework and other apps
 INSTALLED_APPS.extend([
-    # Wagtail CMS
-    'wagtail.contrib.forms',
-    'wagtail.contrib.redirects',
-    'wagtail.embeds',
-    'wagtail.sites',
-    'wagtail.users',
-    'wagtail.snippets',
-    'wagtail.documents',
-    'wagtail.images',
-    'wagtail.search',
-    'wagtail.admin',
-    'wagtail',
-
-    # Wagtail dependencies
-    'modelcluster',
-    'taggit',
-
     # REST Framework
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
+    
+    # API Documentation
+    'drf_yasg',
 
     # Your apps
     'apps.authentication',
@@ -123,23 +110,22 @@ INSTALLED_APPS.extend([
 ])
 
 MIDDLEWARE = [
+    # API optimization middleware should be first for performance measurement
+    'middleware.api_optimization.APILoggerMiddleware',
+    'middleware.api_optimization.MobileAppOptimizationMiddleware',
+    'middleware.api_optimization.APIResponseFormatterMiddleware',
+    
     # CORS middleware should be placed as high as possible
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # Wagtail redirects middleware should be after CommonMiddleware
-    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-# Add Supabase middleware if environment variables are set
-if os.environ.get('SUPABASE_URL') and os.environ.get('SUPABASE_ANON_KEY'):
-    # Insert Supabase middleware after CORS but before other middleware
-    MIDDLEWARE.insert(1, 'middleware.supabase_auth.SupabaseAuthMiddleware')
 
 ROOT_URLCONF = 'config.urls'
 
@@ -197,7 +183,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-# Where `collectstatic` will gather files for production
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Additional locations Django will search for static files in development
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
@@ -213,9 +198,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Sites framework (required by Wagtail)
 SITE_ID = int(os.environ.get('DJANGO_SITE_ID', 1))
-
-# Base URL for Wagtail admin (used in notifications and user bar links)
-WAGTAILADMIN_BASE_URL = os.environ.get('WAGTAILADMIN_BASE_URL', 'http://localhost:8000')
 
 # CORS (for React frontend)
 # Read allowed origins from environment variable for flexibility.
@@ -286,14 +268,56 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
+    ),
+    # Add throttling for mobile app API calls
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',
+        'user': '1000/hour'
+    }
 }
 
 # Simple JWT defaults: short access token, longer refresh token
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': False,
+    'ROTATE_REFRESH_TOKENS': True,  # Enable refresh token rotation
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh tokens
+    'UPDATE_LAST_LOGIN': True,  # Update last login timestamp
+    
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 

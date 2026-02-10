@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from datetime import timedelta, datetime
-from apps.contentmanagement.models import ContentItem, ContentPage
+from apps.contentmanagement.models import ContentItem
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -24,8 +24,8 @@ def get_analytics_summary(request):
             status__in=[ContentItem.STATUS_FOR_APPROVAL, ContentItem.STATUS_FOR_PUBLISHING]
         ).count()
         
-        # Calculate content pages metrics
-        total_content_pages = ContentPage.objects.count()
+        # Content pages are handled by Wagtail in legacy versions; currently not used
+        total_content_pages = 0
         
         # Calculate recent activity (last 30 days)
         thirty_days_ago = timezone.now() - timedelta(days=30)
