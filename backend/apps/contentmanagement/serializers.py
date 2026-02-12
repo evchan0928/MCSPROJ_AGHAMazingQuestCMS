@@ -1,15 +1,31 @@
 from rest_framework import serializers
-from .models import ContentItem
+from .models import ContentItem, QuizQuestion, QuizChoice
 from apps.usermanagement.serializers import UserSerializer
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 User = get_user_model()
 
+class QuizChoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizChoice
+        fields = ['id', 'label', 'text', 'is_correct']
+
+
+class QuizQuestionSerializer(serializers.ModelSerializer):
+    choices = QuizChoiceSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = QuizQuestion
+        fields = ['id', 'order', 'text', 'choices']
+
+
 class ContentItemSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField(read_only=True)
     # Human-readable label for the content_type choice field
     content_type_display = serializers.SerializerMethodField(read_only=True)
+    # Nested quiz data (when content_type == 'quiz')
+    quiz_questions = QuizQuestionSerializer(many=True, read_only=True)
     # Expose related user objects (read-only) so the frontend can show names
     created_by = UserSerializer(read_only=True)
     edited_by = UserSerializer(read_only=True)
@@ -28,7 +44,7 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'content_type_display',
             'highlights', 'ar_marker', 'quiz', 'enable_badges', 'chat_bot_allow', 'exclude_audio',
             # Quiz-specific fields
-            'quiz_length', 'quiz_badges', 'quiz_number', 'quiz_correct_answers'
+            'quiz_length', 'quiz_badges', 'quiz_number', 'quiz_correct_answers', 'quiz_questions'
         ]
         read_only_fields = ['slug', 'created_at', 'edited_at', 'approved_at', 'published_at', 'is_deleted']
 

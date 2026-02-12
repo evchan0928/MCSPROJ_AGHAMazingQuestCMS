@@ -6,6 +6,7 @@ from .views import (
     PublicGameContentList,
     mobile_ar_tour_content,
     ar_tour_markers,
+    public_quizzes,
     health_check,
     api_status
 )
@@ -19,6 +20,7 @@ urlpatterns = [
     path('game/public-content/', PublicGameContentList.as_view(), name='public-game-content'),
     path('mobile-ar-tour/', mobile_ar_tour_content, name='mobile-ar-tour-content'),
     path('ar-markers/', ar_tour_markers, name='ar-tour-markers'),
+    path('quizzes/public/', public_quizzes, name='public-quizzes'),
     path('health/', health_check, name='health-check'),
     path('status/', api_status, name='api-status'),
 ]

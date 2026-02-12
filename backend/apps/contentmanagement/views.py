@@ -116,6 +116,35 @@ def mobile_ar_tour_content(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+def public_quizzes(request):
+    """Public endpoint returning published quizzes and their questions/choices.
+
+    GET /api/content/quizzes/public/ -> list of quizzes with nested questions and choices
+    """
+    try:
+        qs = ContentItem.objects.filter(
+            is_deleted=False,
+            status=ContentItem.STATUS_PUBLISHED,
+            content_type='quiz',
+            is_public=True
+        ).order_by('-published_at')
+    except Exception:
+        qs = ContentItem.objects.filter(
+            is_deleted=False,
+            status=ContentItem.STATUS_PUBLISHED,
+            content_type='quiz'
+        ).order_by('-published_at')
+
+    serializer = ContentItemSerializer(qs, many=True, context={'request': request})
+    return Response({
+        'success': True,
+        'count': len(serializer.data),
+        'data': serializer.data,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def ar_tour_markers(request):
     """
     Endpoint to retrieve AR markers for the mobile app.

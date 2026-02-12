@@ -133,3 +133,30 @@ class ContentItem(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.status})"
+
+
+class QuizQuestion(models.Model):
+    """Represents a single quiz question linked to a ContentItem (content_type='quiz')."""
+    content_item = models.ForeignKey(ContentItem, on_delete=models.CASCADE, related_name='quiz_questions')
+    order = models.IntegerField(default=0, help_text="Ordering index for the question within the quiz")
+    text = models.TextField(help_text="The question text")
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"Q{self.order}: {self.text[:50]}"
+
+
+class QuizChoice(models.Model):
+    """Represents a selectable answer for a QuizQuestion."""
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name='choices')
+    label = models.CharField(max_length=4, help_text="Short label for the choice (e.g. 'A', 'B', 'C')")
+    text = models.TextField(help_text="The answer text")
+    is_correct = models.BooleanField(default=False, help_text="Whether this choice is the correct answer")
+
+    class Meta:
+        ordering = ['label']
+
+    def __str__(self):
+        return f"{self.question} - {self.label}: {self.text[:40]}"
