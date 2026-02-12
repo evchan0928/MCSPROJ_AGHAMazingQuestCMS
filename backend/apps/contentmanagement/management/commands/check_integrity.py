@@ -34,9 +34,7 @@ class Command(BaseCommand):
         # List apps that should have migrations
         expected_apps = [
             'admin', 'auth', 'contenttypes', 'sessions',
-            'contentmanagement', 'usermanagement', 'analyticsmanagement',
-            'wagtailcore', 'wagtailadmin', 'wagtaildocs', 'wagtailembeds',
-            'wagtailforms', 'wagtailimages', 'wagtailredirects', 'wagtailsearch', 'wagtailusers'
+            'contentmanagement', 'usermanagement', 'analyticsmanagement'
         ]
         
         # Check actual tables in database

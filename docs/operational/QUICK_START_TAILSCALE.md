@@ -75,7 +75,7 @@ docker-compose -f devops/docker-compose-fullstack.yml restart
 
 - ✅ PostgreSQL database running
 - ✅ PGAdmin 4 for database management (HTTP accessible)
-- ✅ Django/Wagtail backend API
+- ✅ Django backend API (Wagtail removed)
 - ✅ React frontend application
 - ✅ Portainer for container management
 - ✅ Tailscale VPN for secure remote access

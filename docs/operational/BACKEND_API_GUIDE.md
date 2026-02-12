@@ -2,13 +2,13 @@
 
 ## 🔌 REST API Overview
 
-Your Django/Wagtail backend is now fully operational and ready to handle user authentication, content management, and data storage.
+Your Django backend is now fully operational and ready to handle user authentication, content management, and data storage. (Wagtail was removed from this project.)
 
 ### Backend Information
 - **API URL**: `http://100.93.255.84:8000`
 - **Admin Panel**: `http://100.93.255.84:8000/admin`
 - **API Framework**: Django REST Framework
-- **CMS**: Wagtail
+-- **CMS**: Custom Django content management (Wagtail removed)
 - **Database**: PostgreSQL (aghamazing_db)
 
 ---

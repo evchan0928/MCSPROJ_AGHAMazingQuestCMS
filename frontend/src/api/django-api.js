@@ -2,7 +2,10 @@
 import axios from 'axios';
 
 // Initialize Django API client
-const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000/api';
+// Prefer explicit env var `REACT_APP_BACKEND_API_URL`. If not provided,
+// default to the project's Tailscale host used in development so the
+// frontend can reach the proxied nginx/gunicorn stack.
+const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://100.93.255.84/api' || 'http://localhost:8000/api';
 
 // Create an axios instance with default settings
 const apiClient = axios.create({
@@ -494,6 +497,71 @@ export const downloadAnalyticsReport = async (params) => {
       timeout: 120000 // Extended timeout for report generation
     });
     return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/* ------------------ Mobile management API helpers ------------------ */
+
+export const getMobileProfiles = async () => {
+  try {
+    const response = await apiClient.get('/users/mobile/profile/');
+    return Array.isArray(response.data) ? response.data : (response.data.results || response.data);
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+export const getMobileScores = async () => {
+  try {
+    const response = await apiClient.get('/users/mobile/score/');
+    return Array.isArray(response.data) ? response.data : (response.data.results || response.data);
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+export const postMobileScore = async (payload) => {
+  try {
+    const response = await apiClient.post('/users/mobile/score/', payload);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+export const getMobileLeaderboard = async () => {
+  try {
+    const response = await apiClient.get('/users/mobile/leaderboard/');
+    return Array.isArray(response.data) ? response.data : (response.data.results || response.data);
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+export const getMobileBadges = async () => {
+  try {
+    const response = await apiClient.get('/users/mobile/badges/');
+    return Array.isArray(response.data) ? response.data : (response.data.results || response.data);
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+export const getMobileSessions = async () => {
+  try {
+    const response = await apiClient.get('/users/mobile/session/');
+    return Array.isArray(response.data) ? response.data : (response.data.results || response.data);
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+export const getMobileOtps = async () => {
+  try {
+    const response = await apiClient.get('/users/mobile/otp/');
+    return Array.isArray(response.data) ? response.data : (response.data.results || response.data);
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
   }

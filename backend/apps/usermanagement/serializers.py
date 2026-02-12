@@ -1,3 +1,48 @@
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from .models import MobileProfile, MobileScore, MobileBadge, MobileSession, MobileOTP
+
+User = get_user_model()
+
+
+class MobileProfileSerializer(serializers.ModelSerializer):
+    mobile_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = MobileProfile
+        fields = ('mobile_username', 'display_name', 'phone_number', 'avatar_url', 'metadata')
+
+
+class MobileScoreSerializer(serializers.ModelSerializer):
+    mobile_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = MobileScore
+        fields = ('id', 'mobile_username', 'score', 'created_at')
+
+
+class MobileBadgeSerializer(serializers.ModelSerializer):
+    mobile_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = MobileBadge
+        fields = ('id', 'mobile_username', 'badge_name', 'awarded_at', 'meta')
+
+
+class MobileSessionSerializer(serializers.ModelSerializer):
+    mobile_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = MobileSession
+        fields = ('session_key', 'mobile_username', 'created_at', 'expires_at')
+
+
+class MobileOTPSerializer(serializers.ModelSerializer):
+    mobile_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = MobileOTP
+        fields = ('id', 'mobile_username', 'email', 'code', 'created_at', 'expires_at', 'used')
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.contrib.auth.models import Group

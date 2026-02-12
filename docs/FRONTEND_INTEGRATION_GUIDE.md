@@ -117,7 +117,7 @@ echo "SELECT COUNT(*) FROM django_migrations;" | python manage.py dbshell
 
 ### Backend Components
 - Django REST Framework APIs
-- Wagtail CMS integration
+-- CMS integration (Wagtail removed)
 - PostgreSQL database connection
 - JWT authentication
 - Role-based permissions

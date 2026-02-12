@@ -19,12 +19,12 @@ This document provides information about the running services for the AGHAMazing
 - **Default Email**: admin@aghama.com
 - **Default Password**: admin1234
 
-### Backend Service (Django/Wagtail)
+### Backend Service (Django) — Wagtail removed
 
 #### Django Development Server
 - **URL**: http://localhost:8000
 - **Admin Interface**: http://localhost:8000/admin/
-- **Wagtail Interface**: http://localhost:8000/cms/
+-- **CMS Interface (legacy docs referenced Wagtail)**: http://localhost:8000/cms/ (Wagtail removed)
 - **API Endpoint**: http://localhost:8000/api/
 
 #### Authentication
@@ -61,7 +61,7 @@ Connect to PostgreSQL using:
 ### Accessing the Backend
 - Visit http://localhost:8000 to access the main Django application
 - Visit http://localhost:8000/admin to access Django admin
-- Visit http://localhost:8000/cms to access Wagtail CMS
+- Visit http://localhost:8000/cms to access legacy CMS routes (Wagtail removed)
 - API endpoints are available under http://localhost:8000/api/
 
 ### Accessing the Frontend

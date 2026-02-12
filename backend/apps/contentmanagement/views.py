@@ -95,6 +95,7 @@ def mobile_ar_tour_content(request):
             'title': getattr(item, 'title', ''),
             'description': getattr(item, 'body', '') or getattr(item, 'description', ''),
             'content_type': getattr(item, 'content_type', ''),
+            'content_type_display': item.get_content_type_display() if hasattr(item, 'get_content_type_display') else getattr(item, 'content_type', ''),
             'ar_marker': getattr(item, 'ar_marker', False),
             'chat_bot_allow': getattr(item, 'chat_bot_allow', True),
             'created_at': item.created_at.isoformat() if getattr(item, 'created_at', None) else None,
@@ -126,23 +127,27 @@ def ar_tour_markers(request):
             is_public=True,
             content_type='ar_experience',
             ar_marker__isnull=False
-        ).values('id', 'title', 'ar_marker', 'description')
+        ).values('id', 'title', 'ar_marker', 'description', 'content_type')
     except Exception:
         markers_qs = ContentItem.objects.filter(
             is_deleted=False,
             status=ContentItem.STATUS_PUBLISHED,
             content_type='ar_experience',
             ar_marker__isnull=False
-        ).values('id', 'title', 'ar_marker')
+        ).values('id', 'title', 'ar_marker', 'content_type')
 
     # Build marker list safely
     markers = []
+    # Resolve human-readable labels for content_type choices
+    content_type_choices = dict(ContentItem._meta.get_field('content_type').choices)
     for m in list(markers_qs):
         markers.append({
             'id': m.get('id'),
             'title': m.get('title'),
             'ar_marker': m.get('ar_marker'),
-            'description': m.get('description', '')
+            'description': m.get('description', ''),
+            'content_type': m.get('content_type', ''),
+            'content_type_display': content_type_choices.get(m.get('content_type'), m.get('content_type'))
         })
 
     return Response({

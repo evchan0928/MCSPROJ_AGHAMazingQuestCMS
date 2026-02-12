@@ -17,6 +17,8 @@ import EditContentPage from './pages/EditContentPage.jsx';
 
 // 🔑 IMPORT: User Management Page
 import UserManagementPage from './pages/UserManagementPage.jsx';
+// Mobile Management Page
+import MobileManagementPage from './pages/MobileManagementPage.jsx';
 
 // 🔑 IMPORT: Analytics Pages
 import AnalyticsManagementPage from './pages/AnalyticsManagementPage.jsx';
@@ -70,6 +72,7 @@ function App() {
           {/* User Management Sub-Routes */}
           <Route path="users" element={<UserManagementPage />} />
           <Route path="users/roles" element={<RolesPage />} />
+          <Route path="users/mobile" element={<MobileManagementPage />} />
 
           {/* Catch-all for /dashboard/* pages */}
           <Route path="*" element={<h1 style={{ padding: '20px', fontWeight: 'normal' }}>404 Dashboard Content Not Found</h1>} />

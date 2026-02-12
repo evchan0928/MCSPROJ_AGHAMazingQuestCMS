@@ -19,7 +19,7 @@ Your complete application stack is now configured for remote access via Tailscal
 - **Container**: `agha-frontend`
 - **Port**: 3000
 
-### 2. **Backend API** (Django/Wagtail)
+### 2. **Backend API** (Django) — Wagtail removed
 - **URL**: `http://100.93.255.84:8000`
 - **Purpose**: REST API and admin panel
 - **Container**: `agha-backend`

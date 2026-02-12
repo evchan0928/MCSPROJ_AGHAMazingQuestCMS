@@ -10,7 +10,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'roles')
+        # Include `is_active` to provide frontend with account state
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_superuser', 'roles')
 
 
 class RegisterSerializer(serializers.ModelSerializer):

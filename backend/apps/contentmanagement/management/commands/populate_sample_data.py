@@ -29,7 +29,7 @@ class Command(BaseCommand):
         sample_titles = [
             "Introduction to PostgreSQL",
             "Advanced Django Techniques",
-            "Wagtail CMS Best Practices",
+            "Content Management Best Practices",
             "Educational Content Management",
             "Database Migration Strategies",
             "User Authentication Systems",
@@ -42,7 +42,7 @@ class Command(BaseCommand):
         sample_descriptions = [
             "Comprehensive guide to PostgreSQL features and capabilities.",
             "Deep dive into advanced Django development techniques.",
-            "Best practices for managing content with Wagtail CMS.",
+            "Best practices for managing content with the CMS.",
             "Strategies for educational content organization.",
             "Step-by-step database migration procedures.",
             "Implementing robust authentication systems.",
@@ -94,7 +94,7 @@ class Command(BaseCommand):
                 title=title,
                 body=f"This is the body content for {title}. {description}",
                 content_type=content_type,
-                meta_keywords=f"postgresql,django,wagtail,content,education,{title.replace(' ', ',').lower()}",
+                meta_keywords=f"postgresql,django,content,education,{title.replace(' ', ',').lower()}",
                 meta_description=description,
                 photo_caption=f"Caption for {title}",
                 highlights=highlight,

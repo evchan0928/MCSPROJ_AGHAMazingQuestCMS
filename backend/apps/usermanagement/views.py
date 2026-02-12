@@ -8,7 +8,7 @@ from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from datetime import timedelta
 from apps.contentmanagement.models import ContentItem
-from .models import CustomUserRole  # Changed to import from the local models module
+from .models import CustomUserRole, MobileProfile, MobileScore, MobileBadge, MobileSession, MobileOTP
 from django.contrib.auth.models import Group
 from django.db.models import Count, Q
 import json
@@ -19,6 +19,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import status
+import uuid
+import random
+from datetime import timedelta
+from django.utils import timezone
+from rest_framework.permissions import AllowAny
+from .serializers import (
+    MobileProfileSerializer,
+    MobileScoreSerializer,
+    MobileBadgeSerializer,
+    MobileSessionSerializer,
+    MobileOTPSerializer,
+)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth import get_user_model
+
+UserModel = get_user_model()
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -215,6 +233,219 @@ def user_list_view(request):
     
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+# ----------------------
+# Mobile API endpoints
+# ----------------------
+
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def mobile_profile_view(request):
+    user = request.user
+    try:
+        profile, _ = MobileProfile.objects.get_or_create(user=user)
+    except Exception:
+        return Response({'error': 'Failed to get or create profile.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    if request.method == 'GET':
+        serializer = MobileProfileSerializer(profile)
+        data = serializer.data
+        # Expose mobile_username key for compatibility
+        data['mobile_username'] = user.username
+        return Response(data)
+
+    # PUT
+    serializer = MobileProfileSerializer(profile, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def mobile_score_view(request):
+    user = request.user
+    if request.method == 'POST':
+        serializer = MobileScoreSerializer(data=request.data)
+        # allow client to supply score only; attach user server-side
+        if serializer.is_valid():
+            MobileScore.objects.create(user=user, score=serializer.validated_data.get('score', 0))
+            return Response({'message': 'Score recorded'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # GET: return recent scores for user
+    scores = MobileScore.objects.filter(user=user).order_by('-created_at')[:50]
+    serializer = MobileScoreSerializer(scores, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def mobile_leaderboard_view(request):
+    # Aggregate top users by total score
+    from django.db.models import Sum
+
+    agg = MobileScore.objects.values('user__id', 'user__username').annotate(total=Sum('score')).order_by('-total')[:50]
+    leaderboard = [{'user_id': e['user__id'], 'username': e['user__username'], 'total': e['total']} for e in agg]
+    return Response({'leaderboard': leaderboard})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mobile_badges_view(request):
+    user = request.user
+    badges = MobileBadge.objects.filter(user=user).order_by('-awarded_at')
+    serializer = MobileBadgeSerializer(badges, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def mobile_session_view(request):
+    user = request.user
+    if request.method == 'POST':
+        key = str(uuid.uuid4())
+        expires = timezone.now() + timedelta(days=7)
+        session = MobileSession.objects.create(user=user, session_key=key, expires_at=expires)
+        serializer = MobileSessionSerializer(session)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    # DELETE: accept JSON {"session_key": "..."}
+    data = request.data
+    key = data.get('session_key')
+    if not key:
+        return Response({'error': 'session_key required'}, status=status.HTTP_400_BAD_REQUEST)
+    MobileSession.objects.filter(user=user, session_key=key).delete()
+    return Response({'message': 'session ended'})
+
+
+@api_view(['POST', 'PUT'])
+@permission_classes([AllowAny])
+def mobile_otp_view(request):
+    # POST -> store OTP (mobile backend will generate/send/verify)
+    if request.method == 'POST':
+        # Accept OTP records from mobile backend for storage/audit
+        email = request.data.get('email')
+        code = request.data.get('code')
+        expires_at = request.data.get('expires_at')
+        username = request.data.get('username')
+        user = None
+        if username:
+            try:
+                user = UserModel.objects.get(username=username)
+            except UserModel.DoesNotExist:
+                user = None
+
+        if not email or not code:
+            return Response({'error': 'email and code required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # allow client to supply expires_at as ISO string; otherwise default 10 minutes
+        try:
+            if expires_at:
+                expires = timezone.datetime.fromisoformat(expires_at)
+            else:
+                expires = timezone.now() + timedelta(minutes=10)
+        except Exception:
+            expires = timezone.now() + timedelta(minutes=10)
+
+        otp = MobileOTP.objects.create(user=user, email=email, code=code, expires_at=expires)
+        serializer = MobileOTPSerializer(otp)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    # PUT -> mark OTP used/consumed (mobile backend notifies CMS)
+    code = request.data.get('code')
+    email = request.data.get('email')
+    if not code or not email:
+        return Response({'error': 'code and email required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        otp = MobileOTP.objects.filter(code=code, email=email, used=False).order_by('-created_at').first()
+        if not otp:
+            return Response({'error': 'OTP not found'}, status=status.HTTP_404_NOT_FOUND)
+        otp.used = True
+        otp.save()
+        return Response({'message': 'marked used'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # PUT -> verify OTP
+    code = request.data.get('code')
+    email = request.data.get('email')
+    if not code or not email:
+        return Response({'error': 'code and email required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        otp = MobileOTP.objects.filter(code=code, email=email, used=False).order_by('-created_at').first()
+        if not otp:
+            return Response({'error': 'Invalid or expired code'}, status=status.HTTP_400_BAD_REQUEST)
+        if otp.expires_at < timezone.now():
+            return Response({'error': 'Expired code'}, status=status.HTTP_400_BAD_REQUEST)
+        otp.used = True
+        otp.save()
+        return Response({'message': 'verified'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def mobile_tokens_view(request):
+    # Accept username/password and return JWT tokens (same as login)
+    identifier = request.data.get('identifier') or request.data.get('username') or request.data.get('email')
+    password = request.data.get('password')
+    if not identifier or not password:
+        return Response({'error': 'identifier (username or email) and password required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # If identifier looks like email, resolve username
+    username = identifier
+    if '@' in identifier:
+        try:
+            u = UserModel.objects.get(email=identifier)
+            username = u.username
+        except UserModel.DoesNotExist:
+            return Response({'error': 'invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    serializer = TokenObtainPairSerializer(data={'username': username, 'password': password})
+    try:
+        serializer.is_valid(raise_exception=True)
+    except Exception:
+        return Response({'error': 'invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response(serializer.validated_data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def mobile_register_view(request):
+    # Register mobile user using email + password. Username optional.
+    data = request.data
+    email = data.get('email')
+    password = data.get('password')
+    username = data.get('username')
+    first_name = data.get('first_name', '')
+    last_name = data.get('last_name', '')
+
+    if not email or not password:
+        return Response({'error': 'email and password required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if UserModel.objects.filter(email=email).exists():
+        return Response({'error': 'email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not username:
+        base = email.split('@', 1)[0]
+        candidate = base
+        i = 1
+        while UserModel.objects.filter(username=candidate).exists():
+            candidate = f"{base}{i}"
+            i += 1
+        username = candidate
+
+    try:
+        user = UserModel.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return Response({'id': user.id, 'username': user.username, 'email': user.email}, status=status.HTTP_201_CREATED)
 
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])

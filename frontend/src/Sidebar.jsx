@@ -152,6 +152,7 @@ export default function Sidebar({ user }) {
                             <ul className="sub-menu">
                                 <li><NavLink to="/dashboard/users" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Users</NavLink></li>
                                 <li><NavLink to="/dashboard/users/roles" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Roles</NavLink></li>
+                                <li><NavLink to="/dashboard/users/mobile" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Mobile Management</NavLink></li>
                             </ul>
                         )}
                     </li>

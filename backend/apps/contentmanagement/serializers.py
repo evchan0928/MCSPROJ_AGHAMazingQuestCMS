@@ -8,6 +8,8 @@ User = get_user_model()
 
 class ContentItemSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField(read_only=True)
+    # Human-readable label for the content_type choice field
+    content_type_display = serializers.SerializerMethodField(read_only=True)
     # Expose related user objects (read-only) so the frontend can show names
     created_by = UserSerializer(read_only=True)
     edited_by = UserSerializer(read_only=True)
@@ -23,6 +25,7 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'file_url',
             # Additional content management fields
             'content_type', 'meta_keywords', 'meta_description', 'photo_caption', 
+            'content_type_display',
             'highlights', 'ar_marker', 'quiz', 'enable_badges', 'chat_bot_allow', 'exclude_audio',
             # Quiz-specific fields
             'quiz_length', 'quiz_badges', 'quiz_number', 'quiz_correct_answers'
@@ -60,3 +63,13 @@ class ContentItemSerializer(serializers.ModelSerializer):
             return f"{request.scheme if request else 'https'}://{request.get_host() if request else ''}{url}"
         except Exception:
             return None
+
+    def get_content_type_display(self, obj):
+        """Return human-readable label for `content_type` choice."""
+        try:
+            # Django provides `get_FOO_display()` for choice fields
+            if hasattr(obj, 'get_content_type_display'):
+                return obj.get_content_type_display()
+            return getattr(obj, 'content_type', '')
+        except Exception:
+            return getattr(obj, 'content_type', '')

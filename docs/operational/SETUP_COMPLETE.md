@@ -16,7 +16,7 @@
 
 3. **Complete Stack**
    - PostgreSQL database ✅
-   - Django/Wagtail backend ✅
+   - Django backend ✅ (Wagtail removed)
    - React frontend ✅
    - Tailscale VPN access ✅
 

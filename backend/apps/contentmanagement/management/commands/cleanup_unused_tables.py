@@ -52,7 +52,7 @@ class Command(BaseCommand):
                     self.style.WARNING(f'Could not find app config for {app_label}')
                 )
 
-        # Tables required by Django and Wagtail core functionality
+        # Tables required by Django core functionality (Wagtail removed from project)
         required_tables = {
             # Django core tables
             'auth_group',
@@ -67,45 +67,7 @@ class Command(BaseCommand):
             'django_admin_log',
             'django_site',
             
-            # Wagtail core tables
-            'wagtailcore_collection',
-            'wagtailcore_collectionviewrestriction',
-            'wagtailcore_collectionviewrestriction_groups',
-            'wagtailcore_comment',
-            'wagtailcore_commentreply',
-            'wagtailcore_locale',
-            'wagtailcore_page',
-            'wagtailcore_pagelogentry',
-            'wagtailcore_pagesubscription',
-            'wagtailcore_pageviewrestriction',
-            'wagtailcore_pageviewrestriction_groups',
-            'wagtailcore_revision',
-            'wagtailcore_site',
-            'wagtailcore_modellogentry',
-            'wagtailcore_referenceindex',
-            'wagtailcore_workflow',
-            'wagtailcore_workflowcontenttype',
-            'wagtailcore_workflowpage',
-            'wagtailcore_workflowstate',
-            'wagtailcore_workflowtask',
-            'wagtailcore_task',
-            'wagtailcore_taskstate',
-            'wagtailcore_groupapprovaltask',
-            'wagtailcore_groupapprovaltask_groups',
-            'wagtailcore_groupcollectionpermission',
-            'wagtailcore_grouppagepermission',
-            'wagtailcore_groupsitepermission',
-            'wagtailcore_uploadedfile',
-            'wagtailadmin_admin',
-            'wagtailadmin_editingsession',
-            'wagtaildocs_document',
-            'wagtailembeds_embed',
-            'wagtailforms_formsubmission',
-            'wagtailimages_image',
-            'wagtailimages_rendition',
-            'wagtailredirects_redirect',
-            'wagtailsearch_indexentry',
-            'wagtailusers_userprofile',
+            # (Wagtail tables intentionally omitted — this project no longer requires Wagtail)
             'taggit_tag',
             'taggit_taggeditem',
         }

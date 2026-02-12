@@ -51,7 +51,7 @@ DATABASES = {
 ## Verification Steps Completed
 
 1. **Configuration Check**: Verified settings file only contains PostgreSQL configuration
-2. **Migration Status**: Confirmed all Django and Wagtail migrations applied to PostgreSQL
+2. **Migration Status**: Confirmed all Django migrations applied to PostgreSQL (Wagtail not used)
 3. **Model Testing**: Verified that all application models can connect to PostgreSQL
 4. **File Cleanup**: Ensured no SQLite files exist in the project
 5. **Integration Test**: Validated that all modules connect properly to PostgreSQL
@@ -61,7 +61,7 @@ DATABASES = {
 All services are running as follows:
 - PostgreSQL database on port 5439 (mapped from 5432 in container)
 - pgAdmin for database management on port 5050
-- Backend Django/Wagtail application on port 8000
+- Backend Django application on port 8000 (Wagtail removed)
 - Frontend React application on port 3000
 
 ## Next Steps

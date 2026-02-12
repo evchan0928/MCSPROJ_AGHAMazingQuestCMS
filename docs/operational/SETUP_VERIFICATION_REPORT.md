@@ -11,7 +11,7 @@
 - [x] Docker containerization of full stack
 - [x] PostgreSQL database (Docker container)
 - [x] PGAdmin 4 for database management
-- [x] Django/Wagtail backend API
+- [x] Django backend API (Wagtail removed)
 - [x] React frontend application
 - [x] Portainer for container management
 - [x] Tailscale VPN integration
@@ -37,7 +37,7 @@
 ```
 ✅ agha-postgres      - Up (PostgreSQL 15)
 ✅ agha-pgadmin4      - Up (PGAdmin 4)
-✅ agha-backend       - Up (Django/Wagtail)
+✅ agha-backend       - Up (Django)
 ✅ agha-frontend      - Up (React)
 ✅ portainer          - Up (Container Manager)
 ```
