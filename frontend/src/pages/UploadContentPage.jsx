@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { message, notification } from 'antd';
-import { createContentItem } from '../api/django-api';
+import { createContentItem, getCurrentUser } from '../api/django-api';
 
 export default function UploadContentPage() {
   const navigate = useNavigate();
@@ -18,6 +18,8 @@ export default function UploadContentPage() {
     quiz_length: '', // Quiz-specific field: number of questions
     quiz_badges: 'no', // Quiz-specific field: yes or no
     quiz_number: '', // Quiz-specific field
+    chat_bot_allow: false, // New field for enabling chat bot
+    ar_marker: '', // New field for AR marker
     quiz_questions: [], // array of { question: '', options: {a:'',b:'',c:'',d:''} }
   });
 
@@ -27,6 +29,22 @@ export default function UploadContentPage() {
   const [imageFile, setImageFile] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Initialize current user on component mount
+  React.useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      message.error('Failed to fetch user data');
+    }
+  };
 
   // Generic handler for all input changes
   const handleChange = (e) => {
@@ -104,16 +122,16 @@ export default function UploadContentPage() {
     try {
       const contentData = {
         ...formData,
-        status: 'draft',
+        status: 'for_editing', // Keeping it in editing state
         file: imageFile || pdfFile || null
       };
       
       const result = await createContentItem(contentData);
-      message.success('Content saved as draft successfully!');
+      message.success('Content saved successfully!');
       navigate('/dashboard/content/list'); // Redirect to content list
     } catch (error) {
-      console.error('Error saving draft:', error);
-      message.error(`Failed to save draft: ${error.message}`);
+      console.error('Error saving content:', error);
+      message.error(`Failed to save content: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -140,7 +158,7 @@ export default function UploadContentPage() {
       const result = await createContentItem(contentData);
       
       message.success('Content submitted successfully!');
-      navigate('/dashboard/content/approve'); // Redirect to approve content page
+      navigate('/dashboard/content/list'); // Redirect to content list instead of approve page
     } catch (error) {
       console.error('Error submitting content:', error);
       message.error(`Failed to submit content: ${error.message}`);
@@ -167,10 +185,8 @@ export default function UploadContentPage() {
   };
 
   return (
-    // The 'card' class provides the main container styling matching your design
-    // The router renders this component directly into the main content area of the layout.
     <div className="card">
-      <h1 className="card-title">Upload Content</h1> {/* Use H2 for the main title */}
+      <h1 className="card-title">Upload Content</h1>
       <p>Fill out the form below to create and upload new content.</p>
 
       <form onSubmit={handleSubmit} className="content-form-layout">
@@ -179,7 +195,7 @@ export default function UploadContentPage() {
         <div className="form-header-controls">
           <div className="action-buttons">
             <button type="button" className="secondary-action-btn" onClick={handleSaveDraft} disabled={loading}>
-              Save as Draft
+              Save Draft
             </button>
             <button type="submit" className="primary-action-btn" disabled={loading}>
               {loading ? 'Submitting...' : 'Submit for Review'}
@@ -204,8 +220,8 @@ export default function UploadContentPage() {
             />
           </div>
 
-          {/* Row 2: Type Selection */}
-          <div className="form-group grid-item-1-6">
+          {/* Row 2: Type Selection and AR/Chatbot Settings */}
+          <div className="form-group grid-item-1-3">
             <label htmlFor="content_type">Content Type *</label>
             <select
               id="content_type"
@@ -220,6 +236,31 @@ export default function UploadContentPage() {
               <option value="document">Document</option>
               <option value="quiz">Quiz</option>
             </select>
+          </div>
+          
+          <div className="form-group grid-item-4-5">
+            <label htmlFor="chat_bot_allow">Enable Chat Bot</label>
+            <select
+              id="chat_bot_allow"
+              name="chat_bot_allow"
+              value={formData.chat_bot_allow.toString()}
+              onChange={handleChange}
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          
+          <div className="form-group grid-item-5-6">
+            <label htmlFor="ar_marker">AR Marker</label>
+            <input
+              type="text"
+              id="ar_marker"
+              name="ar_marker"
+              value={formData.ar_marker}
+              onChange={handleChange}
+              placeholder="Enter AR marker identifier"
+            />
           </div>
 
           {/* Conditional: Quiz-Specific Fields (only show when Quiz is selected) */}

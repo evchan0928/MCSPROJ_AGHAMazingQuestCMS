@@ -22,9 +22,10 @@ export default function ApproveContentPage() {
   const outlet = useOutletContext();
   const outletUser = outlet?.user || null;
 
-  // Check user permissions
+  // Check user permissions - allowing Admins as well
   const allowed = (outletUser && (outletUser.is_superuser || 
     (outletUser.roles || []).includes('Approver') || 
+    (outletUser.roles || []).includes('Admin') || 
     (outletUser.roles || []).includes('Super Admin'))) || false;
 
   const fetchPendingContent = async () => {
@@ -85,12 +86,12 @@ export default function ApproveContentPage() {
     }
   };
 
-  const showModal = (record) => {
-    setSelectedContent(record);
+  const showModal = (content) => {
+    setSelectedContent(content);
     setModalVisible(true);
   };
 
-  const hideModal = () => {
+  const closeModal = () => {
     setModalVisible(false);
     setSelectedContent(null);
   };
@@ -194,47 +195,46 @@ export default function ApproveContentPage() {
 
         <Card>
           <Table
-            dataSource={contents.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
+            dataSource={contents}
             columns={columns}
             loading={loading}
-            pagination={false}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: contents.length,
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              },
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+            }}
             rowKey="id"
           />
-          <div style={{ marginTop: 16, textAlign: 'right' }}>
-            <Pagination
-              current={currentPage}
-              pageSize={pageSize}
-              total={contents.length}
-              onChange={handlePageChange}
-              showSizeChanger
-              showQuickJumper
-              showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
-            />
-          </div>
         </Card>
 
         <Modal
-          title={selectedContent?.title}
-          open={modalVisible}
-          onCancel={hideModal}
+          title="Content Details"
+          visible={modalVisible}
+          onCancel={closeModal}
           footer={[
-            <Button key="back" onClick={hideModal}>Close</Button>,
+            <Button key="back" onClick={closeModal}>Cancel</Button>,
             <Button 
-              key="reject" 
+              key="deny" 
+              type="primary" 
               danger
               onClick={() => {
                 handleReject(selectedContent?.id);
-                hideModal();
               }}
             >
-              Reject
+              Deny
             </Button>,
             <Button 
               key="approve" 
               type="primary"
               onClick={() => {
                 handleApprove(selectedContent?.id);
-                hideModal();
               }}
             >
               Approve

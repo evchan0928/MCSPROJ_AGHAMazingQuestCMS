@@ -1,548 +1,307 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Modal, notification, Card } from 'antd';
-import { EditOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, DeleteOutlined, PushpinOutlined, PlayCircleOutlined, UploadOutlined } from '@ant-design/icons';
-import { 
-  getContentItems, 
-  getCurrentUser, 
-  sendContentForApproval, 
-  approveContentItem, 
-  denyContentItem, 
-  publishContentItem, 
-  deleteContentItem,
-  updateContentItem
-} from '../api/django-api';
+// src/pages/ContentListPage.jsx
 
-const ContentList = () => {
+import React, { useState, useEffect } from 'react';
+import { Table, Card, Modal, message, Tag, Button, Space, Divider } from 'antd';
+import { EditOutlined, EyeOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { getContentItems, deleteContentItem, sendContentForApproval, approveContentItem, denyContentItem, publishContentItem } from '../api/django-api';
+
+const { confirm } = Modal;
+
+const ContentListPage = () => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [api, contextHolder] = notification.useNotification();
+  const navigate = useNavigate();
 
+  // Get current user from localStorage
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+  // Fetch content items from the API
   useEffect(() => {
-    fetchUserData();
-    fetchContentList();
+    fetchContents();
   }, []);
 
-  const fetchUserData = async () => {
+  const fetchContents = async () => {
     try {
-      const userData = await getCurrentUser();
-      setCurrentUser(userData);
+      setLoading(true);
+      const data = await getContentItems();
+      setContents(data);
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      // Show error notification
-      api.error({
-        message: 'Error',
-        description: 'Failed to fetch user data',
-      });
-    }
-  };
-
-  const fetchContentList = async () => {
-    setLoading(true);
-    try {
-      // Using the correct endpoint through our API service
-      const response = await getContentItems();
-      
-      // Transform the data to match table structure
-      const transformedData = response.map(item => ({
-        key: item.id,
-        id: item.id,
-        title: item.title,
-        status: item.status,
-        type: item.file ? (item.file.endsWith('.mp4') || item.file.endsWith('.mov') ? 'video' : 
-                          item.file.endsWith('.jpg') || item.file.endsWith('.png') || item.file.endsWith('.jpeg') ? 'image' : 'text') : 'text',
-        author: item.created_by?.username || 'Unknown',
-        createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A',
-        item: item // Keep the original item for reference
-      }));
-      
-      setContents(transformedData);
-    } catch (error) {
-      console.error('Error fetching content:', error);
-      api.error({
-        message: 'Error',
-        description: `Failed to load content list: ${error.message || 'Unknown error'}`,
-      });
+      console.error('Error fetching content items:', error);
+      message.error('Failed to load content items');
     } finally {
       setLoading(false);
     }
   };
 
-  // Determine available actions based on user role and content status
-  const determineAvailableActions = (contentItem, currentUser) => {
-    const actions = [];
-    const item = contentItem.item; // Get the original item
-    
-    // Check if current user is the creator of the content
-    const isCreator = item.created_by && item.created_by.id === currentUser?.id;
-    
-    // Encoder can edit their own content if it's in 'for_editing' status
-    if (currentUser?.role === 'encoder' && isCreator && item.status === 'for_editing') {
-      actions.push('Edit');
-    }
-    
-    // Encoder can submit for approval if content is in 'for_editing' status
-    if (currentUser?.role === 'encoder' && isCreator && item.status === 'for_editing') {
-      actions.push('SubmitForApproval');
-    }
-    
-    // Reviewer can approve/reject content in 'for_approval' status
-    if ((currentUser?.role === 'reviewer' || currentUser?.is_superuser) && item.status === 'for_approval') {
-      actions.push('Approve', 'Reject');
-    }
-    
-    // Approver can publish content in 'for_publishing' status
-    if ((currentUser?.role === 'approver' || currentUser?.is_superuser) && item.status === 'for_publishing') {
-      actions.push('Publish');
-    }
-    
-    // Encoder can delete draft content (for_editing) if they are the creator
-    if (currentUser?.role === 'encoder' && isCreator && item.status === 'for_editing') {
-      actions.push('Delete');
-    }
-    
-    // Approver can archive published content
-    if ((currentUser?.role === 'approver' || currentUser?.is_superuser) && item.status === 'published') {
-      actions.push('Archive');
-    }
-    
-    return actions;
+  // Determine if user can perform actions based on role
+  const canEdit = (content) => {
+    // Can edit if user is superuser, or if status is for_editing and user is encoder/editor
+    return currentUser.is_superuser || 
+           currentUser.groups?.includes('Super Admin') ||
+           (content.status === 'for_editing' && 
+            (currentUser.groups?.includes('Encoder') || currentUser.groups?.includes('Editor')));
   };
 
-  // Handler functions for different actions
-  const handleAction = async (action, record) => {
+  const canDelete = (content) => {
+    // Can delete if user is superuser, admin, or if status is for_editing and user is encoder/editor
+    return currentUser.is_superuser || 
+           currentUser.groups?.includes('Super Admin') ||
+           currentUser.groups?.includes('Admin') ||
+           (content.status === 'for_editing' && 
+            (currentUser.groups?.includes('Encoder') || currentUser.groups?.includes('Editor')));
+  };
+
+  const canSendForApproval = (content) => {
+    // Can send for approval if user is encoder/editor and status is for_editing
+    return (currentUser.groups?.includes('Encoder') || currentUser.groups?.includes('Editor')) &&
+           content.status === 'for_editing';
+  };
+
+  const canApprove = (content) => {
+    // Can approve if user is approver and status is for_approval
+    return (currentUser.groups?.includes('Approver') || currentUser.groups?.includes('Super Admin')) &&
+           content.status === 'for_approval';
+  };
+
+  const canPublish = (content) => {
+    // Can publish if user is admin and status is approved
+    return (currentUser.is_superuser || currentUser.groups?.includes('Super Admin') || currentUser.groups?.includes('Admin')) &&
+           content.status === 'approved';
+  };
+
+  // Action handlers
+  const handleEdit = (id) => {
+    navigate(`/dashboard/content/edit/${id}`);
+  };
+
+  const handleDelete = (id) => {
+    confirm({
+      title: 'Confirm Deletion',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to delete this content?',
+      okText: 'Yes',
+      okType: 'danger',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          await deleteContentItem(id);
+          message.success('Content deleted successfully');
+          fetchContents(); // Refresh the list
+        } catch (error) {
+          console.error('Error deleting content:', error);
+          message.error('Failed to delete content');
+        }
+      },
+    });
+  };
+
+  const handleSendForApproval = async (id) => {
     try {
-      const item = record.item; // Get the original item
-      
-      switch(action) {
-        case 'Edit':
-          // Navigate to edit page
-          window.location.href = `/dashboard/content/edit/${record.id}`;
-          break;
-        case 'SubmitForApproval':
-          await sendContentForApproval(record.id);
-          api.success({
-            message: 'Success',
-            description: 'Content submitted for approval successfully',
-          });
-          fetchContentList(); // Refresh the list
-          break;
-        case 'Approve':
-          await approveContentItem(record.id);
-          api.success({
-            message: 'Success',
-            description: 'Content approved successfully',
-          });
-          fetchContentList(); // Refresh the list
-          break;
-        case 'Reject':
-          await denyContentItem(record.id);
-          api.success({
-            message: 'Success',
-            description: 'Content rejected',
-          });
-          fetchContentList(); // Refresh the list
-          break;
-        case 'Publish':
-          await publishContentItem(record.id);
-          api.success({
-            message: 'Success',
-            description: 'Content published successfully',
-          });
-          fetchContentList(); // Refresh the list
-          break;
-        case 'Delete':
-          Modal.confirm({
-            title: 'Confirm deletion',
-            content: 'Are you sure you want to delete this content?',
-            okText: 'Yes',
-            cancelText: 'No',
-            onOk: async () => {
-              await deleteContentItem(record.id);
-              api.success({
-                message: 'Success',
-                description: 'Content deleted successfully',
-              });
-              fetchContentList(); // Refresh the list
-            }
-          });
-          break;
-        case 'Archive':
-          // For archiving, we update the status to 'deleted'
-          await updateContentItem(record.id, { status: 'deleted' });
-          api.success({
-            message: 'Success',
-            description: 'Content archived successfully',
-          });
-          fetchContentList(); // Refresh the list
-          break;
-        default:
-          break;
-      }
+      await sendContentForApproval(id);
+      message.success('Content sent for approval');
+      fetchContents(); // Refresh the list
     } catch (error) {
-      console.error(`Error performing ${action}:`, error);
-      api.error({
-        message: 'Error',
-        description: `Failed to perform ${action}. Please try again.`,
-      });
+      console.error('Error sending content for approval:', error);
+      message.error('Failed to send content for approval');
     }
   };
 
-  const getStatusTag = (status) => {
-    // Map backend status values to readable labels
-    const statusLabels = {
-      'for_editing': 'For Editing',
-      'for_approval': 'For Approval', 
-      'for_publishing': 'For Publishing',
-      'published': 'Published',
-      'deleted': 'Archived'
-    };
-    
-    const colorMap = {
-      'for_editing': 'default',
-      'for_approval': 'orange',
-      'for_publishing': 'blue',
-      'published': 'green',
-      'deleted': 'gray'
-    };
-    
-    const displayStatus = statusLabels[status] || status;
-    
-    return (
-      <Tag color={colorMap[status] || 'default'}>
-        {displayStatus}
-      </Tag>
-    );
+  const handleApprove = async (id) => {
+    try {
+      await approveContentItem(id);
+      message.success('Content approved');
+      fetchContents(); // Refresh the list
+    } catch (error) {
+      console.error('Error approving content:', error);
+      message.error('Failed to approve content');
+    }
   };
 
+  const handleDeny = (id) => {
+    confirm({
+      title: 'Confirm Denial',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to deny this content? It will be sent back for editing.',
+      okText: 'Yes',
+      okType: 'danger',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          await denyContentItem(id);
+          message.success('Content denied and sent back for editing');
+          fetchContents(); // Refresh the list
+        } catch (error) {
+          console.error('Error denying content:', error);
+          message.error('Failed to deny content');
+        }
+      },
+    });
+  };
+
+  const handlePublish = async (id) => {
+    try {
+      await publishContentItem(id);
+      message.success('Content published');
+      fetchContents(); // Refresh the list
+    } catch (error) {
+      console.error('Error publishing content:', error);
+      message.error('Failed to publish content');
+    }
+  };
+
+  // Status badge component
+  const getStatusTag = (status) => {
+    const statusConfig = {
+      for_editing: { color: 'processing', text: 'For Editing' },
+      for_approval: { color: 'orange', text: 'For Approval' },
+      approved: { color: 'success', text: 'Approved' },
+      published: { color: 'purple', text: 'Published' },
+      rejected: { color: 'error', text: 'Rejected' },
+    };
+
+    const config = statusConfig[status] || { color: 'default', text: status };
+    return <Tag color={config.color}>{config.text}</Tag>;
+  };
+
+  // Define columns for the table
   const getTextColumns = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80,
       sorter: (a, b) => a.id - b.id,
     },
     {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
-      render: (text) => (
-        <div className="title-truncated" title={text}>
-          {text}
-        </div>
-      ),
-      width: 250,
+      render: (text) => <span className="table-title">{text}</span>,
+      sorter: (a, b) => a.title.localeCompare(b.title),
+    },
+    {
+      title: 'Type',
+      dataIndex: 'content_type',
+      key: 'content_type',
+      render: (type) => <span>{type || 'text'}</span>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status) => getStatusTag(status),
-      width: 120,
-    },
-    {
-      title: 'Author',
-      dataIndex: 'author',
-      key: 'author',
-      width: 120,
+      filters: [
+        { text: 'For Editing', value: 'for_editing' },
+        { text: 'For Approval', value: 'for_approval' },
+        { text: 'Approved', value: 'approved' },
+        { text: 'Published', value: 'published' },
+        { text: 'Rejected', value: 'rejected' },
+      ],
+      onFilter: (value, record) => record.status.indexOf(value) === 0,
     },
     {
       title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 120,
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date) => date ? new Date(date).toLocaleDateString() : 'N/A',
+      sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
     },
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, record) => {
-        if (!currentUser) return null;
-        
-        const availableActions = determineAvailableActions(record, currentUser);
-        
-        return (
-          <Space size="middle">
-            {availableActions.includes('Edit') && (
-              <Button 
-                size="middle" 
-                icon={<EditOutlined />}
-                onClick={() => handleAction('Edit', record)}
-              >
-                Edit
-              </Button>
-            )}
-            {availableActions.includes('SubmitForApproval') && (
-              <Button 
-                size="middle" 
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleAction('SubmitForApproval', record)}
-              >
-                Submit for Approval
-              </Button>
-            )}
-            {availableActions.includes('Approve') && (
-              <Button 
-                size="middle" 
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleAction('Approve', record)}
-              >
-                Approve
-              </Button>
-            )}
-            {availableActions.includes('Reject') && (
-              <Button 
-                size="middle" 
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleAction('Reject', record)}
-              >
-                Reject
-              </Button>
-            )}
-            {availableActions.includes('Publish') && (
-              <Button 
-                size="middle" 
-                type="primary"
-                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                icon={<PushpinOutlined />}
-                onClick={() => handleAction('Publish', record)}
-              >
-                Publish
-              </Button>
-            )}
-            {availableActions.includes('Delete') && (
-              <Button 
-                size="middle" 
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleAction('Delete', record)}
-              >
-                Delete
-              </Button>
-            )}
-            {availableActions.includes('Archive') && (
-              <Button 
-                size="middle" 
-                ghost
-                onClick={() => handleAction('Archive', record)}
-              >
-                Archive
-              </Button>
-            )}
-          </Space>
-        );
-      },
-      width: 400,
-    },
-  ];
-
-  const getMediaColumns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-      sorter: (a, b) => a.id - b.id,
-    },
-    {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
-      render: (text) => (
-        <div className="title-truncated" title={text}>
-          {text}
-        </div>
-      ),
-      width: 200,
-    },
-    {
-      title: 'Preview',
-      dataIndex: 'type',
-      key: 'preview',
-      render: (type) => (
-        <div className="preview-container">
-          {type === 'video' ? (
-            <PlayCircleOutlined className="preview-icon video-icon" />
-          ) : type === 'image' ? (
-            <UploadOutlined className="preview-icon image-icon" />
-          ) : (
-            <span>No Preview</span>
+      render: (_, record) => (
+        <Space size="middle">
+          {canEdit(record) && (
+            <Button 
+              icon={<EditOutlined />} 
+              onClick={() => handleEdit(record.id)}
+              title="Edit Content"
+              className="btn-primary btn-sm"
+            >
+              Edit
+            </Button>
           )}
-        </div>
-      ),
-      width: 100,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => getStatusTag(status),
-      width: 120,
-    },
-    {
-      title: 'Author',
-      dataIndex: 'author',
-      key: 'author',
-      width: 120,
-    },
-    {
-      title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 120,
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => {
-        if (!currentUser) return null;
-        
-        const availableActions = determineAvailableActions(record, currentUser);
-        
-        return (
-          <Space size="middle">
-            {availableActions.includes('Edit') && (
+          
+          {canDelete(record) && (
+            <Button 
+              icon={<DeleteOutlined />} 
+              danger
+              onClick={() => handleDelete(record.id)}
+              title="Delete Content"
+              className="btn-danger btn-sm"
+            >
+              Delete
+            </Button>
+          )}
+          
+          {canSendForApproval(record) && (
+            <Button 
+              type="primary" 
+              onClick={() => handleSendForApproval(record.id)}
+              title="Send for Approval"
+              className="btn-success btn-sm"
+            >
+              Send for Approval
+            </Button>
+          )}
+          
+          {canApprove(record) && (
+            <Space>
               <Button 
-                size="middle" 
-                icon={<EditOutlined />}
-                onClick={() => handleAction('Edit', record)}
-              >
-                Edit
-              </Button>
-            )}
-            {availableActions.includes('SubmitForApproval') && (
-              <Button 
-                size="middle" 
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleAction('SubmitForApproval', record)}
-              >
-                Submit for Approval
-              </Button>
-            )}
-            {availableActions.includes('Approve') && (
-              <Button 
-                size="middle" 
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleAction('Approve', record)}
+                type="primary" 
+                onClick={() => handleApprove(record.id)}
+                title="Approve Content"
+                className="btn-success btn-sm"
               >
                 Approve
               </Button>
-            )}
-            {availableActions.includes('Reject') && (
               <Button 
-                size="middle" 
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleAction('Reject', record)}
+                danger 
+                onClick={() => handleDeny(record.id)}
+                title="Deny Content"
+                className="btn-danger btn-sm"
               >
-                Reject
+                Deny
               </Button>
-            )}
-            {availableActions.includes('Publish') && (
-              <Button 
-                size="middle" 
-                type="primary"
-                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                icon={<PushpinOutlined />}
-                onClick={() => handleAction('Publish', record)}
-              >
-                Publish
-              </Button>
-            )}
-            {availableActions.includes('Delete') && (
-              <Button 
-                size="middle" 
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleAction('Delete', record)}
-              >
-                Delete
-              </Button>
-            )}
-            {availableActions.includes('Archive') && (
-              <Button 
-                size="middle" 
-                ghost
-                onClick={() => handleAction('Archive', record)}
-              >
-                Archive
-              </Button>
-            )}
-          </Space>
-        );
-      },
-      width: 400,
+            </Space>
+          )}
+          
+          {canPublish(record) && (
+            <Button 
+              type="primary" 
+              onClick={() => handlePublish(record.id)}
+              title="Publish Content"
+              className="btn-primary btn-sm"
+            >
+              Publish
+            </Button>
+          )}
+        </Space>
+      ),
     },
   ];
-
-  // Separate text and media content
-  const textContents = contents.filter(item => item.type === 'text');
-  const mediaContents = contents.filter(item => ['image', 'video'].includes(item.type));
 
   return (
-    <>
-      {contextHolder}
-      <div className="content-list-page">
-        <Card title="Content Management" className="page-card">
-          <h2 className="section-title">All Content</h2>
-          <Table
-            dataSource={contents}
-            columns={getTextColumns} // Using the same columns for all content
-            loading={loading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-            }}
-            rowKey="id"
-            className="content-table"
-          />
-        </Card>
-
-        {textContents.length > 0 && (
-          <Card title="Text Contents" className="section-card">
-            <Table
-              dataSource={textContents}
-              columns={getTextColumns}
-              loading={loading}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-              }}
-              rowKey="id"
-              className="content-table"
-            />
-          </Card>
-        )}
-
-        {mediaContents.length > 0 && (
-          <Card title="Media Contents (Images & Videos)" className="section-card">
-            <Table
-              dataSource={mediaContents}
-              columns={getMediaColumns}
-              loading={loading}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-              }}
-              rowKey="id"
-              className="content-table"
-            />
-          </Card>
-        )}
-      </div>
-    </>
+    <div className="content-list-page">
+      <Card className="card">
+        <h2 className="card-title">Content Management</h2>
+        <h3 className="section-title">All Content</h3>
+        <Table
+          dataSource={contents}
+          columns={getTextColumns}
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          rowKey="id"
+          className="content-table"
+        />
+      </Card>
+    </div>
   );
 };
 
-export default ContentList;
+export default ContentListPage;

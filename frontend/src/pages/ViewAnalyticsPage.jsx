@@ -12,6 +12,7 @@ const ViewAnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(null);
   const [analyticsData, setAnalyticsData] = useState({});
+  const [userActivityData, setUserActivityData] = useState([]);
   const [api, contextHolder] = notification.useNotification();
 
   useEffect(() => {
@@ -29,45 +30,51 @@ const ViewAnalyticsPage = () => {
         getUserActivityAnalytics()
       ]);
       
+      // Prepare user activity data for chart
+      const preparedUserActivityData = userData.top_content_creators?.slice(0, 5).map(creator => ({
+        name: creator.username,
+        contentCount: creator.content_count
+      })) || [];
+      
+      setUserActivityData(preparedUserActivityData);
+      
+      // Prepare views over time data (currently using placeholder since backend doesn't provide this yet)
+      // In a real implementation, this would come from analytics tracking
+      const viewsOverTime = []; // Backend doesn't provide view history yet
+      
       // Combine all data into a single object for the UI
       const combinedData = {
         summary: {
           totalUsers: userData.user_stats?.total_users || 0,
           totalContent: summaryData.summary?.total_content_items || 0,
           publishedContent: summaryData.summary?.published_content || 0,
-          totalViews: summaryData.summary?.total_content_items * 50 || 0, // Placeholder calculation
-          avgEngagement: Math.min(100, Math.floor(Math.random() * 30) + 65) || 0, // Placeholder
+          contentInReview: summaryData.summary?.content_in_review || 0,
+          totalViews: 0, // Backend doesn't provide total views metric yet
+          avgEngagement: 0, // Backend doesn't provide engagement metrics yet
           newUsers: summaryData.summary?.recently_created || 0
         },
-        viewsOverTime: Array.from({ length: 7 }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - (6 - i));
-          return {
-            date: date.toISOString().split('T')[0],
-            views: Math.floor(Math.random() * 100) + 100,
-            unique: Math.floor(Math.random() * 80) + 60
-          };
-        }),
+        viewsOverTime: viewsOverTime,
         contentTypes: [
-          { name: 'Draft', count: contentData.content_by_status?.draft?.count || 0, views: Math.floor(Math.random() * 2000) + 5000 },
-          { name: 'Review', count: contentData.content_by_status?.review?.count || 0, views: Math.floor(Math.random() * 1500) + 3000 },
-          { name: 'Approved', count: contentData.content_by_status?.approved?.count || 0, views: Math.floor(Math.random() * 1000) + 1800 },
-          { name: 'Published', count: contentData.content_by_status?.published?.count || 0, views: Math.floor(Math.random() * 500) + 950 },
+          { name: 'For Editing', count: contentData.content_by_status?.for_editing?.count || 0 },
+          { name: 'For Approval', count: contentData.content_by_status?.for_approval?.count || 0 },
+          { name: 'For Publishing', count: contentData.content_by_status?.for_publishing?.count || 0 },
+          { name: 'Published', count: contentData.content_by_status?.published?.count || 0 },
+          { name: 'Deleted', count: contentData.content_by_status?.deleted?.count || 0 },
         ].filter(item => item.count > 0),
         topContent: contentData.recently_published?.slice(0, 5).map((item, index) => ({
           key: `${index}`,
+          id: item.id || index,
           title: item.title || 'Untitled',
-          views: Math.floor(Math.random() * 200) + item.id || 100,
-          likes: Math.floor(Math.random() * 100) + 20,
-          shares: Math.floor(Math.random() * 50) + 5
+          published_at: item.published_at || 'N/A',
+          published_by: item.published_by || 'Unknown'
         })) || [],
         userActivity: [
-          { hour: '00:00', activity: Math.floor(Math.random() * 20) + 5 },
-          { hour: '04:00', activity: Math.floor(Math.random() * 15) + 5 },
-          { hour: '08:00', activity: Math.floor(Math.random() * 40) + 25 },
-          { hour: '12:00', activity: Math.floor(Math.random() * 50) + 50 },
-          { hour: '16:00', activity: Math.floor(Math.random() * 50) + 40 },
-          { hour: '20:00', activity: Math.floor(Math.random() * 45) + 30 },
+          { hour: '00:00', activity: 0 }, // Backend doesn't provide hourly activity data yet
+          { hour: '04:00', activity: 0 },
+          { hour: '08:00', activity: 0 },
+          { hour: '12:00', activity: 0 },
+          { hour: '16:00', activity: 0 },
+          { hour: '20:00', activity: 0 },
         ]
       };
       
@@ -94,31 +101,28 @@ const ViewAnalyticsPage = () => {
     });
   };
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
   const topContentColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+    },
     {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
     },
     {
-      title: 'Views',
-      dataIndex: 'views',
-      key: 'views',
-      sorter: (a, b) => a.views - b.views,
+      title: 'Published At',
+      dataIndex: 'published_at',
+      key: 'published_at',
     },
     {
-      title: 'Likes',
-      dataIndex: 'likes',
-      key: 'likes',
-      sorter: (a, b) => a.likes - b.likes,
-    },
-    {
-      title: 'Shares',
-      dataIndex: 'shares',
-      key: 'shares',
-      sorter: (a, b) => a.shares - b.shares,
+      title: 'Published By',
+      dataIndex: 'published_by',
+      key: 'published_by',
     },
   ];
 
@@ -172,8 +176,8 @@ const ViewAnalyticsPage = () => {
           <Col span={4}>
             <Card>
               <Statistic
-                title="Total Views"
-                value={analyticsData.summary?.totalViews || 0}
+                title="Content in Review"
+                value={analyticsData.summary?.contentInReview || 0}
                 valueStyle={{ fontSize: '20px' }}
               />
             </Card>
@@ -191,7 +195,7 @@ const ViewAnalyticsPage = () => {
           <Col span={4}>
             <Card>
               <Statistic
-                title="New Users"
+                title="New Content"
                 value={analyticsData.summary?.newUsers || 0}
                 valueStyle={{ fontSize: '20px', color: '#1890ff' }}
               />
@@ -200,54 +204,77 @@ const ViewAnalyticsPage = () => {
         </Row>
 
         <Tabs defaultActiveKey="overview" style={{ marginBottom: '24px' }}>
-          <TabPane tab="Overview" key="overview">
-            <Row gutter={16}>
-              <Col span={16}>
-                <Card title="Views Over Time" loading={loading}>
+          <>
+            <TabPane tab="Overview" key="overview">
+              <Row gutter={16}>
+                <Col span={16}>
+                  <Card title="Content Status Overview" loading={loading}>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart
+                        data={analyticsData.contentTypes || []}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="count" name="Content Count" fill="#1890ff" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Card>
+                </Col>
+                <Col span={8}>
+                  <Card title="Content Distribution" loading={loading}>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={analyticsData.contentTypes || []}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="count"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {analyticsData.contentTypes?.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Card>
+                </Col>
+              </Row>
+            </TabPane>
+            <TabPane tab="Views Over Time" key="viewsOverTime">
+              <Card title="Content Views" loading={loading}>
+                {analyticsData.viewsOverTime && analyticsData.viewsOverTime.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
                     <AreaChart
-                      data={analyticsData.viewsOverTime || []}
-                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      data={analyticsData.viewsOverTime}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
+                      <XAxis dataKey="hour" />
                       <YAxis />
                       <Tooltip />
-                      <Legend />
-                      <Area type="monotone" dataKey="views" stackId="1" stroke="#8884d8" fill="#8884d8" name="Total Views" />
-                      <Area type="monotone" dataKey="unique" stackId="2" stroke="#82ca9d" fill="#82ca9d" name="Unique Views" />
+                      <Area type="monotone" dataKey="views" stroke="#8884d8" fill="#8884d8" />
                     </AreaChart>
                   </ResponsiveContainer>
-                </Card>
-              </Col>
-              <Col span={8}>
-                <Card title="Content Distribution" loading={loading}>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={analyticsData.contentTypes || []}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="count"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {analyticsData.contentTypes?.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Card>
-              </Col>
-            </Row>
-          </TabPane>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <p>No data available</p>
+                  </div>
+                )}
+              </Card>
+            </TabPane>
+          </>
           
           <TabPane tab="Content Performance" key="performance">
-            <Card title="Top Performing Content" loading={loading}>
+            <Card title="Recently Published Content" loading={loading}>
               <Table 
                 columns={topContentColumns} 
                 dataSource={analyticsData.topContent} 
@@ -260,18 +287,18 @@ const ViewAnalyticsPage = () => {
           <TabPane tab="User Activity" key="activity">
             <Row gutter={16}>
               <Col span={24}>
-                <Card title="User Activity by Hour" loading={loading}>
+                <Card title="Top Content Creators" loading={loading}>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart
-                      data={analyticsData.userActivity || []}
+                      data={userActivityData}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="hour" />
+                      <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="activity" fill="#1890ff" name="User Activity" />
+                      <Bar dataKey="contentCount" name="Content Count" fill="#1890ff" />
                     </BarChart>
                   </ResponsiveContainer>
                 </Card>
@@ -292,25 +319,23 @@ const ViewAnalyticsPage = () => {
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
-                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                  <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="count" name="Content Count" fill="#8884d8" />
-                  <Bar yAxisId="right" dataKey="views" name="Views" fill="#82ca9d" />
+                  <Bar dataKey="count" name="Content Count" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
           </Col>
           <Col span={12}>
-            <Card title="Engagement Metrics">
+            <Card title="System Summary">
               <div style={{ height: '250px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <h3>Engagement Rate</h3>
+                  <h3>Total Content Items</h3>
                   <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#1890ff' }}>
-                    {analyticsData.summary?.avgEngagement || 0}%
+                    {analyticsData.summary?.totalContent || 0}
                   </div>
-                  <p style={{ color: '#52c41a' }}>↑ 12% from last month</p>
+                  <p>No data trend available yet</p>
                 </div>
               </div>
             </Card>

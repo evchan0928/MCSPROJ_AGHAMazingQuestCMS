@@ -28,10 +28,23 @@ def get_dashboard_stats(request):
     """
     try:
         # Get published content count
-        published_count = ContentItem.objects.filter(status='published').count()
+        published_count = ContentItem.objects.filter(status=ContentItem.STATUS_PUBLISHED).count()
         
-        # Get pending approval count
-        pending_approval_count = ContentItem.objects.filter(status='pending').count()
+        # Get pending approval count (corrected from 'pending' to the actual status)
+        pending_approval_count = ContentItem.objects.filter(status=ContentItem.STATUS_FOR_APPROVAL).count()
+        
+        # Get content in editing count
+        content_in_editing_count = ContentItem.objects.filter(status=ContentItem.STATUS_FOR_EDITING).count()
+        
+        # Get total content count
+        total_content_count = ContentItem.objects.count()
+        
+        # Get recently published content count (published in the last 7 days)
+        seven_days_ago = timezone.now() - timezone.timedelta(days=7)
+        recently_published_count = ContentItem.objects.filter(
+            status=ContentItem.STATUS_PUBLISHED,
+            created_at__gte=seven_days_ago
+        ).count()
         
         # Get active users count
         active_users_count = User.objects.filter(is_active=True).count()
@@ -42,6 +55,9 @@ def get_dashboard_stats(request):
         stats_data = {
             'published': published_count,
             'pendingApproval': pending_approval_count,
+            'contentInEditing': content_in_editing_count,
+            'totalContent': total_content_count,
+            'recentlyPublished': recently_published_count,
             'activeUsers': active_users_count,
             'notifications': notifications_count
         }
@@ -63,15 +79,18 @@ def get_recent_content(request):
         
         content_list = []
         for item in recent_content:
-            # Get the author information
-            author_name = item.author.get_full_name() if item.author.get_full_name() else item.author.username
+            # Get the creator information
+            creator_name = item.created_by.get_full_name() if item.created_by and item.created_by.get_full_name() else (item.created_by.username if item.created_by else 'Unknown')
             
             content_list.append({
                 'id': item.id,
                 'title': item.title,
-                'timestamp': item.created_at.strftime('%d-%B-%Y | %H:%M %p'),
-                'encoded_by': author_name,
-                'reviewed_by': 'Auto-assigned' if not item.reviewer else item.reviewer.get_full_name(),
+                'content_type': item.content_type,
+                'created_at': item.created_at.isoformat(),
+                'created_by': {
+                    'username': item.created_by.username if item.created_by else 'Unknown',
+                    'full_name': item.created_by.get_full_name() if item.created_by and item.created_by.get_full_name() else ''
+                },
                 'status': item.get_status_display(),  # Using the display value of the status choice
             })
         

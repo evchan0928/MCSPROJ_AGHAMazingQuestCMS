@@ -75,14 +75,12 @@ urlpatterns = [
     # Main API endpoints
     path('admin/', admin.site.urls),
     
-    
-    # API endpoints
-    path('api/', include([
-        path('auth/', include('apps.authentication.urls')),
-        path('content/', include('apps.contentmanagement.urls')),
-        path('users/', include('apps.usermanagement.urls')),
-        path('analytics/', include('apps.analyticsmanagement.urls')),
-    ])),
+    # API endpoints - with root API info
+    path('api/', api_root, name='api-root'),  # API root endpoint
+    path('api/auth/', include('apps.authentication.urls')),
+    path('api/content/', include('apps.contentmanagement.urls')),
+    path('api/users/', include('apps.usermanagement.urls')),
+    path('api/analytics/', include('apps.analyticsmanagement.urls')),
     
     # API documentation
     path('api/swagger/', schema_view.with_ui(

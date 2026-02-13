@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --only=production
+# Install all dependencies (including dev dependencies) to avoid lockfile conflicts
+RUN npm install
 
 COPY . .
 

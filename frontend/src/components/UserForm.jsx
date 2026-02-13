@@ -23,12 +23,12 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
     if (initial) {
       // Normalize roles to an array of role names
       const normalizedRoles = Array.isArray(initial.roles) 
-        ? initial.roles.map(r => typeof r === 'string' ? r : (r && r.name) || '')
+        ? initial.roles.map(r => typeof r === 'string' ? r : (r && r.name) || (r && r.role_name) || '')
         : [];
       
       form.setFieldsValue({
         ...initial,
-        roles: normalizedRoles,
+        roles: normalizedRoles.filter(r => r !== ''), // Only include non-empty role names
       });
     } else {
       // Set default values for new user
@@ -54,7 +54,25 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
       
       // Prepare the payload
       const payload = { ...values };
-      if (!payload.password) delete payload.password;
+      
+      // Process roles to ensure they're in the correct format
+      if (Array.isArray(payload.roles)) {
+        // Ensure roles are sent as an array of role names (strings)
+        payload.roles = payload.roles.map(role => 
+          typeof role === 'object' && role !== null ? 
+            (role.name || role.role_name || role.id) : 
+          typeof role === 'string' ? 
+            role : 
+          String(role)
+        ).filter(role => role !== ''); // Remove any empty role values
+      }
+      
+      // Don't send password if it's empty (unless we're creating a user)
+      if (!payload.password) {
+        if (isUpdate) {
+          delete payload.password; // Don't send empty password when updating
+        }
+      }
       
       let result;
       if (isUpdate) {
@@ -106,7 +124,7 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
             is_staff: false,
             is_superuser: false,
             roles: [],
-            password: initial && initial.id ? '' : '' // Only require password for new users
+            password: ''
           }}
         >
           <Row gutter={16}>
@@ -114,11 +132,11 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
               <Form.Item
                 name="username"
                 label="Username"
-                rules={[{ required: true, message: 'Please input the username!' }]}
+                rules={[{ required: true, message: 'Please enter a username' }]}
               >
                 <Input 
                   prefix={<UserOutlined />} 
-                  placeholder="Enter username" 
+                  placeholder="Username" 
                 />
               </Form.Item>
             </Col>
@@ -127,25 +145,25 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
                 name="email"
                 label="Email"
                 rules={[
-                  { required: true, message: 'Please input the email!' },
-                  { type: 'email', message: 'Please enter a valid email!' }
+                  { required: true, message: 'Please enter an email' },
+                  { type: 'email', message: 'Please enter a valid email' }
                 ]}
               >
                 <Input 
                   prefix={<MailOutlined />} 
-                  placeholder="Enter email" 
+                  placeholder="Email" 
                 />
               </Form.Item>
             </Col>
           </Row>
-
+          
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="first_name"
                 label="First Name"
               >
-                <Input placeholder="Enter first name" />
+                <Input placeholder="First Name" />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -153,98 +171,86 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
                 name="last_name"
                 label="Last Name"
               >
-                <Input placeholder="Enter last name" />
+                <Input placeholder="Last Name" />
               </Form.Item>
             </Col>
           </Row>
-
+          
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="password"
-                label={initial && initial.id ? "New Password (optional)" : "Password"}
-                rules={!initial || !initial.id ? [{ required: true, message: 'Please input the password!' }] : []}
+                label="Password"
+                rules={!initial?.id ? [{ required: true, message: 'Please enter a password' }] : []}
               >
                 <Input.Password 
                   prefix={<LockOutlined />} 
-                  placeholder={initial && initial.id ? "Leave blank to keep current password" : "Enter password"} 
+                  placeholder={initial?.id ? "New Password (leave blank to keep current)" : "Password"} 
                 />
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item
+                name="roles"
+                label="Roles"
+                tooltip="Assign roles to the user for permission management"
+              >
+                <Select 
+                  mode="multiple"
+                  placeholder="Select roles"
+                  prefix={<SafetyCertificateOutlined />}
+                >
+                  {roles.map((role, index) => (
+                    <Option key={index} value={typeof role === 'string' ? role : (role?.name || role?.role_name || role)}>
+                      {typeof role === 'string' ? role : (role?.name || role?.role_name || role)}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
           </Row>
-
-          <Divider orientation="left">User Status & Permissions</Divider>
+          
+          <Divider />
           
           <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item 
-                name="is_active" 
+            <Col span={6}>
+              <Form.Item
+                name="is_active"
+                label="Status"
                 valuePropName="checked"
-                label="Active"
               >
-                <Checkbox>Account Active</Checkbox>
+                <Checkbox>Active</Checkbox>
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item 
-                name="is_staff" 
-                valuePropName="checked"
+            <Col span={6}>
+              <Form.Item
+                name="is_staff"
                 label="Staff"
+                valuePropName="checked"
               >
-                <Checkbox>Staff Status</Checkbox>
+                <Checkbox>Staff User</Checkbox>
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item 
-                name="is_superuser" 
-                valuePropName="checked"
+            <Col span={6}>
+              <Form.Item
+                name="is_superuser"
                 label="Superuser"
+                valuePropName="checked"
               >
-                <Checkbox>Superuser Status</Checkbox>
+                <Checkbox>Superuser</Checkbox>
               </Form.Item>
             </Col>
           </Row>
-
-          <Divider orientation="left">User Roles</Divider>
           
-          <Form.Item
-            name="roles"
-            label="Assign Roles"
-          >
-            <Select
-              mode="multiple"
-              placeholder="Select roles for this user"
-              style={{ width: '100%' }}
-              prefix={<SafetyCertificateOutlined />}
-            >
-              {roles.map(role => (
-                <Option key={role.name} value={role.name}>
-                  {role.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
           <Form.Item>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <Button 
-                type="default" 
-                onClick={() => { 
-                  if (onCancel) onCancel(); 
-                  else if (onDone) onDone(); 
-                }} 
-                disabled={saving}
-              >
+            <Button type="primary" htmlType="submit" loading={saving}>
+              {initial?.id ? 'Update User' : 'Create User'}
+            </Button>
+            {onCancel && (
+              <Button style={{ marginLeft: 8 }} onClick={onCancel}>
                 Cancel
               </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                loading={saving}
-              >
-                {saving ? 'Saving...' : (initial && initial.id ? 'Update User' : 'Create User')}
-              </Button>
-            </div>
+            )}
           </Form.Item>
         </Form>
       </Card>

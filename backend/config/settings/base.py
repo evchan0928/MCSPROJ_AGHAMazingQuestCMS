@@ -211,6 +211,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://10.0.0.1:3000',     # Private network
     'http://172.16.0.1:3000',   # Private network
     'http://172.19.91.23:3000',  # Staging environment IP for frontend
+    'http://localhost:8080',  # Nginx proxy server
+    'https://localhost:8080',  # Nginx proxy server (HTTPS)
 ]
 CORS_ALLOW_CREDENTIALS = True
 # You can override this with a comma-separated list in the environment variable
@@ -227,6 +229,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:3000',  # IPv4 localhost
     'http://localhost:8000',  # Django development server
     'http://127.0.0.1:8000',  # IPv4 localhost
+    'http://localhost:8080',  # Nginx proxy server
+    'https://localhost:8080', # Nginx proxy server (HTTPS)
 ]
 
 # Add additional trusted origins from environment variable if set

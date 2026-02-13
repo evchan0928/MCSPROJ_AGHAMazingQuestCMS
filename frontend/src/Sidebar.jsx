@@ -47,14 +47,16 @@ export default function Sidebar({ user }) {
       transition: 'all 0.2s'
   };
 
+  // Close dropdowns when a navigation item is clicked
+  const handleNavClick = () => {
+    setContentOpen(false);
+    setAnalyticsOpen(false);
+    setUserMgmtOpen(false);
+  };
 
   return (
     <aside className="sidebar">
-        <div className="sidebar-header">
-            <img src={LOGO_URL} alt="DOST-STII Logo" className="sidebar-logo" />
-            <span className="sidebar-title">DOST-STII CMS</span>
-        </div>
-
+        {/* Removed sidebar header with logo and title */}
         <nav>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {/* Dashboard (always visible and static) */}
@@ -64,6 +66,7 @@ export default function Sidebar({ user }) {
                         end
                         style={({ isActive }) => ({ ...defaultStyle, ...(isActive ? activeStyle : {}) })}
                         className="nav-item"
+                        onClick={handleNavClick}
                     >
                         <span className="material-icons" style={{ marginRight: '10px' }}>dashboard</span>
                         <span>Dashboard</span>
@@ -84,7 +87,15 @@ export default function Sidebar({ user }) {
                         <ul className="sub-menu">
                             {/* Upload: Encoder, Editor, Super Admin */}
                             {(user?.is_superuser || roles.includes('Encoder') || roles.includes('Editor') || roles.includes('Super Admin')) && (
-                                <li><NavLink to="/dashboard/content/upload" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Upload Content</NavLink></li>
+                                <li>
+                                  <NavLink 
+                                    to="/dashboard/content/upload" 
+                                    style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                    onClick={handleNavClick}
+                                  >
+                                    Upload Content
+                                  </NavLink>
+                                </li>
                             )}
 
                             {/* 🔑 CHANGED: Renamed from "Edit content" to "Content list" and updated path */}
@@ -93,24 +104,57 @@ export default function Sidebar({ user }) {
                                     <NavLink 
                                         to="/dashboard/content/list" 
                                         style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                        onClick={handleNavClick}
                                     >
                                         Content List
                                     </NavLink>
                                 </li>
                             )}
 
-                            {/* Approve & Publish: Approver, Super Admin */}
-                            {(user?.is_superuser || roles.includes('Approver') || roles.includes('Super Admin')) && (
+                            {/* Approve & Publish: Approver, Admin, Super Admin */}
+                            {(user?.is_superuser || roles.includes('Approver') || roles.includes('Admin') || roles.includes('Super Admin')) && (
                                 <>
-                                    <li><NavLink to="/dashboard/content/approve" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Approve Content</NavLink></li>
-                                    <li><NavLink to="/dashboard/content/publish" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Publish Content</NavLink></li>
-                                    <li><NavLink to="/dashboard/content/published" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Published Content</NavLink></li>
+                                    <li>
+                                      <NavLink 
+                                        to="/dashboard/content/approve" 
+                                        style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                        onClick={handleNavClick}
+                                      >
+                                        Approve Content
+                                      </NavLink>
+                                    </li>
+                                    <li>
+                                      <NavLink 
+                                        to="/dashboard/content/publish" 
+                                        style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                        onClick={handleNavClick}
+                                      >
+                                        Publish Content
+                                      </NavLink>
+                                    </li>
+                                    <li>
+                                      <NavLink 
+                                        to="/dashboard/content/published" 
+                                        style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                        onClick={handleNavClick}
+                                      >
+                                        Published Content
+                                      </NavLink>
+                                    </li>
                                 </>
                             )}
 
                             {/* Delete: Admin, Super Admin */}
                             {(user?.is_superuser || roles.includes('Admin') || roles.includes('Super Admin')) && (
-                                <li><NavLink to="/dashboard/content/delete" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Delete Content</NavLink></li>
+                                <li>
+                                  <NavLink 
+                                    to="/dashboard/content/delete" 
+                                    style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                    onClick={handleNavClick}
+                                  >
+                                    Delete Content
+                                  </NavLink>
+                                </li>
                             )}
                         </ul>
                     )}
@@ -129,9 +173,33 @@ export default function Sidebar({ user }) {
                         </button>
                         {analyticsOpen && (
                             <ul className="sub-menu">
-                                <li><NavLink to="/dashboard/analytics/generate" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Generate Report</NavLink></li>
-                                <li><NavLink to="/dashboard/analytics/view" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>View Reports</NavLink></li>
-                                <li><NavLink to="/dashboard/analytics/download" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Download Reports</NavLink></li>
+                                <li>
+                                  <NavLink 
+                                    to="/dashboard/analytics/generate" 
+                                    style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                    onClick={handleNavClick}
+                                  >
+                                    Generate Report
+                                  </NavLink>
+                                </li>
+                                <li>
+                                  <NavLink 
+                                    to="/dashboard/analytics/view" 
+                                    style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                    onClick={handleNavClick}
+                                  >
+                                    View Reports
+                                  </NavLink>
+                                </li>
+                                <li>
+                                  <NavLink 
+                                    to="/dashboard/analytics/download" 
+                                    style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                    onClick={handleNavClick}
+                                  >
+                                    Download Reports
+                                  </NavLink>
+                                </li>
                             </ul>
                         )}
                     </li>
@@ -150,8 +218,24 @@ export default function Sidebar({ user }) {
                         </button>
                         {userMgmtOpen && (
                             <ul className="sub-menu">
-                                <li><NavLink to="/dashboard/users" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Users</NavLink></li>
-                                <li><NavLink to="/dashboard/users/roles" style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}>Roles</NavLink></li>
+                                <li>
+                                  <NavLink 
+                                    to="/dashboard/users" 
+                                    style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                    onClick={handleNavClick}
+                                  >
+                                    Users
+                                  </NavLink>
+                                </li>
+                                <li>
+                                  <NavLink 
+                                    to="/dashboard/users/roles" 
+                                    style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                    onClick={handleNavClick}
+                                  >
+                                    Roles
+                                  </NavLink>
+                                </li>
                             </ul>
                         )}
                     </li>
@@ -163,7 +247,11 @@ export default function Sidebar({ user }) {
             <div className="user-initials-circle">{user?.initials || 'SB'}</div>
             <div 
                 className="logout-text"
-                onClick={() => { localStorage.removeItem('access'); localStorage.removeItem('refresh'); window.location.href = '/'; }}
+                onClick={() => { 
+                  localStorage.removeItem('access_token'); 
+                  localStorage.removeItem('refresh_token'); 
+                  window.location.href = '/signin'; 
+                }}
             >
                 Logout
             </div>

@@ -77,7 +77,7 @@ apiClient.interceptors.response.use(
         // Token refresh failed, redirect to login
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        window.location.href = '/signin';
       }
     }
     
@@ -158,7 +158,7 @@ export const signOut = async () => {
  */
 export const getCurrentUser = async () => {
   try {
-    const response = await apiClient.get('/auth/user/');
+    const response = await apiClient.get('/auth/me/');
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || error.message);
@@ -201,10 +201,21 @@ export const getContentItems = async () => {
  */
 export const getDashboardStats = async () => {
   try {
-    const response = await apiClient.get('/dashboard/stats/');
+    // Updated URL to match backend configuration: /api/users/dashboard/stats/
+    const response = await apiClient.get('/users/dashboard/stats/');
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.detail || error.message);
+    console.error('Error fetching dashboard stats:', error);
+    // Return default values in case of error
+    return {
+      published: 0,
+      pendingApproval: 0,
+      activeUsers: 0,
+      notifications: 0,
+      totalContent: 0,
+      contentInEditing: 0,
+      recentlyPublished: 0
+    };
   }
 };
 
@@ -213,10 +224,12 @@ export const getDashboardStats = async () => {
  */
 export const getRecentContent = async () => {
   try {
-    const response = await apiClient.get('/content/recent/');
+    // Updated URL to match backend configuration: /api/users/content/recent/
+    const response = await apiClient.get('/users/content/recent/');
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.detail || error.message);
+    console.error('Error fetching recent content:', error);
+    return [];
   }
 };
 
@@ -372,7 +385,18 @@ export const updateUser = async (id, userData) => {
     const response = await apiClient.patch(`/users/${id}/`, userData);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.detail || error.message);
+    // Handle both standard API error responses and backend validation errors
+    const errorData = error.response?.data;
+    if (errorData && typeof errorData === 'object') {
+      // Check if it's a field-specific error object
+      if (Object.keys(errorData).length > 0) {
+        // Join multiple error messages if present
+        const messages = Object.values(errorData).flat().join(', ');
+        return Promise.reject(new Error(messages || 'Validation error occurred'));
+      }
+    }
+    // Fallback to detail field or generic error message
+    throw new Error(error.response?.data?.detail || error.response?.data?.error || error.message);
   }
 };
 

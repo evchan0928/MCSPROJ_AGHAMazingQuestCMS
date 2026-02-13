@@ -3,7 +3,11 @@ import { Form, Input, Button, Card, message, Spin, Select, Upload, InputNumber }
 import { UploadOutlined, SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
-import axios from 'axios';
+import { 
+  getContentItems, 
+  updateContentItem,
+  getCurrentUser
+} from '../api/django-api';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -15,46 +19,49 @@ const EditContentPage = () => {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    fetchUserData();
     fetchContentDetails();
   }, [id]);
 
+  const fetchUserData = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      message.error('Failed to fetch user data');
+    }
+  };
+
   const fetchContentDetails = async () => {
     try {
-      // In a real implementation, this would fetch from the API
-      // const token = localStorage.getItem('token');
-      // const response = await axios.get(`/api/content/${id}/`, {
-      //   headers: { 'Authorization': `Bearer ${token}` }
-      // });
+      // Fetch the content item by ID
+      const allContents = await getContentItems();
+      const contentItem = allContents.find(item => item.id === parseInt(id));
       
-      // Mock data for demonstration
-      const mockContent = {
-        id: parseInt(id),
-        title: `Content Title ${id}`,
-        body: '<p>This is the content body for editing. It contains <strong>rich text formatting</strong> and can include <em>emphasis</em>, lists, and other HTML elements.</p>',
-        status: 'draft',
-        type: 'article',
-        author: 'Current User',
-        featuredImage: null,
-        documents: [],
-        videoUrl: '',
-        tags: ['science', 'technology']
-      };
-      
-      setContent(mockContent);
-      form.setFieldsValue({
-        title: mockContent.title,
-        body: mockContent.body,
-        status: mockContent.status,
-        type: mockContent.type,
-        videoUrl: mockContent.videoUrl,
-        tags: mockContent.tags
-      });
-      setLoading(false);
+      if (contentItem) {
+        setContent(contentItem);
+        form.setFieldsValue({
+          title: contentItem.title,
+          body: contentItem.body || contentItem.description || '',
+          status: contentItem.status,
+          content_type: contentItem.content_type || 'text',
+          photo_caption: contentItem.photo_caption || '',
+          quiz_length: contentItem.quiz_length || '',
+          quiz_badges: contentItem.quiz_badges || 'no',
+          quiz_number: contentItem.quiz_number || ''
+        });
+      } else {
+        message.error('Content not found');
+        navigate('/dashboard/content/list');
+      }
     } catch (error) {
       console.error('Error fetching content:', error);
       message.error('Failed to load content details');
+    } finally {
       setLoading(false);
     }
   };
@@ -62,20 +69,13 @@ const EditContentPage = () => {
   const handleSave = async (values) => {
     setSaving(true);
     try {
-      // In a real implementation, this would make an API call
-      // const token = localStorage.getItem('token');
-      // await axios.put(`/api/content/${id}/`, values, {
-      //   headers: { 
-      //     'Authorization': `Bearer ${token}`,
-      //     'Content-Type': 'multipart/form-data'
-      //   }
-      // });
-      
+      const updatedContent = await updateContentItem(id, values);
       message.success('Content updated successfully!');
       navigate('/dashboard/content/list'); // Redirect to content list after saving
     } catch (error) {
       console.error('Error updating content:', error);
-      message.error('Failed to update content');
+      message.error(`Failed to update content: ${error.message}`);
+    } finally {
       setSaving(false);
     }
   };
@@ -111,11 +111,13 @@ const EditContentPage = () => {
           onFinish={handleSave}
           initialValues={{
             title: content?.title || '',
-            body: content?.body || '',
+            body: content?.body || content?.description || '',
             status: content?.status || 'draft',
-            type: content?.type || 'article',
-            videoUrl: content?.videoUrl || '',
-            tags: content?.tags || []
+            content_type: content?.content_type || 'text',
+            photo_caption: content?.photo_caption || '',
+            quiz_length: content?.quiz_length || '',
+            quiz_badges: content?.quiz_badges || 'no',
+            quiz_number: content?.quiz_number || ''
           }}
         >
           <Form.Item
@@ -124,6 +126,19 @@ const EditContentPage = () => {
             rules={[{ required: true, message: 'Please input the content title!' }]}
           >
             <Input placeholder="Enter content title" />
+          </Form.Item>
+
+          <Form.Item
+            label="Content Type"
+            name="content_type"
+          >
+            <Select placeholder="Select content type">
+              <Option value="text">Text</Option>
+              <Option value="image">Image</Option>
+              <Option value="video">Video</Option>
+              <Option value="document">Document</Option>
+              <Option value="quiz">Quiz</Option>
+            </Select>
           </Form.Item>
 
           <Form.Item
@@ -149,65 +164,51 @@ const EditContentPage = () => {
           </Form.Item>
 
           <Form.Item
-            label="Type"
-            name="type"
+            label="Photo Caption"
+            name="photo_caption"
           >
-            <Select placeholder="Select content type">
-              <Option value="article">Article</Option>
-              <Option value="video">Video</Option>
-              <Option value="image">Image Gallery</Option>
-              <Option value="document">Document</Option>
-            </Select>
+            <Input placeholder="Enter photo caption (if applicable)" />
           </Form.Item>
 
-          <Form.Item
-            label="Featured Image"
-            name="featuredImage"
-          >
-            <Upload maxCount={1} beforeUpload={() => false}>
-              <Button icon={<UploadOutlined />}>Click to upload</Button>
-            </Upload>
-          </Form.Item>
+          {/* Quiz-specific fields */}
+          {form.getFieldValue('content_type') === 'quiz' && (
+            <>
+              <Form.Item
+                label="Number of Questions"
+                name="quiz_length"
+              >
+                <InputNumber min={1} max={100} placeholder="Enter number of questions" style={{ width: '100%' }} />
+              </Form.Item>
 
-          <Form.Item
-            label="Video URL"
-            name="videoUrl"
-          >
-            <Input placeholder="Enter video URL (optional)" />
-          </Form.Item>
+              <Form.Item
+                label="Quiz Badges"
+                name="quiz_badges"
+              >
+                <Select placeholder="Does this quiz have badges?">
+                  <Option value="no">No</Option>
+                  <Option value="yes">Yes</Option>
+                </Select>
+              </Form.Item>
 
-          <Form.Item
-            label="Documents"
-            name="documents"
-          >
-            <Upload multiple beforeUpload={() => false}>
-              <Button icon={<UploadOutlined />}>Click to upload documents</Button>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item
-            label="Tags"
-            name="tags"
-          >
-            <Select
-              mode="tags"
-              placeholder="Add tags for categorization"
-              style={{ width: '100%' }}
-            >
-              {/* Options are dynamically added as tags */}
-            </Select>
-          </Form.Item>
+              <Form.Item
+                label="Quiz Number"
+                name="quiz_number"
+              >
+                <InputNumber min={1} placeholder="Enter quiz sequence number" style={{ width: '100%' }} />
+              </Form.Item>
+            </>
+          )}
 
           <Form.Item
             label="Status"
             name="status"
           >
             <Select placeholder="Select status">
-              <Option value="draft">Draft</Option>
-              <Option value="review">For Review</Option>
-              <Option value="approved">Approved</Option>
+              <Option value="for_editing">For Editing</Option>
+              <Option value="for_approval">For Approval</Option>
+              <Option value="for_publishing">For Publishing</Option>
               <Option value="published">Published</Option>
-              <Option value="archived">Archived</Option>
+              <Option value="deleted">Deleted</Option>
             </Select>
           </Form.Item>
 
