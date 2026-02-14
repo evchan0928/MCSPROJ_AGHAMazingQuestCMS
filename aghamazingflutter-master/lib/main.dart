@@ -1,0 +1,109 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'screens/welcome_screen.dart';
+import 'services/auth_service.dart';
+import 'services/energy_manager.dart';  // ADD THIS
+import 'services/auth_api.dart';  // ADD THIS IMPORT
+import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/mainmenu_screen.dart';
+import 'screens/trivia_game1/main_trivia_screen.dart';
+import 'screens/gemgrab/gem_grab_game_screen.dart';
+import 'screens/content_screen.dart';  // ADD CONTENT SCREEN IMPORT
+
+void main() async {
+  // Ensure Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Enforce Portrait Only Mode
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
+  // Initialize Energy System (ADD THIS)
+  await EnergyManager.instance.initialize();
+
+  // Initialize services with the base API URL
+  const baseUrl = 'https://your-api-url.com'; // Replace with your actual API URL
+    
+  final authApi = AuthApi(
+    registerUrl: '$baseUrl/api/auth/register/',
+    loginUrl: '$baseUrl/api/auth/login/',
+    otpRequestUrl: '$baseUrl/api/auth/otp/request/',
+    otpVerifyUrl: '$baseUrl/api/auth/otp/verify/',
+    passwordResetUrl: '$baseUrl/api/auth/password/reset/', // ADD THIS LINE
+    timeout: const Duration(seconds: 15),
+  );
+
+  final authService = AuthService(authApi: authApi);
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'AGHAMazing',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+        fontFamily: 'LilitaOne',
+      ),
+      // Use AuthWrapper to check authentication state
+      home: const AuthWrapper(),
+      routes: {
+        '/welcome': (_) => const WelcomeScreen(),
+        '/login': (_) => const LoginScreen(),
+        '/register': (_) => const RegisterScreen(),
+        '/mainmenu': (_) => const MainMenuScreen(),
+        '/profile': (_) => const ProfileScreen(),
+        '/trivia': (_) => const MainTriviaScreen(),
+        '/gemgrab': (_) => const GemGrabGameScreen(),  // ADD THIS LINE
+        '/content': (_) => const ContentScreen(),  // ADD CONTENT SCREEN ROUTE
+      },
+    );
+  }
+}
+
+// This widget checks if user is logged in
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authService = AuthService();
+
+    return StreamBuilder<User?>(
+      stream: authService.authStateChanges,
+      builder: (context, snapshot) {
+        // Show loading while checking auth state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        // User is logged in - go to main menu
+        if (snapshot.hasData) {
+          return const MainMenuScreen();
+        }
+
+        // User is not logged in - show welcome screen
+        return const WelcomeScreen();
+      },
+    );
+  }
+}

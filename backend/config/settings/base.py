@@ -201,10 +201,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# CORS (for React frontend)
+# CORS (for React frontend and Flutter app)
 # Read allowed origins from environment variable for flexibility.
 # Default to common development values if not set.
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGIN_REGEXES = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://[::1]:3000',      # IPv6 localhost
@@ -215,14 +215,17 @@ CORS_ALLOWED_ORIGINS = [
     'http://172.19.91.23:3000',  # Staging environment IP for frontend
     'http://localhost:8080',  # Nginx proxy server
     'https://localhost:8080',  # Nginx proxy server (HTTPS)
+    # Adding origins for Flutter app access
+    'http://localhost:8000',  # Django development server (for Flutter app)
+    'http://127.0.0.1:8000',  # IPv4 localhost (for Flutter app)
 ]
 CORS_ALLOW_CREDENTIALS = True
 # You can override this with a comma-separated list in the environment variable
-if os.environ.get('CORS_ALLOWED_ORIGINS'):
-    additional_origins = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if origin.strip()]
-    CORS_ALLOWED_ORIGINS.extend(additional_origins)
+if os.environ.get('CORS_ALLOWED_ORIGIN_REGEXES'):
+    additional_origins = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGIN_REGEXES', '').split(',') if origin.strip()]
+    CORS_ALLOWED_ORIGIN_REGEXES.extend(additional_origins)
 
-# Allow all origins if CORS_ALLOWED_ORIGINS is not set (for development)
+# Allow all origins if CORS_ALLOWED_ORIGIN_REGEXES is not set (for development)
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
 
 # CSRF Trusted Origins for development
@@ -266,6 +269,11 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+]
+
+CORS_EXPOSE_HEADERS = [
+    'Content-Type',
+    'X-CSRFTOKEN',
 ]
 
 # Django REST Framework + Simple JWT configuration
