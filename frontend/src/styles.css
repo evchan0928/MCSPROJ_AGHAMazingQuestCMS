@@ -1006,6 +1006,7 @@ button {
   box-shadow: var(--shadow-xl);
   padding: 2.5rem;
   z-index: 2;
+  margin-bottom: 2rem;
 }
 
 .signin-header {
@@ -1196,9 +1197,41 @@ button {
   text-decoration: underline;
 }
 
+/* Sign In Image Gallery */
+.signin-image-gallery {
+  width: 100%;
+  max-width: 800px;
+  margin: 1rem auto;
+  padding: 1rem;
+}
+
+.image-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.signin-gallery-image {
+  flex: 1;
+  min-width: 0; /* Allows images to shrink below their natural size */
+  height: 150px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-normal);
+  background-color: #f1f5f9;
+  border: 1px solid var(--border-color);
+}
+
+.signin-gallery-image:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-xl);
+}
+
 .signin-footer {
   margin-top: auto;
-  padding-top: 2rem;
+  padding-top: 1rem;
   width: 100%;
   max-width: 450px;
   display: flex;
@@ -1261,6 +1294,17 @@ button {
   .signin-title {
     font-size: 1.6rem;
   }
+  
+  .image-row {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .signin-gallery-image {
+    width: 100%;
+    max-width: 300px;
+    height: 180px;
+  }
 }
 
 @media (max-width: 576px) {
@@ -1284,5 +1328,9 @@ button {
   
   .signin-footer {
     padding-top: 1rem;
+  }
+  
+  .signin-gallery-image {
+    height: 150px;
   }
 }
