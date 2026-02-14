@@ -1,185 +1,396 @@
-# AGHAMazingQuestCMS - Comprehensive Full Stack Development Setup
+# Full Stack Development Setup Guide: AGHAMazingQuestCMS
 
-## Overview
-This document provides a complete, optimized setup guide for the AGHAMazingQuestCMS application. It combines all necessary components for a high-performance development environment.
+This comprehensive guide covers the setup, deployment, and optimization of the AGHAMazingQuestCMS - a full-stack content management system built with Django REST Framework backend and React frontend, deployed via Docker containers with Nginx reverse proxy.
+
+## Table of Contents
+1. [Architecture Overview](#architecture-overview)
+2. [Prerequisites](#prerequisites)
+3. [Repository Structure](#repository-structure)
+4. [Configuration Files](#configuration-files)
+5. [Development Setup](#development-setup)
+6. [Production Deployment](#production-deployment)
+7. [API Endpoints](#api-endpoints)
+8. [Troubleshooting](#troubleshooting)
+9. [Security Considerations](#security-considerations)
+10. [Performance Optimization](#performance-optimization)
+
+## Architecture Overview
+
+The AGHAMazingQuestCMS follows a modern full-stack architecture:
+
+```
+Internet → Nginx Reverse Proxy → React Frontend (port 3000)
+                              → Django Backend (port 8000)
+                              → PostgreSQL Database
+                              → pgAdmin (port 5050)
+```
+
+Key components:
+- **Frontend**: React application with modern UI/UX
+- **Backend**: Django REST Framework API with JWT authentication
+- **Database**: PostgreSQL for data persistence
+- **Admin Interface**: pgAdmin for database management
+- **Reverse Proxy**: Nginx for routing and security
+- **Authentication**: JWT-based with refresh token rotation
+- **API Documentation**: Swagger/Redoc integration
 
 ## Prerequisites
 
-- **Docker** (version 20.10 or higher)
-- **Docker Compose V2** (not the old docker-compose)
-- **Node.js** (version 18 or higher)
-- **npm** (version 8 or higher)
-- **Git**
-- Minimum 4GB RAM and 5GB disk space
+Before starting, ensure your system meets these requirements:
 
-## Quick Setup (Recommended)
+### System Requirements
+- **OS**: Linux, macOS, or Windows with WSL2
+- **Docker**: Version 20.10 or higher
+- **Docker Compose**: Version 2.0 or higher
+- **Git**: Version 2.25 or higher
+- **Node.js**: Version 16 or higher (for local development)
+- **Python**: Version 3.9 or higher (for local development)
 
-The fastest way to get started is using the provided optimized setup script:
+### Installation Commands
 
+For Ubuntu/Debian:
 ```bash
-# Make the setup script executable
-chmod +x setup_optimized.sh
-
-# Run the optimized setup script
-./setup_optimized.sh
+sudo apt update
+sudo apt install -y docker.io docker-compose git
+sudo usermod -aG docker $USER  # Add current user to docker group
 ```
 
-## Detailed Architecture
-
-### Service Components
-- **PostgreSQL Database**: Persistent storage with pgAdmin interface
-- **Django Backend**: REST API with authentication and content management
-- **React Frontend**: Dynamic user interface with live reloading
-- **Nginx Proxy**: Reverse proxy for unified access and routing
-- **Network**: Custom Docker network for optimized communication
-
-### Network Configuration
-- All services communicate through a dedicated Docker network (`agha-network`)
-- Frontend and backend communicate internally via service names
-- Nginx serves as the unified entry point for all client requests
-- Optimized for both development and production-like environments
-
-### Port Configuration
-- **Application Access**: http://localhost:8081 (Nginx proxy) - used when 8080 is occupied
-- **Legacy Port**: http://localhost:8080 (when available)
-- **API Endpoint**: http://localhost:8081/api/ (or :8080/api/ if using legacy port)
-- **Admin Panel**: http://localhost:8081/admin/ (or :8080/admin/ if using legacy port)
-- **Database Admin**: http://localhost:5050 (pgAdmin)
-- **Internal Backend**: http://localhost:8000
-- **Internal Frontend**: http://localhost:3000
-
-## Pre-configured Demo Accounts
-
-After setup, the following accounts will be available:
-
-| Role | Username | Password | Permissions |
-|------|----------|----------|-------------|
-| Demo User | `demo_user` | `demopass123` | Read-only access |
-| Encoder | `encoder_user` | `demopass123` | Content creation |
-| Editor | `editor_user` | `demopass123` | Content editing |
-| Approver | `approver_user` | `demopass123` | Content approval |
-| Admin | `admin_user` | `demopass123` | Administrative tasks |
-| Super Admin | `superadmin` | `superadmin123` | Full system access |
-
-## Development Workflow
-
-### Performance Optimization Tips
-1. **Container Resource Limits**: Set appropriate CPU and memory limits in Docker Desktop
-2. **Volume Mounts**: Use named volumes for databases and anonymous volumes for caches
-3. **Build Caching**: Leverage Docker layer caching for faster rebuilds
-4. **Hot Reloading**: Frontend updates reflect immediately in development mode
-
-### Making Changes
-1. **Frontend**: Changes to [frontend/src](file:///home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/frontend/src) automatically reload in the browser
-2. **Backend**: Changes to [backend/](file:///home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/backend) may require restarting the backend container
-3. **Configuration**: Changes to nginx config require restarting the nginx container
-
-### Development Commands
+For macOS:
 ```bash
-# Restart backend after code changes
-docker restart agha-backend
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# View all service logs
-docker compose -f devops/docker-compose-fullstack.yml logs -f
-
-# Run Django management commands
-docker exec -it agha-backend python manage.py <command>
-
-# Execute database migrations
-docker exec -it agha-backend python manage.py migrate
-
-# Run tests
-docker exec -it agha-backend python manage.py test
+# Install prerequisites
+brew install docker docker-compose git
 ```
 
-## Performance Monitoring
+For Windows (WSL2):
+```powershell
+# In PowerShell as Administrator
+wsl --install
+# Then in WSL terminal:
+sudo apt update && sudo apt install -y docker.io docker-compose git
+```
 
-### Resource Usage
-- **PostgreSQL**: ~200MB RAM baseline, increases with data size
-- **Backend (Django)**: ~150MB RAM baseline, varies with load
-- **Frontend (React Dev Server)**: ~200MB RAM
-- **Nginx**: ~10MB RAM
-- **Total baseline**: ~560MB RAM
+## Repository Structure
 
-### Health Checks
-The optimized setup includes health checks for all services:
-- Database connectivity verification
-- Backend API response time monitoring
-- Frontend availability testing
-- Authentication flow validation
+```
+MCSPROJ_AGHAMazingQuestCMS/
+├── backend/
+│   ├── apps/
+│   │   ├── authentication/
+│   │   ├── contentmanagement/
+│   │   ├── usermanagement/
+│   │   └── analyticsmanagement/
+│   ├── config/
+│   ├── middleware/
+│   ├── requirements.txt
+│   └── manage.py
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── api/
+│   │   ├── styles.css
+│   │   └── App.jsx
+│   ├── package.json
+│   └── Dockerfile
+├── devops/
+│   ├── docker-compose-fullstack.yml
+│   └── nginx-config/
+│       └── agha-proxy.conf
+└── docs/
+    └── setup-guide.md
+```
+
+## Configuration Files
+
+### Environment Variables (.env)
+
+The project uses environment variables for configuration. Create a `.env` file in the repository root:
+
+```env
+# Database Configuration
+DB_NAME=aghamazing_db
+DB_USER=admin
+DB_PASSWORD=password123
+DB_HOST=localhost
+DB_PORT=5432
+
+# Django Configuration
+DJANGO_SECRET_KEY=your-secret-key-here
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+CSRF_TRUSTED_ORIGINS=http://localhost:8080,http://localhost:8081
+
+# JWT Configuration
+JWT_SECRET_KEY=your-jwt-secret
+```
+
+### Docker Compose Configuration
+
+The `devops/docker-compose-fullstack.yml` file orchestrates all services:
+
+- **PostgreSQL**: Database server (port 5433)
+- **pgAdmin**: Database administration (port 5050)
+- **Backend**: Django API server (internal port 8000)
+- **Frontend**: React development server (internal port 3000)
+- **Nginx**: Reverse proxy (port 8081)
+
+### Nginx Configuration
+
+The `devops/nginx-config/agha-proxy.conf` file defines:
+
+- API routes: `/api/` → Backend
+- Admin panel: `/admin/` → Backend
+- Static files: `/static/` → Backend
+- All other routes: `/` → Frontend
+
+## Development Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/MCSPROJ_AGHAMazingQuestCMS.git
+cd MCSPROJ_AGHAMazingQuestCMS
+```
+
+### 2. Build and Start Services
+
+```bash
+cd devops
+docker compose -f docker-compose-fullstack.yml up -d
+```
+
+### 3. Initial Database Setup
+
+After starting the services, run migrations:
+
+```bash
+docker exec agha-backend python manage.py migrate
+docker exec agha-backend python manage.py populate_sample_data
+```
+
+### 4. Access the Applications
+
+- **Main Application**: http://localhost:8081
+- **Sign-In Page**: http://localhost:8081/signin
+- **API Documentation**: http://localhost:8081/api/swagger/
+- **Django Admin**: http://localhost:8081/admin/
+- **pgAdmin**: http://localhost:5050
+
+### 5. Default Credentials
+
+#### Demo Users
+- Username: `demo_user` | Password: `demopass123`
+- Username: `encoder_user` | Password: `demopass123`
+- Username: `editor_user` | Password: `demopass123`
+- Username: `approver_user` | Password: `demopass123`
+- Username: `admin_user` | Password: `demopass123`
+- Username: `superadmin` | Password: `superadmin123`
+
+#### pgAdmin Credentials
+- Email: `aghamazingdost@gmail.com`
+- Password: `DOSTAGHAMazingQuestAdmin1234`
+
+#### Database Connection (for direct access)
+- Host: localhost
+- Port: 5433
+- Database: `aghamazing_db`
+- Username: `admin`
+- Password: `password123`
+
+## Production Deployment
+
+For production deployment, consider these additional configurations:
+
+### Environment Configuration
+
+```env
+# Disable debug mode
+DJANGO_DEBUG=False
+
+# Set production-ready secret key
+DJANGO_SECRET_KEY=your-production-secret-key
+
+# Restrict allowed hosts
+DJANGO_ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+
+# Production database settings
+DB_HOST=your-db-host
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+```
+
+### SSL/TLS Configuration
+
+Update nginx configuration for HTTPS:
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /path/to/your/certificate.crt;
+    ssl_certificate_key /path/to/your/private.key;
+    
+    # ... rest of configuration
+}
+```
+
+### Performance Tuning
+
+Adjust Gunicorn workers for production:
+
+```bash
+# In backend Dockerfile
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "config.wsgi:application"]
+```
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login/` - User login
+- `POST /api/auth/logout/` - User logout
+- `POST /api/auth/refresh/` - Token refresh
+- `GET /api/auth/me/` - Get current user
+
+### Content Management
+- `GET /api/content/items/` - List content items
+- `POST /api/content/items/` - Create content item
+- `GET /api/content/items/{id}/` - Retrieve content item
+- `PUT /api/content/items/{id}/` - Update content item
+- `DELETE /api/content/items/{id}/` - Delete content item
+- `POST /api/content/items/{id}/send_for_approval/` - Send for approval
+- `POST /api/content/items/{id}/approve/` - Approve content
+- `POST /api/content/items/{id}/publish/` - Publish content
+
+### User Management
+- `GET /api/users/` - List users
+- `POST /api/users/` - Create user
+- `GET /api/users/{id}/` - Retrieve user
+- `PUT /api/users/{id}/` - Update user
+- `DELETE /api/users/{id}/` - Delete user
+
+### Analytics
+- `GET /api/analytics/` - Get analytics summary
+- `GET /api/analytics/content/` - Get content analytics
+- `GET /api/analytics/users/` - Get user activity analytics
+- `POST /api/analytics/generate/` - Generate analytics report
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Issue**: Port 8080 is already in use by another service
-**Solution**: The application will automatically run on port 8081. Access via http://localhost:8081
-
-**Issue**: Slow initial load times
-**Solution**: Ensure Docker has sufficient allocated resources (minimum 4GB RAM)
-
-**Issue**: Frontend not refreshing after changes
-**Solution**: Clear browser cache and verify WebSocket connection to hot-reload server
-
-**Issue**: Database connection errors
-**Solution**: Check that PostgreSQL is running and credentials match [backend/.env](file:///home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/backend/.env)
-
-**Issue**: Authentication fails
-**Solution**: Verify credentials from the table above and check that backend is running
-
-**Issue**: API calls returning CORS errors
-**Solution**: Ensure all traffic goes through the nginx proxy (port 8081), not direct backend access
-
-### Network Optimization
-- All containers run on the same custom network for minimal latency
-- Service discovery uses internal DNS names for fast resolution
-- Nginx proxy efficiently routes requests without significant overhead
-
-## Optimized Environment Scripts
-
-### Setup Script Features
-- Prerequisite verification before installation
-- Automatic network creation for services
-- Dependency checking and installation guidance
-- Service readiness validation
-- System health verification
-
-### Cleanup and Maintenance
+#### 1. Port Already in Use
+If you encounter port conflicts:
 ```bash
-# Stop development environment
-./stop_optimized.sh
+# Check which process is using the port
+lsof -i :8081
 
-# Clean Docker resources
-docker system prune -f
-
-# Reset entire environment
-./reset_environment.sh
+# Kill the process if needed
+kill -9 PID
 ```
 
-## Production Parity
+#### 2. Database Connection Errors
+```bash
+# Check if PostgreSQL is running
+docker compose -f docker-compose-fullstack.yml ps
 
-The development environment closely mirrors production:
-- Same Docker images and configurations
-- Identical network topology
-- Matching environment variables
-- Equal port mappings
-- Consistent service dependencies
+# Check database logs
+docker logs agha-postgres
 
-## Support and Maintenance
+# Retry migrations
+docker exec agha-backend python manage.py migrate
+```
 
-### Getting Help
-- Check the logs: `docker compose -f devops/docker-compose-fullstack.yml logs`
-- Verify network connectivity: `docker network ls` and `docker ps`
-- Confirm resource allocation in Docker Desktop settings
+#### 3. Frontend Build Issues
+```bash
+# Clear npm cache
+docker exec agha-frontend npm cache clean --force
 
-### Updates
-- Monitor the repository for updates to this setup guide
-- Regularly pull latest changes and rebuild if needed
-- Keep Docker and related tools updated to the latest stable versions
+# Reinstall dependencies
+docker exec agha-frontend npm install
+```
+
+#### 4. Authentication Problems
+- Verify CSRF_TRUSTED_ORIGINS includes your domain
+- Check that ALLOWED_HOSTS includes your domain
+- Ensure session cookies are configured correctly for your domain
+
+### Debugging Tips
+
+1. **Check Container Logs**:
+   ```bash
+   docker logs agha-backend
+   docker logs agha-frontend
+   docker logs agha-nginx
+   ```
+
+2. **Verify Environment Variables**:
+   ```bash
+   docker exec agha-backend env | grep DB_
+   ```
+
+3. **Test API Directly**:
+   ```bash
+   curl -v http://localhost:8081/api/
+   ```
+
+## Security Considerations
+
+### Authentication & Authorization
+- JWT tokens with 15-minute expiration
+- Refresh tokens with 7-day expiration
+- Token rotation for refresh tokens
+- Session management with CSRF protection
+
+### Data Protection
+- PostgreSQL with encrypted connections
+- Environment variables for sensitive data
+- Input validation and sanitization
+- SQL injection prevention
+
+### Network Security
+- Nginx reverse proxy for attack mitigation
+- CORS configuration limiting origins
+- Rate limiting for API endpoints
+- SSL/TLS termination at proxy level
+
+## Performance Optimization
+
+### Caching Strategy
+- Redis for session storage (future implementation)
+- Browser caching for static assets
+- CDN for media files (future implementation)
+
+### Database Optimization
+- PostgreSQL connection pooling
+- Query optimization with select_related/prefetch_related
+- Proper indexing strategy
+- Regular vacuuming and maintenance
+
+### Frontend Optimization
+- Code splitting and lazy loading
+- Image optimization and compression
+- Bundle size optimization
+- Caching strategies for API responses
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: February 2026  
-**Primary Contact**: Development Team  
-**Validated On**: Linux, macOS, Windows (with WSL2)
+## Recent Updates
+
+- **Clean Sign-In Form**: A professional, responsive sign-in form has been implemented with:
+  - Modern UI design with gradient backgrounds
+  - Password visibility toggle
+  - Feature highlights panel
+  - Improved error messaging
+  - Responsive layout for all device sizes
+  - Loading indicators
+  - Enhanced security features
+
+This completes the comprehensive setup guide for AGHAMazingQuestCMS. The system is now ready for development, testing, and production deployment.

@@ -86,7 +86,6 @@ DATABASES = {
 INSTALLED_APPS = [
     # Django core apps
     'django.contrib.admin',
-    'django.contrib.sites',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -201,8 +200,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Sites framework (required by Wagtail)
-SITE_ID = int(os.environ.get('DJANGO_SITE_ID', 1))
 
 # CORS (for React frontend)
 # Read allowed origins from environment variable for flexibility.
