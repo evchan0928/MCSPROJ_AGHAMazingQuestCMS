@@ -48,8 +48,7 @@ services:
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
-    ports:
-      - "8000:8000"
+    # Remove direct port exposure - all traffic goes through nginx
     networks:
       - agha-network
     depends_on:
@@ -64,13 +63,12 @@ services:
     volumes:
       - /app/node_modules
       - ../frontend:/app
-    ports:
-      - "3000:3000"
+    # Remove direct port exposure - all traffic goes through nginx
     environment:
       - CHOKIDAR_USEPOLLING=true  # Needed for file watching in some environments
       - NODE_ENV=development
       # Ensure frontend knows where the backend API is (use Tailscale IP for external access)
-      - REACT_APP_BACKEND_API_URL=http://100.93.255.84:8000/api
+      - REACT_APP_BACKEND_API_URL=/api
     networks:
       - agha-network
     depends_on:
@@ -83,7 +81,7 @@ services:
     container_name: agha-nginx
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8081:8081"
     volumes:
       - ./nginx-config/agha-proxy.conf:/etc/nginx/conf.d/default.conf:ro
       - ../media:/app/media:ro

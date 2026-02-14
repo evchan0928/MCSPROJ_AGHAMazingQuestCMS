@@ -51,6 +51,11 @@ try:
     _fallback = socket.gethostname() + ".ts.net"
     if _fallback and _fallback not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_fallback)
+        
+    # Add local IP to allow access from local network
+    local_ip = socket.gethostbyname(socket.gethostname())
+    if local_ip and local_ip not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(local_ip)
 except Exception:
     # if socket fails for any reason, just continue with the parsed list
     pass
@@ -229,8 +234,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:3000',  # IPv4 localhost
     'http://localhost:8000',  # Django development server
     'http://127.0.0.1:8000',  # IPv4 localhost
-    'http://localhost:8080',  # Nginx proxy server
-    'https://localhost:8080', # Nginx proxy server (HTTPS)
+    'http://localhost:8081',  # Nginx proxy server
+    'https://localhost:8081', # Nginx proxy server (HTTPS)
+    'http://0.0.0.0:8081',    # Additional host for container access
+    'http://127.0.0.1:8081',  # Additional host for local access
 ]
 
 # Add additional trusted origins from environment variable if set
