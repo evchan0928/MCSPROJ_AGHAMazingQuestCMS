@@ -1,15 +1,14 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from datetime import timedelta
 from apps.contentmanagement.models import ContentItem
-from .models import CustomUserRole  # Changed to import from the local models module
-from django.contrib.auth.models import Group
+from .models import CustomUserRole  # Import the custom user role model
 from django.db.models import Count, Q
 import json
 
@@ -176,36 +175,24 @@ def user_list_view(request):
             )
             
             # Assign roles if provided
-            for role_name in roles:
-                if isinstance(role_name, str):
-                    role, created = CustomUserRole.objects.get_or_create(
-                        user=user,
-                        role_name=role_name
-                    )
-                elif isinstance(role_name, dict):
-                    role, created = CustomUserRole.objects.get_or_create(
-                        user=user,
-                        role_name=role_name.get('name', role_name.get('role_name', ''))
-                    )
-
-            # Also synchronize Django Groups for permission checks
-            try:
-                group_names = []
-                for r in roles:
-                    if isinstance(r, str):
-                        group_names.append(r)
-                    elif isinstance(r, dict):
-                        group_names.append(r.get('name', r.get('role_name', '')))
-
+            if roles:
+                if not isinstance(roles, list):
+                    return Response({'error': 'Roles must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+                
                 groups = []
-                for name in set([n for n in group_names if n]):
-                    g, _ = Group.objects.get_or_create(name=name)
-                    groups.append(g)
+                for role_item in roles:
+                    role_name = role_item
+                    if isinstance(role_item, dict):
+                        role_name = role_item.get('name', role_item.get('role_name', ''))
+                    
+                    if role_name:
+                        # Get or create the group
+                        group, created = Group.objects.get_or_create(name=role_name)
+                        groups.append(group)
+                
+                # Assign all groups to the user
                 if groups:
                     user.groups.set(groups)
-            except Exception:
-                # Non-fatal: continue even if group sync fails
-                pass
             
             # Return the created user data
             user_info = {
@@ -390,14 +377,15 @@ def user_roles_view(request):
     
     # Get all unique role names from the CustomUserRole model
     roles = CustomUserRole.objects.values('role_name').distinct()
-    # Create a list of roles with synthetic IDs (position-based)
+    # Get all Django Groups (roles)
+    groups = Group.objects.all()
+    
+    # Create a list of roles
     role_list = []
-    for idx, role in enumerate(roles):
-        # Get a representative role object to use its actual ID
-        actual_role_obj = CustomUserRole.objects.filter(role_name=role['role_name']).first()
+    for group in groups:
         role_list.append({
-            'id': actual_role_obj.id,
-            'name': actual_role_obj.role_name
+            'id': group.id,
+            'name': group.name
         })
     
     return JsonResponse(role_list, safe=False)
@@ -418,24 +406,15 @@ def create_role_view(request):
             return JsonResponse({'error': 'Role name is required'}, status=400)
         
         # Check if role already exists
-        if CustomUserRole.objects.filter(role_name=role_name).exists():
+        if Group.objects.filter(name=role_name).exists():
             return JsonResponse({'error': 'Role already exists'}, status=400)
         
-        # Create the role with a placeholder user (we'll use the requesting user)
-        role = CustomUserRole.objects.create(
-            user=request.user,  # Use the current logged-in user as a placeholder
-            role_name=role_name
-        )
-
-        # Ensure a corresponding Django Group exists for permissions
-        try:
-            Group.objects.get_or_create(name=role_name)
-        except Exception:
-            pass
+        # Create the group
+        group = Group.objects.create(name=role_name)
         
         response_data = {
-            'id': role.id,
-            'name': role.role_name
+            'id': group.id,
+            'name': group.name
         }
         
         return JsonResponse(response_data, status=201)
@@ -451,21 +430,15 @@ def create_role_view(request):
 def role_detail_view(request, role_id):
     """View to retrieve, update, or delete a specific role."""
     try:
-        # Find all role instances with this role name
-        role_instances = CustomUserRole.objects.filter(id=role_id)
-        if not role_instances.exists():
-            return JsonResponse({'error': 'Role not found.'}, status=404)
-        
-        # Get the role name from any instance
-        role_name = role_instances.first().role_name
-    except CustomUserRole.DoesNotExist:
+        group = Group.objects.get(id=role_id)
+    except Group.DoesNotExist:
         return JsonResponse({'error': 'Role not found.'}, status=404)
     
     if request.method == 'GET':
         # Return role details
         role_info = {
-            'id': role_id,
-            'name': role_name,
+            'id': group.id,
+            'name': group.name,
         }
         return JsonResponse(role_info)
     
@@ -479,15 +452,16 @@ def role_detail_view(request, role_id):
                 return JsonResponse({'error': 'Role name is required'}, status=400)
             
             # Check if the new name already exists
-            if CustomUserRole.objects.filter(role_name=new_name).exclude(id=role_id).exists():
+            if Group.objects.filter(name=new_name).exclude(id=role_id).exists():
                 return JsonResponse({'error': 'A role with this name already exists'}, status=400)
             
-            # Update all instances of this role
-            CustomUserRole.objects.filter(id=role_id).update(role_name=new_name)
+            # Update the group name
+            group.name = new_name
+            group.save()
             
             role_info = {
-                'id': role_id,
-                'name': new_name,
+                'id': group.id,
+                'name': group.name,
             }
             
             return JsonResponse(role_info)
@@ -498,9 +472,9 @@ def role_detail_view(request, role_id):
             return JsonResponse({'error': str(e)}, status=500)
     
     elif request.method == 'DELETE':
-        # Delete all instances of this role
-        CustomUserRole.objects.filter(id=role_id).delete()
-        return JsonResponse({'message': 'Role deleted successfully.'})
+        # Delete the group
+        group.delete()
+        return JsonResponse({'message': 'Role deleted successfully.'}, status=204)
     
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)

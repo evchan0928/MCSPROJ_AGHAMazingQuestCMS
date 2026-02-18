@@ -17,7 +17,7 @@ from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # `base.py` lives in `config/settings/`, so go up three levels to reach
-# the repository/project root (AGHAMazingQuestCMS).
+# the repository/root (AGHAMazingQuestCMS).
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
@@ -73,7 +73,7 @@ DATABASES = {
         'USER': os.environ.get('DB_USER', 'admin'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5439'),  # Default to 5439 as configured in docker
+        'PORT': os.environ.get('DB_PORT', '5432'),  # Changed to 5432 for local PostgreSQL
         'OPTIONS': {
             # PostgreSQL specific options
             'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
@@ -219,6 +219,9 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     # Adding origins for Flutter app access
     'http://localhost:8000',  # Django development server (for Flutter app)
     'http://127.0.0.1:8000',  # IPv4 localhost (for Flutter app)
+    # Adding the frontend port where it's actually running
+    'http://localhost:3001',  # Frontend development server
+    'http://127.0.0.1:3001',  # IPv4 localhost for frontend
 ]
 CORS_ALLOW_CREDENTIALS = True
 # You can override this with a comma-separated list in the environment variable
@@ -239,6 +242,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://localhost:8081', # Nginx proxy server (HTTPS)
     'http://0.0.0.0:8081',    # Additional host for container access
     'http://127.0.0.1:8081',  # Additional host for local access
+    # Adding the frontend port where it's actually running
+    'http://localhost:3001',  # Frontend development server
+    'http://127.0.0.1:3001',  # IPv4 localhost for frontend
 ]
 
 # Add additional trusted origins from environment variable if set

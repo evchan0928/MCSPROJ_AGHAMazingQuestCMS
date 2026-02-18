@@ -2,7 +2,9 @@
 import axios from 'axios';
 
 // Initialize Django API client
-const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000/api';
+// Updated to handle the correct backend URL for both axios and fetch calls
+const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8001';
+const BACKEND_API_URL = BACKEND_BASE_URL.endsWith('/api') ? BACKEND_BASE_URL : `${BACKEND_BASE_URL}/api`;
 
 // Create an axios instance with default settings
 const apiClient = axios.create({
@@ -526,8 +528,9 @@ export const downloadAnalyticsReport = async (params) => {
 // 🔑 NEW: Mobile Management API functions
 export async function getUserProfiles(params = {}) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-profiles/?${new URLSearchParams(params)}`, {
+  // Use the same BACKEND_API_URL but adjust for mobile endpoints
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/user-profiles/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -542,8 +545,8 @@ export async function getUserProfiles(params = {}) {
 
 export async function createUserProfile(userData) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-profiles/`, {
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/user-profiles/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -559,8 +562,8 @@ export async function createUserProfile(userData) {
 
 export async function updateUserProfile(profileId, userData) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-profiles/${profileId}/`, {
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/user-profiles/${profileId}/`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -576,8 +579,8 @@ export async function updateUserProfile(profileId, userData) {
 
 export async function deleteUserProfile(profileId) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-profiles/${profileId}/`, {
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/user-profiles/${profileId}/`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -592,8 +595,8 @@ export async function deleteUserProfile(profileId) {
 
 export async function getUserSessions(params = {}) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-sessions/?${new URLSearchParams(params)}`, {
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/user-sessions/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -608,8 +611,8 @@ export async function getUserSessions(params = {}) {
 
 export async function getScores(params = {}) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/scores/?${new URLSearchParams(params)}`, {
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/scores/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -624,8 +627,8 @@ export async function getScores(params = {}) {
 
 export async function getBadges(params = {}) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/badges/?${new URLSearchParams(params)}`, {
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/badges/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -640,8 +643,8 @@ export async function getBadges(params = {}) {
 
 export async function getUserBadges(params = {}) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-badges/?${new URLSearchParams(params)}`, {
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/user-badges/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -656,8 +659,8 @@ export async function getUserBadges(params = {}) {
 
 export async function getLeaderboards(params = {}) {
   const token = localStorage.getItem('access_token');
-  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
-  const response = await fetch(`${BACKEND_API_URL}/api/mobile/leaderboards/?${new URLSearchParams(params)}`, {
+  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
+  const response = await fetch(`${adjustedUrl}/api/mobile/leaderboards/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

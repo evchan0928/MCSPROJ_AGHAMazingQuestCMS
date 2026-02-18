@@ -8,13 +8,19 @@ const LOGO_URL = "https://raw.githubusercontent.com/Marianne-101/pictures/main/d
 export default function Sidebar({ user }) {
   // Use user prop for roles and superuser status
   const roles = (user && user.roles) || [];
+  // Extract role names from the role objects
+  const roleNames = roles.map(role => typeof role === 'string' ? role : role.name);
+  
   // Admin determination: superuser or Admin role
-  const isAdmin = user?.is_superuser || roles.includes('Admin') || roles.includes('Super Admin');
+  const isAdmin = user?.is_superuser || roleNames.includes('Admin') || roleNames.includes('Super Admin');
+  const isEncoder = roleNames.includes('Encoder');
+  const isEditor = roleNames.includes('Editor');
+  const isApprover = roleNames.includes('Approver');
   
   // State for dropdowns
   const [contentOpen, setContentOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
-const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile Management
+  const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile Management
   const [userMgmtOpen, setUserMgmtOpen] = useState(false);
 
   // Helper for NavLink styling (combines NavItem logic)
@@ -88,7 +94,7 @@ const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile
                     {contentOpen && (
                         <ul className="sub-menu">
                             {/* Upload: Encoder, Editor, Super Admin */}
-                            {(user?.is_superuser || roles.includes('Encoder') || roles.includes('Editor') || roles.includes('Super Admin')) && (
+                            {(user?.is_superuser || isEncoder || isEditor || roleNames.includes('Super Admin')) && (
                                 <li>
                                   <NavLink 
                                     to="/dashboard/content/upload" 
@@ -101,7 +107,7 @@ const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile
                             )}
 
                             {/* 🔑 CHANGED: Renamed from "Edit content" to "Content list" and updated path */}
-                            {(user?.is_superuser || roles.includes('Editor') || roles.includes('Super Admin')) && (
+                            {(user?.is_superuser || isEditor || roleNames.includes('Super Admin')) && (
                                 <li>
                                     <NavLink 
                                         to="/dashboard/content/list" 
@@ -114,7 +120,7 @@ const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile
                             )}
 
                             {/* Approve & Publish: Approver, Admin, Super Admin */}
-                            {(user?.is_superuser || roles.includes('Approver') || roles.includes('Admin') || roles.includes('Super Admin')) && (
+                            {(user?.is_superuser || isApprover || isAdmin || roleNames.includes('Super Admin')) && (
                                 <>
                                     <li>
                                       <NavLink 
@@ -147,7 +153,7 @@ const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile
                             )}
 
                             {/* Delete: Admin, Super Admin */}
-                            {(user?.is_superuser || roles.includes('Admin') || roles.includes('Super Admin')) && (
+                            {(user?.is_superuser || isAdmin || roleNames.includes('Super Admin')) && (
                                 <li>
                                   <NavLink 
                                     to="/dashboard/content/delete" 
@@ -163,7 +169,7 @@ const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile
                 </li>
  
                 {/* Analytics Management Dropdown */}
-                {(user?.is_superuser || roles.includes('Admin') || roles.includes('Super Admin')) && (
+                {(user?.is_superuser || isAdmin || roleNames.includes('Super Admin')) && (
                     <li className="sidebar-section-li" style={{ marginTop: '12px' }}>
                          <div className="sidebar-separator-small"></div>
                         <button 

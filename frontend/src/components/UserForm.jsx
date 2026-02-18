@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, Checkbox, Button, Row, Col, Card, Divider, notification } from 'antd';
-import { UserOutlined, MailOutlined, LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Row, Col, Checkbox, Divider, Select, notification } from 'antd';
+import { UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
 import { createUser, updateUser } from '../api/django-api'; // Import the API functions
+import '../pages/ContentManagementPage.css'; // Import the CSS file from pages directory
 
 const { Option } = Select;
 
-export default function UserForm({ user: initial, roles = [], onCancel, onSaved, onDone }) {
+export default function UserForm({ user, roles = [], onDone, onCancel }) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [api, contextHolder] = notification.useNotification();
@@ -18,20 +19,26 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
     });
   };
 
+  // Set initial values when user prop changes
   useEffect(() => {
-    // Set initial values for the form
-    if (initial) {
-      // Normalize roles to an array of role names
-      const normalizedRoles = Array.isArray(initial.roles) 
-        ? initial.roles.map(r => typeof r === 'string' ? r : (r && r.name) || (r && r.role_name) || '')
-        : [];
+    if (user && user.id) {
+      // Transform roles to match expected format
+      const formattedRoles = user.roles?.map(role => 
+        typeof role === 'string' ? role : (role?.name || role?.role_name || '')
+      ) || [];
       
       form.setFieldsValue({
-        ...initial,
-        roles: normalizedRoles.filter(r => r !== ''), // Only include non-empty role names
+        username: user.username || '',
+        email: user.email || '',
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        is_active: user.is_active !== undefined ? user.is_active : true,
+        is_staff: user.is_staff || false,
+        is_superuser: user.is_superuser || false,
+        roles: formattedRoles,
+        password: '' // Don't populate existing passwords for security
       });
     } else {
-      // Set default values for new user
       form.setFieldsValue({
         username: '',
         email: '',
@@ -44,61 +51,33 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
         password: ''
       });
     }
-  }, [initial, form]);
+  }, [user, form]);
 
   const submit = async (values) => {
     setSaving(true);
+    
     try {
-      // Determine if we're creating or updating
-      const isUpdate = initial && initial.id;
+      // Transform roles to the expected format for the API
+      const transformedValues = {
+        ...values,
+        roles: values.roles?.map(roleName => ({ name: roleName })) || []
+      };
       
-      // Prepare the payload
-      const payload = { ...values };
-      
-      // Process roles to ensure they're in the correct format
-      if (Array.isArray(payload.roles)) {
-        // Ensure roles are sent as an array of role names (strings)
-        payload.roles = payload.roles.map(role => 
-          typeof role === 'object' && role !== null ? 
-            (role.name || role.role_name || role.id) : 
-          typeof role === 'string' ? 
-            role : 
-          String(role)
-        ).filter(role => role !== ''); // Remove any empty role values
-      }
-      
-      // Don't send password if it's empty (unless we're creating a user)
-      if (!payload.password) {
-        if (isUpdate) {
-          delete payload.password; // Don't send empty password when updating
-        }
-      }
-      
-      let result;
-      if (isUpdate) {
+      if (user && user.id) {
         // Update existing user
-        result = await updateUser(initial.id, payload);
+        await updateUser(user.id, transformedValues);
+        openNotification('Success', `User "${values.username}" updated successfully`, 'success');
       } else {
         // Create new user
-        result = await createUser(payload);
+        await createUser(transformedValues);
+        openNotification('Success', `User "${values.username}" created successfully`, 'success');
       }
       
-      // Call saved/done callbacks
-      if (onSaved) onSaved(result);
-      else if (onDone) onDone(result);
-      
-      openNotification(
-        'Success', 
-        `User ${isUpdate ? 'updated' : 'created'} successfully`, 
-        'success'
-      );
+      onDone();
     } catch (err) {
-      console.error(`Failed to ${initial && initial.id ? 'update' : 'create'} user:`, err);
-      openNotification(
-        'Error', 
-        `Failed to ${initial && initial.id ? 'update' : 'create'} user: ${err.message}`, 
-        'error'
-      );
+      console.error(err);
+      const errorMessage = err.message || 'An error occurred';
+      openNotification('Error', `Failed to ${user && user.id ? 'update' : 'create'} user: ${errorMessage}`, 'error');
     } finally {
       setSaving(false);
     }
@@ -108,8 +87,8 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
     <>
       {contextHolder}
       <Card 
-        title={initial && initial.id ? "Edit User" : "Add New User"} 
-        style={{ marginBottom: '20px' }}
+        title={user && user.id ? `Edit User: ${user.username || user.email}` : 'Add New User'} 
+        className="user-form-card"
       >
         <Form
           form={form}
@@ -181,11 +160,11 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
               <Form.Item
                 name="password"
                 label="Password"
-                rules={!initial?.id ? [{ required: true, message: 'Please enter a password' }] : []}
+                rules={!user?.id ? [{ required: true, message: 'Please enter a password' }] : []}
               >
                 <Input.Password 
                   prefix={<LockOutlined />} 
-                  placeholder={initial?.id ? "New Password (leave blank to keep current)" : "Password"} 
+                  placeholder={user?.id ? "New Password (leave blank to keep current)" : "Password"} 
                 />
               </Form.Item>
             </Col>
@@ -198,13 +177,12 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
                 <Select 
                   mode="multiple"
                   placeholder="Select roles"
-                  prefix={<SafetyCertificateOutlined />}
+                  // Use the roles passed from props
+                  options={roles.map((role, index) => ({
+                    label: typeof role === 'string' ? role : (role?.name || role?.role_name || ''),
+                    value: typeof role === 'string' ? role : (role?.name || role?.role_name || '')
+                  }))}
                 >
-                  {roles.map((role, index) => (
-                    <Option key={index} value={typeof role === 'string' ? role : (role?.name || role?.role_name || role)}>
-                      {typeof role === 'string' ? role : (role?.name || role?.role_name || role)}
-                    </Option>
-                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -244,7 +222,7 @@ export default function UserForm({ user: initial, roles = [], onCancel, onSaved,
           
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={saving}>
-              {initial?.id ? 'Update User' : 'Create User'}
+              {user?.id ? 'Update User' : 'Create User'}
             </Button>
             {onCancel && (
               <Button style={{ marginLeft: 8 }} onClick={onCancel}>

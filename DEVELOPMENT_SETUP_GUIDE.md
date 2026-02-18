@@ -1,169 +1,217 @@
-# AGHAMazingQuestCMS Development Setup Guide
+# Development Setup Guide
 
-This is the **official and only** development setup guide for the AGHAMazingQuestCMS project. Follow these instructions to set up your local development environment.
+This guide provides instructions for setting up the development environment for the Aghamazing Quest CMS project.
 
 ## Prerequisites
 
-Before starting, ensure you have the following installed on your system:
+- Python 3.12+
+- Node.js 18+ (with npm)
+- PostgreSQL 12+
+- Git
 
-- **Docker** (version 20.10 or higher)
-- **Docker Compose V2** (not the old docker-compose)
-- **Node.js** (version 18 or higher)
-- **npm** (version 8 or higher)
-- **Git**
+## Recommended Development Environment
 
-## Quick Setup (Recommended)
+For the best experience, we recommend using VSCode with the following extensions:
+- `dart-code.dart-code`
+- `dart-code.flutter`
+- `ms-python.python`
+- `ms-vscode.vscode-json`
+- `bradlc.vscode-tailwindcss`
+- `esbenp.prettier-vscode`
 
-The fastest way to get started is using the provided setup script:
+## Initial Setup
 
-```bash
-# Make the setup script executable
-chmod +x setup_development.sh
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd MCSPROJ_AGHAMazingQuestCMS
+   ```
 
-# Run the setup script
-./setup_development.sh
+2. Navigate to the backend directory and set up Python virtual environment:
+   ```bash
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. Set up the database:
+   - Install and start PostgreSQL on your system
+   - Create a database for the project:
+     ```sql
+     CREATE DATABASE agha_cms;
+     CREATE USER agha_user WITH PASSWORD 'your_strong_password';
+     ALTER ROLE agha_user SET client_encoding TO 'utf8';
+     ALTER ROLE agha_user SET default_transaction_isolation TO 'read committed';
+     ALTER ROLE agha_user SET timezone TO 'UTC';
+     GRANT ALL PRIVILEGES ON DATABASE agha_cms TO agha_user;
+     ALTER USER agha_user CREATEDB;
+     ```
+   - Update the `.env` file in the backend directory with your database credentials
+
+4. Run migrations:
+   ```bash
+   python manage.py migrate
+   ```
+
+5. Create a superuser account:
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+6. Populate sample data (optional):
+   ```bash
+   python manage.py populate_sample_data
+   ```
+
+7. Create content roles:
+   ```bash
+   python manage.py create_content_roles
+   ```
+
+8. Start the backend server:
+   ```bash
+   python manage.py runserver 8001
+   ```
+
+9. In a new terminal, navigate to the frontend directory and set up the React application:
+   ```bash
+   cd ../frontend  # From the backend directory
+   npm install
+   ```
+
+10. Configure environment variables for the frontend:
+    - Copy `.env.example` to `.env`
+    - Update `REACT_APP_BACKEND_API_URL` to point to your backend (e.g., `http://localhost:8001`)
+
+11. Start the frontend development server:
+    ```bash
+    npm start
+    ```
+
+The application should now be accessible at `http://localhost:3000`.
+
+## Project Structure
+
+```
+MCSPROJ_AGHAMazingQuestCMS/
+├── backend/                 # Django REST API backend
+│   ├── config/             # Django project settings
+│   ├── apps/               # Custom Django apps
+│   │   ├── contentmanagement/  # Content management module
+│   │   └── usermanagement/     # User management module
+│   ├── static/             # Static files
+│   ├── media/              # Media uploads
+│   ├── requirements.txt    # Python dependencies
+│   └── manage.py          # Django management script
+├── frontend/              # React frontend application
+│   ├── public/            # Public assets
+│   ├── src/               # Source code
+│   │   ├── components/    # React components
+│   │   ├── pages/         # Page components
+│   │   ├── api/           # API client code
+│   │   └── utils/         # Utility functions
+│   ├── package.json       # Node.js dependencies
+│   └── .env               # Environment variables
+├── aghamazingflutter-master/  # Flutter mobile application
+└── docs/                  # Documentation
 ```
 
-This script will:
-1. Verify all prerequisites
-2. Configure the development environment
-3. Build and start all services
-4. Run database migrations
-5. Populate sample data
-6. Perform system verification
+## Running the Application
 
-## Manual Setup (Alternative)
-
-If you prefer to set up manually, follow these steps:
-
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd MCSPROJ_AGHAMazingQuestCMS
-```
-
-### 2. Build and Start Services
-
-```bash
-# Navigate to the devops directory
-cd devops
-
-# Build and start all services
-docker compose -f docker-compose-fullstack.yml up -d --build
-```
-
-### 3. Initialize Database
-
-```bash
-# Run database migrations
-docker exec agha-backend python manage.py migrate
-
-# Populate sample data
-docker exec agha-backend python manage.py populate_sample_data
-```
-
-## Available Services
-
-Once setup is complete, the following services will be available:
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| Frontend | [http://localhost:8080](http://localhost:8080) | Main application interface |
-| API | [http://localhost:8080/api/](http://localhost:8080/api/) | Backend API endpoints |
-| Admin Panel | [http://localhost:8080/admin/](http://localhost:8080/admin/) | Django admin interface |
-| pgAdmin | [http://localhost:5050](http://localhost:5050) | PostgreSQL administration |
-
-## Demo User Credentials
-
-The system comes pre-populated with demo users for different roles:
-
-| Role | Username | Password |
-|------|----------|----------|
-| Demo User | `demo_user` | `demopass123` |
-| Encoder | `encoder_user` | `demopass123` |
-| Editor | `editor_user` | `demopass123` |
-| Approver | `approver_user` | `demopass123` |
-| Admin | `admin_user` | `demopass123` |
-| Super Admin | `superadmin` | `demopass123` |
-
-## Development Workflow
-
-### Making Changes to the Frontend
-
-1. The frontend runs in development mode with hot reloading
-2. Changes to files in the `frontend/` directory will automatically reload
-3. The frontend is accessible at [http://localhost:8080](http://localhost:8080)
-
-### Making Changes to the Backend
-
-1. The backend runs in development mode
-2. Changes to Python files in the `backend/` directory may require container restart
-3. To restart the backend: `docker restart agha-backend`
-
-### Accessing Logs
-
-```bash
-# View all service logs
-docker compose -f docker-compose-fullstack.yml logs
-
-# View specific service logs
-docker logs agha-backend
-docker logs agha-frontend
-docker logs agha-nginx
-```
+1. Make sure PostgreSQL is running on your system
+2. Activate the Python virtual environment in the backend directory:
+   ```bash
+   cd backend
+   source venv/bin/activate
+   ```
+3. Start the backend server:
+   ```bash
+   python manage.py runserver 8001
+   ```
+4. In a new terminal, navigate to the frontend directory and start the React development server:
+   ```bash
+   cd frontend
+   npm start
+   ```
 
 ## Troubleshooting
 
-### Common Issues
+### Backend Issues
 
-**Issue**: Frontend shows a blank page
-**Solution**: Clear browser cache and refresh the page
+**Problem**: Database connection errors
+**Solution**: Ensure PostgreSQL is running and credentials in `.env` are correct
 
-**Issue**: Authentication fails
-**Solution**: Ensure you're using the correct credentials from the table above
+**Problem**: Migration errors
+**Solution**: 
+- Ensure your virtual environment is activated
+- Confirm database permissions are properly set (`GRANT ALL PRIVILEGES` and `CREATEDB`)
 
-**Issue**: API endpoints return 404
-**Solution**: Verify that the backend service is running: `docker ps | grep agha-backend`
+### Frontend Issues
 
-**Issue**: Cannot connect to database
-**Solution**: Check that postgres is running: `docker ps | grep agha-postgres`
+**Problem**: Cannot connect to backend API
+**Solution**: Verify `REACT_APP_BACKEND_API_URL` in frontend `.env` matches the backend address
 
-### Resetting the Environment
+**Problem**: Module resolution errors
+**Solution**: Delete `node_modules` and `package-lock.json`, then run `npm install` again
 
-If you encounter persistent issues, you can reset the environment:
+### General Issues
 
+**Problem**: Permission errors
+**Solution**: Ensure you're using a virtual environment and not installing packages globally
+
+## API Endpoints
+
+The backend API is available at `http://localhost:8001/api/` when running locally.
+
+Key endpoints:
+- Authentication: `/api/auth/`
+- Users: `/api/users/`
+- Content: `/api/content/`
+- Roles: `/api/roles/`
+- Mobile: `/api/mobile/`
+
+## Mobile Application
+
+The Flutter mobile application is located in the `aghamazingflutter-master` directory. To run it:
+
+1. Navigate to the Flutter directory:
+   ```bash
+   cd aghamazingflutter-master
+   ```
+
+2. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+
+3. Run the application:
+   ```bash
+   flutter run
+   ```
+   
+   Note: Make sure you have Android Studio/SDK installed or iOS development tools as appropriate.
+
+## Testing
+
+To run backend tests:
 ```bash
-# Stop the environment
-./stop_development.sh
-
-# Clean up Docker resources
-docker system prune -f
-
-# Restart the environment
-./setup_development.sh
+python manage.py test
 ```
 
-## Stopping the Development Environment
-
-When you're done working, stop the development environment:
-
+To run frontend tests:
 ```bash
-# Make the stop script executable
-chmod +x stop_development.sh
-
-# Run the stop script
-./stop_development.sh
+npm test
 ```
 
-## Additional Notes
+## Production Deployment
 
-- All services run in Docker containers for consistency across environments
-- The nginx server acts as a reverse proxy, routing requests to the appropriate services
-- The frontend and backend communicate through the API endpoints
-- Data is persisted in the PostgreSQL database
-- Changes to the Dockerfile or docker-compose file require rebuilding: `docker compose -f docker-compose-fullstack.yml up -d --build`
+For production deployment, follow these steps:
 
----
+1. Backend:
+   - Collect static files: `python manage.py collectstatic --noinput`
+   - Use a production-ready server like Gunicorn: `gunicorn config.wsgi:application`
 
-**Important**: This is the official and only development setup guide. Ignore any other setup instructions you might find in the repository. If you encounter issues, contact the development team rather than attempting alternative setup methods.
+2. Frontend:
+   - Build the application: `npm run build`
+   - Serve the build directory using a web server like Nginx

@@ -1,74 +1,131 @@
-# AGHAMazingQuestCMS - Mobile AR Tour Application Content Management System
+# Aghamazing Quest - Content Management System
 
-Welcome to the AGHAMazingQuestCMS project, a comprehensive content management system designed for managing content in a mobile augmented reality (AR) tour application for the Department of Science and Technology - Science Education Institute (DOST-SEI).
+A comprehensive content management system for managing educational content with role-based access control, content approval workflows, and multi-platform support.
 
-## 🚀 Development Setup
+## Overview
 
-For complete development environment setup instructions, please refer to the [DEVELOPMENT_SETUP_GUIDE.md](DEVELOPMENT_SETUP_GUIDE.md) file. This contains the official and only recommended setup procedure.
+The Aghamazing Quest CMS is a full-stack application designed to manage content creation, approval, and publication workflows. It includes:
 
-Quick start:
-```bash
-# Make the setup script executable
-chmod +x setup_development.sh
+- **Backend**: Django REST API with role-based access control
+- **Frontend**: React-based dashboard for content management
+- **Mobile**: Flutter application for mobile access
+- **Database**: PostgreSQL for data storage
 
-# Run the setup script
-./setup_development.sh
+## Features
+
+- Role-based access control (Super Admin, Admin, Editor, Encoder, Approver)
+- Content management with approval workflows
+- User management system
+- Mobile application integration
+- Analytics and reporting capabilities
+- Real-time notifications
+
+## Tech Stack
+
+- **Backend**: Django, Django REST Framework, JWT Authentication
+- **Frontend**: React, Ant Design, Axios
+- **Mobile**: Flutter, Dart
+- **Database**: PostgreSQL
+- **Development**: Python 3.12+, Node.js 18+, Flutter 3.16+
+
+## Development Setup
+
+For detailed setup instructions, see:
+- [Development Setup Guide](./DEVELOPMENT_SETUP_GUIDE.md)
+- [Full Stack Development Setup Guide](./FULL_STACK_DEVELOPMENT_SETUP.md)
+
+## Architecture
+
+The system consists of three main components:
+
+### Backend (Django)
+Located in the `backend/` directory, this component provides:
+- RESTful API endpoints
+- User authentication and authorization
+- Content management workflows
+- Role-based access control
+- Database models and migrations
+
+### Frontend (React)
+Located in the `frontend/` directory, this component provides:
+- Dashboard interface for content management
+- User role management
+- Content upload and editing
+- Analytics and reporting
+- Mobile management features
+
+### Mobile (Flutter)
+Located in the `aghamazingflutter-master/` directory, this component provides:
+- Mobile access to content
+- User profiles and authentication
+- Game mechanics and scoring
+- Offline content access
+
+## Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd MCSPROJ_AGHAMazingQuestCMS
+   ```
+
+2. Set up the backend:
+   - Navigate to `backend/` directory
+   - Create a Python virtual environment
+   - Install dependencies from `requirements.txt`
+   - Set up the database
+   - Run migrations
+   - Start the server
+
+3. Set up the frontend:
+   - Navigate to `frontend/` directory
+   - Install dependencies with `npm install`
+   - Configure environment variables
+   - Start the development server
+
+4. For detailed instructions, refer to the setup guides mentioned above.
+
+## Project Structure
+
+```
+MCSPROJ_AGHAMazingQuestCMS/
+├── backend/                 # Django REST API backend
+│   ├── config/             # Django project settings
+│   ├── apps/               # Custom Django apps
+│   │   ├── contentmanagement/  # Content management module
+│   │   └── usermanagement/     # User management module
+│   ├── static/             # Static files
+│   ├── media/              # Media uploads
+│   ├── requirements.txt    # Python dependencies
+│   └── manage.py          # Django management script
+├── frontend/              # React frontend application
+│   ├── public/            # Public assets
+│   ├── src/               # Source code
+│   │   ├── components/    # React components
+│   │   ├── pages/         # Page components
+│   │   ├── api/           # API client code
+│   │   └── utils/         # Utility functions
+│   ├── package.json       # Node.js dependencies
+│   └── .env               # Environment variables
+├── aghamazingflutter-master/  # Flutter mobile application
+│   ├── lib/               # Dart source code
+│   ├── assets/            # Asset files
+│   ├── android/           # Android-specific files
+│   ├── ios/               # iOS-specific files
+│   └── pubspec.yaml       # Flutter dependencies
+├── docs/                  # Documentation
+├── ECOCODERS_FINAL PAPERS/ # Project papers
+└── README.md              # This file
 ```
 
-## 📋 Project Overview
+## Contributing
 
-The AGHAMazingQuestCMS is a full-stack application that includes:
+We welcome contributions to the project. Please read our contributing guidelines before submitting pull requests.
 
-- **Frontend**: A React-based content management interface
-- **Backend**: A Django REST API with authentication and content management capabilities
-- **Database**: PostgreSQL for data persistence
-- **Admin Interface**: Django admin for advanced management tasks
-- **Documentation**: Comprehensive API documentation
+## License
 
-## 🏗️ Architecture
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-The system consists of several key components:
+## Contact
 
-- **Authentication Module**: Handles user registration, login, and role-based access control
-- **Content Management**: Manages AR tour content, articles, and media
-- **User Management**: Controls user roles and permissions
-- **Analytics**: Tracks content performance and user engagement
-
-## 🌐 Available Services
-
-Once the development environment is set up, the following services will be available:
-
-- **Main Application**: [http://localhost:8080](http://localhost:8080)
-- **API Documentation**: [http://localhost:8080/api/swagger/](http://localhost:8080/api/swagger/)
-- **Admin Panel**: [http://localhost:8080/admin/](http://localhost:8080/admin/)
-- **pgAdmin**: [http://localhost:5050](http://localhost:5050)
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React, JavaScript, Ant Design
-- **Backend**: Django, Django REST Framework, Python
-- **Database**: PostgreSQL
-- **Infrastructure**: Docker, Docker Compose, Nginx
-
-## 👥 User Roles
-
-The system supports multiple user roles with different permissions:
-
-- **Super Admin**: Full system access
-- **Admin**: Manage users and content approval
-- **Editor**: Create and edit content
-- **Encoder**: Input and upload content
-- **Approver**: Review and approve content
-
-## 📚 Documentation
-
-- [Development Setup Guide](DEVELOPMENT_SETUP_GUIDE.md) - Official development environment setup
-- [Setup Guide](SETUP_GUIDE.md) - Complete setup and usage instructions
-- [Quick Start Guide](docs/operational/QUICK_START_TAILSCALE.md)
-- [API Architecture](docs/API_ARCHITECTURE.md)
-- [Frontend Integration](docs/FLUTTER_INTEGRATION.md)
-- [Deployment Guide](docs/operational/DEPLOYMENT.md)
-
-## 📄 License
-
-[Add license information here]
+For questions or support, please contact the development team.
