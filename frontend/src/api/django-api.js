@@ -522,3 +522,150 @@ export const downloadAnalyticsReport = async (params) => {
     throw new Error(error.response?.data?.detail || error.message);
   }
 };
+
+// 🔑 NEW: Mobile Management API functions
+export async function getUserProfiles(params = {}) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-profiles/?${new URLSearchParams(params)}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function createUserProfile(userData) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-profiles/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(userData)
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function updateUserProfile(profileId, userData) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-profiles/${profileId}/`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(userData)
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function deleteUserProfile(profileId) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-profiles/${profileId}/`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getUserSessions(params = {}) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-sessions/?${new URLSearchParams(params)}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getScores(params = {}) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/scores/?${new URLSearchParams(params)}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getBadges(params = {}) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/badges/?${new URLSearchParams(params)}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getUserBadges(params = {}) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/user-badges/?${new URLSearchParams(params)}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getLeaderboards(params = {}) {
+  const token = localStorage.getItem('access_token');
+  const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${BACKEND_API_URL}/api/mobile/leaderboards/?${new URLSearchParams(params)}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}

@@ -111,6 +111,7 @@ INSTALLED_APPS.extend([
     'apps.contentmanagement',
     'apps.usermanagement',
     'apps.analyticsmanagement',
+    'apps.mobilemanagement',  # Adding mobile management app
 ])
 
 MIDDLEWARE = [

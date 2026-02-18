@@ -798,106 +798,74 @@ button {
   display: flex;
   gap: 1rem;
   margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  background: var(--surface-color);
-  padding: 1rem;
+}
+
+/* Profile and Settings Page Styles */
+.profile-page-container, .settings-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.profile-page-container .ant-card, .settings-page-container .ant-card {
+  margin-bottom: 24px;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-md);
 }
 
-.filter-group {
-  flex: 1;
-  min-width: 200px;
+.profile-page-container .ant-card-head, .settings-page-container .ant-card-head {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding-left: 20px;
 }
 
-.filter-group label {
-  display: block;
-  margin-bottom: 0.5rem;
+.profile-page-container .ant-card-body, .settings-page-container .ant-card-body {
+  padding: 24px;
+}
+
+.settings-page-container .ant-form-item-label > label {
   font-weight: 500;
   color: var(--text-primary);
 }
 
-.date-filter {
-  width: 100%;
+.profile-page-container .ant-divider, .settings-page-container .ant-divider {
+  margin: 24px 0;
 }
 
-.get-data-btn {
-  height: 40px;
-  margin-top: 1.5rem;
-}
-
-/* Table Container Styles */
-.data-table-container {
-  background: var(--surface-color);
-  border-radius: var(--radius-lg);
-  padding: 1rem;
-  box-shadow: var(--shadow);
-  overflow-x: auto;
-}
-
-/* Button Group Styles */
-.action-buttons {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.action-buttons button {
-  flex: 1;
-  min-width: 120px;
-}
-
-/* Input and Form Enhancements */
-.form-group input:not([type="checkbox"]):not([type="radio"]), 
-.form-group textarea,
-.form-group select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  background-color: #fafafa;
+.profile-page-container h2, .settings-page-container h2 {
+  margin-bottom: 4px;
   color: var(--text-primary);
-  box-sizing: border-box;
-  font-size: 0.875rem;
-  transition: var(--transition-fast);
-  border: 1px solid var(--border-color);
 }
 
-.form-group input:focus, 
-.form-group textarea:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(28, 36, 77, 0.1);
+.profile-page-container p, .settings-page-container p {
+  margin-bottom: 0;
+  color: var(--text-secondary);
 }
 
-/* Responsive Adjustments for Various Components */
+.profile-page-container .ant-btn, .settings-page-container .ant-btn {
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font-weight: 500;
+}
+
+.profile-page-container .ant-input-affix-wrapper .ant-input-prefix, 
+.profile-page-container .ant-input-affix-wrapper .ant-input-suffix,
+.settings-page-container .ant-input-affix-wrapper .ant-input-prefix, 
+.settings-page-container .ant-input-affix-wrapper .ant-input-suffix {
+  color: var(--text-muted);
+}
+
+.profile-page-container .ant-form-item, .settings-page-container .ant-form-item {
+  margin-bottom: 20px;
+}
+
+/* Responsive adjustments for profile and settings pages */
 @media (max-width: 768px) {
-  .data-table-container {
-    padding: 0.75rem;
-    margin: 0 0.5rem;
+  .profile-page-container, .settings-page-container {
+    padding: 10px 0;
   }
   
-  .filter-row {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .filter-group {
-    min-width: auto;
-  }
-  
-  .card {
-    padding: 1rem;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .action-buttons button {
-    width: 100%;
+  .profile-page-container .ant-card-body, .settings-page-container .ant-card-body {
+    padding: 16px;
   }
 }
 

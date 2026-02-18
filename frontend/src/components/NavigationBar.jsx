@@ -7,7 +7,7 @@ import {
   MenuOutlined,
   LogoutOutlined
 } from '@ant-design/icons';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './NavigationBar.css';
 
 const { Header } = Layout;
@@ -15,6 +15,7 @@ const { Text } = Typography;
 
 const NavigationBar = ({ user, onLogout }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
   // Toggle menu collapse on smaller screens
@@ -67,13 +68,19 @@ const NavigationBar = ({ user, onLogout }) => {
         title = 'User Management';
       } else if (pathSnippets[i] === 'roles') {
         title = 'Roles';
+      } else if (pathSnippets[i] === 'mobile') {
+        title = 'Mobile Management';
+      } else if (pathSnippets[i] === 'profile') {
+        title = 'Profile';
+      } else if (pathSnippets[i] === 'settings') {
+        title = 'Settings';
       }
       
       breadcrumbItems.push({
         title: i === pathSnippets.length - 1 ? (
           <Text strong>{title}</Text> // Make current page bold - this is the current page, not a link
         ) : (
-          <Link to={currentPath}>{title}</Link>
+          <Link to={`/dashboard/${currentPath.split('/').slice(2).join('/')}`}>{title}</Link>
         )
       });
     }
@@ -81,17 +88,28 @@ const NavigationBar = ({ user, onLogout }) => {
     return breadcrumbItems;
   };
 
+  // Handle profile menu item click
+  const handleProfileClick = (e) => {
+    if (e.key === 'profile') {
+      navigate('/dashboard/profile');
+    } else if (e.key === 'settings') {
+      navigate('/dashboard/settings');
+    } else if (e.key === 'logout') {
+      onLogout();
+    }
+  };
+
   // User menu for profile and logout
   const userMenu = (
-    <Menu>
+    <Menu onClick={handleProfileClick}>
       <Menu.Item key="profile" icon={<UserOutlined />}>
-        <Link to="/profile">Profile</Link>
+        Profile
       </Menu.Item>
       <Menu.Item key="settings" icon={<SettingOutlined />}>
-        <Link to="/settings">Settings</Link>
+        Settings
       </Menu.Item>
       <Menu.Divider />
-      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={onLogout}>
+      <Menu.Item key="logout" icon={<LogoutOutlined />}>
         Logout
       </Menu.Item>
     </Menu>

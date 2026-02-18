@@ -14,7 +14,6 @@ export default function Sidebar({ user }) {
   // State for dropdowns
   const [contentOpen, setContentOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
-const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile Management
   const [userMgmtOpen, setUserMgmtOpen] = useState(false);
 
   // Helper for NavLink styling (combines NavItem logic)
@@ -53,7 +52,6 @@ const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile
     setContentOpen(false);
     setAnalyticsOpen(false);
     setUserMgmtOpen(false);
-    setMobileMgmtOpen(false); // Added for Mobile Management
   };
 
   return (
@@ -207,76 +205,6 @@ const [mobileMgmtOpen, setMobileMgmtOpen] = useState(false); // Added for Mobile
                     </li>
                 )}
 
-                {/* Mobile Management Dropdown - Added for Flutter integration */}
-                <li className="sidebar-section-li" style={{ marginTop: '12px' }}>
-                    <div className="sidebar-separator-small"></div>
-                    <button 
-                        onClick={() => setMobileMgmtOpen(v => !v)} 
-                        className="dropdown-toggle-btn"
-                    >
-                        <span className="material-icons" style={{ marginRight: '10px' }}>phone_iphone</span>
-                        Mobile Management {mobileMgmtOpen ? '▲' : '▼'}
-                    </button>
-                    {mobileMgmtOpen && (
-                        <ul className="sub-menu">
-                            <li>
-                              <NavLink 
-                                to="/dashboard/mobile/user-profiles" 
-                                style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
-                                onClick={handleNavClick}
-                              >
-                                User Profiles
-                              </NavLink>
-                            </li>
-                            <li>
-                              <NavLink 
-                                to="/dashboard/mobile/auth-tokens" 
-                                style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
-                                onClick={handleNavClick}
-                              >
-                                Authentication Tokens
-                              </NavLink>
-                            </li>
-                            <li>
-                              <NavLink 
-                                to="/dashboard/mobile/user-sessions" 
-                                style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
-                                onClick={handleNavClick}
-                              >
-                                User Sessions
-                              </NavLink>
-                            </li>
-                            <li>
-                              <NavLink 
-                                to="/dashboard/mobile/leaderboard" 
-                                style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
-                                onClick={handleNavClick}
-                              >
-                                Leaderboard
-                              </NavLink>
-                            </li>
-                            <li>
-                              <NavLink 
-                                to="/dashboard/mobile/scores" 
-                                style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
-                                onClick={handleNavClick}
-                              >
-                                Scores
-                              </NavLink>
-                            </li>
-                            <li>
-                              <NavLink 
-                                to="/dashboard/mobile/badges" 
-                                style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
-                                onClick={handleNavClick}
-                              >
-                                Badges
-                              </NavLink>
-                            </li>
-                        </ul>
-                    )}
-                </li>
-                
                 {/* User & Role Management Dropdown */}
                 {isAdmin && (
                     <li className="sidebar-section-li" style={{ marginTop: '12px' }}>
