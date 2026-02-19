@@ -19,6 +19,9 @@ class UserProfileViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        # Handle schema generation by checking for fake view
+        if getattr(self, 'swagger_fake_view', False):
+            return UserProfile.objects.none()
         # Allow users to see only their own profile unless they are admin
         if self.request.user.is_staff:
             return UserProfile.objects.all()
@@ -31,6 +34,9 @@ class UserSessionViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        # Handle schema generation by checking for fake view
+        if getattr(self, 'swagger_fake_view', False):
+            return UserSession.objects.none()
         # Allow users to see only their own sessions unless they are admin
         if self.request.user.is_staff:
             return UserSession.objects.all()
@@ -43,6 +49,9 @@ class ScoreViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        # Handle schema generation by checking for fake view
+        if getattr(self, 'swagger_fake_view', False):
+            return Score.objects.none()
         # Allow users to see only their own scores unless they are admin
         if self.request.user.is_staff:
             return Score.objects.all()
@@ -54,6 +63,12 @@ class BadgeViewSet(ModelViewSet):
     serializer_class = BadgeSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # Handle schema generation by checking for fake view
+        if getattr(self, 'swagger_fake_view', False):
+            return Badge.objects.none()
+        return Badge.objects.all()
+
 
 class UserBadgeViewSet(ModelViewSet):
     queryset = UserBadge.objects.all()
@@ -61,6 +76,9 @@ class UserBadgeViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        # Handle schema generation by checking for fake view
+        if getattr(self, 'swagger_fake_view', False):
+            return UserBadge.objects.none()
         # Allow users to see only their own badges unless they are admin
         if self.request.user.is_staff:
             return UserBadge.objects.all()
@@ -73,6 +91,9 @@ class LeaderboardViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        # Handle schema generation by checking for fake view
+        if getattr(self, 'swagger_fake_view', False):
+            return Leaderboard.objects.none()
         # Allow users to see all leaderboard entries
         # Could be filtered by category or time period as needed
         return Leaderboard.objects.all()

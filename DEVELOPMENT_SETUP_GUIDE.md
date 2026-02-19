@@ -119,21 +119,68 @@ MCSPROJ_AGHAMazingQuestCMS/
 
 ## Running the Application
 
-1. Make sure PostgreSQL is running on your system
-2. Activate the Python virtual environment in the backend directory:
+Make sure PostgreSQL (or your chosen DB) is running before starting the app.
+
+Start / Stop (development, inside `venv`)
+
+- Create and activate the virtual environment (one-time):
+   ```bash
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+- Start backend (foreground):
    ```bash
    cd backend
    source venv/bin/activate
-   ```
-3. Start the backend server:
-   ```bash
    python manage.py runserver 8001
    ```
-4. In a new terminal, navigate to the frontend directory and start the React development server:
+   - Stop backend: press `Ctrl+C` in that terminal.
+
+- Start backend (background, example):
+   ```bash
+   cd backend
+   source venv/bin/activate
+   nohup python manage.py runserver 8001 > backend.log 2>&1 &
+   echo $! > backend.pid
+   ```
+   - Stop background backend:
+   ```bash
+   kill $(cat backend.pid) && rm backend.pid
+   ```
+
+- Start frontend (React):
    ```bash
    cd frontend
+   npm install      # first time only
    npm start
    ```
+   - Stop frontend: press `Ctrl+C` in that terminal.
+
+- Deactivate virtualenv:
+   ```bash
+   deactivate
+   ```
+
+Tips for running both services concurrently
+
+- Use two terminals (one for backend venv, one for frontend). Example with `tmux`:
+   ```bash
+   tmux new -s agha
+   # pane 1: backend
+   cd backend && source venv/bin/activate && python manage.py runserver 8001
+   # new pane: frontend
+   cd frontend && npm start
+   ```
+
+- Alternatively run backend in background and frontend in foreground.
+
+The dev servers run on:
+- Backend: `http://localhost:8001`
+- Frontend: `http://localhost:3000`
+
 
 ## Troubleshooting
 

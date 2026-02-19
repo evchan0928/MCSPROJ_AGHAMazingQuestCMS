@@ -27,7 +27,7 @@ The user creation functionality connects to the PostgreSQL database as follows:
 
 ### Database Schema
 - **Table**: `auth_user` (Django's built-in user table)
-- **Connected to**: PostgreSQL database (`aghamazing_db` on port 5433)
+- **Connected to**: PostgreSQL database (`aghamazing_db` on port 5432)
 - **Persistence**: All user data is permanently stored in the database
 
 ## Correct Access Information
@@ -80,3 +80,11 @@ The API endpoints are properly configured in:
 - `apps/usermanagement/serializers.py`
 
 These files ensure that user creation requests are properly handled and saved to the PostgreSQL database.
+
+## API Documentation Access
+
+For developers working with the API, the Swagger documentation is available at:
+
+- API Documentation: `http://localhost:8000/api/swagger/`
+
+This provides detailed information about all available endpoints, including user management APIs.

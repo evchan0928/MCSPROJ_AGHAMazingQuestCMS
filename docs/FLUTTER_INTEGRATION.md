@@ -6,7 +6,7 @@ This guide explains how to set up and use the Django-PostgreSQL backend with a F
 
 The application consists of:
 1. Django backend serving REST APIs
-2. PostgreSQL database (hosted on Tailscale network at 100.93.255.84:5433)
+2. PostgreSQL database (hosted on Tailscale network at 100.93.255.84:5432)
 3. Flutter mobile application consuming the APIs
 
 ## Setting Up the Django-PostgreSQL Backend
@@ -35,7 +35,7 @@ export DB_NAME=aghamazing_db
 export DB_USER=admin
 export DB_PASSWORD=password123
 export DB_HOST=100.93.255.84
-export DB_PORT=5433
+export DB_PORT=5432
 ```
 
 ### 3. Run Migrations and Start Server
@@ -251,6 +251,14 @@ class _UsersScreenState extends State<UsersScreen> {
 3. **Supabase Integration**: If using direct Supabase access from Flutter, consider implementing Row Level Security (RLS) policies to protect data.
 
 4. **Testing**: You can test the Django API endpoints directly using tools like Postman before connecting with Flutter.
+
+## API Documentation
+
+During development, you can access the API documentation through Swagger UI at:
+
+- API Documentation: `http://localhost:8000/api/swagger/`
+
+This provides interactive documentation for all API endpoints that the Flutter app can consume, including user authentication, content management, and mobile-specific endpoints.
 
 ## Troubleshooting
 

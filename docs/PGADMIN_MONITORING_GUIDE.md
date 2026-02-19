@@ -32,7 +32,7 @@ When you run the Django migrations, several schemas and tables are created in Po
    - Name: "AGHAMazingQuestCMS Development" (or any descriptive name)
 4. In the "Connection" tab:
    - Host name/address: `localhost`
-   - Port: `5433` (based on your setup)
+   - Port: `5432` (current working port)
    - Maintenance database: `aghamazing_db`
    - Username: `postgres`
    - Password: `admin123`
@@ -103,6 +103,15 @@ The connection flow between your frontend, backend, and PostgreSQL is as follows
    - Authentication tokens
    - Audit logs and analytics
    - File metadata (actual files are stored in backend storage)
+
+## API Documentation Access
+
+In addition to database monitoring, developers can access the API documentation through Swagger UI:
+
+- API Documentation: `http://localhost:8000/api/swagger/`
+- API Root: `http://localhost:8000/api/`
+
+This provides interactive documentation for all API endpoints available in the system.
 
 ## Monitoring Best Practices
 

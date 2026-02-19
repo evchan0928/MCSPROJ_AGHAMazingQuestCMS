@@ -7,6 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        ref_name = 'MobileManagementUser'  # Unique ref_name to avoid conflict
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

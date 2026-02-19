@@ -16,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'is_active', 'is_staff', 'is_superuser', 'roles', 'password'
         )
+        ref_name = 'UserManagementUser'  # Unique ref_name to avoid conflict
 
     def create(self, validated_data):
         pw = validated_data.pop('password', None)

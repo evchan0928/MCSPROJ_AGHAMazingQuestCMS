@@ -114,7 +114,7 @@ JWT_SECRET_KEY=your-jwt-secret
 
 The `devops/docker-compose-fullstack.yml` file orchestrates all services:
 
-- **PostgreSQL**: Database server (port 5433)
+- **PostgreSQL**: Database server (port 5432)
 - **pgAdmin**: Database administration (port 5050)
 - **Backend**: Django API server (internal port 8000)
 - **Frontend**: React development server (internal port 3000)
@@ -178,7 +178,7 @@ docker exec agha-backend python manage.py populate_sample_data
 
 #### Database Connection (for direct access)
 - Host: localhost
-- Port: 5433
+- Port: 5432
 - Database: `aghamazing_db`
 - Username: `admin`
 - Password: `password123`
@@ -344,15 +344,38 @@ MCSPROJ_AGHAMazingQuestCMS/
     └── setup-guide.md
 ```
 
-## API Endpoints
+## API Documentation Access
 
-When running locally, the backend API is available at `http://localhost:8001/api/`.
+### Accessing Swagger API Documentation in Development
 
-Key endpoints:
-- Authentication: `/api/auth/login/`, `/api/auth/register/`, `/api/auth/logout/`
-- Users: `/api/users/`
-- Content: `/api/content/`
-- Roles: `/api/users/roles/`
+With the Django development server running, you can access the API documentation via Swagger UI:
+
+1. Start the Django development server:
+   ```bash
+   cd backend
+   source venv/bin/activate  # Activate virtual environment
+   python manage.py runserver
+   ```
+
+2. Navigate to the API documentation:
+   - Open your browser
+   - Go to `http://localhost:8000/api/swagger/` (or the port shown in your terminal output)
+   
+3. The Swagger UI will display all available API endpoints with interactive documentation.
+
+### API Endpoints Available
+
+After starting the development server, the following endpoints will be available:
+
+- API Root: `http://localhost:8000/api/`
+- API Documentation (Swagger): `http://localhost:8000/api/swagger/`
+- Authentication: `http://localhost:8000/api/auth/`
+- Content Management: `http://localhost:8000/api/content/`
+- User Management: `http://localhost:8000/api/users/`
+- Analytics: `http://localhost:8000/api/analytics/`
+- Mobile Management: `http://localhost:8000/api/mobile/`
+
+*Note: The actual port may vary (e.g., 8000, 8001, etc.) depending on availability. Check the terminal output when starting the server.*
 
 ## Troubleshooting
 
