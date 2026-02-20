@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 import '../services/userprofile_service.dart';
-import 'login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,9 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _profileAvatarPath;
   bool _loading = true;
 
-  // Add Firebase references
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Remove Firebase references and use local services
   final UserProfileService _profileService = UserProfileService();
 
   static const List<String> _avatarPool = [
@@ -38,16 +34,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProfileFromFirebase();
+    _loadProfileFromBackend();
   }
 
-  // NEW: Load from Firebase instead of SharedPreferences
-  Future<void> _loadProfileFromFirebase() async {
+  // NEW: Load from Backend instead of Firebase
+  Future<void> _loadProfileFromBackend() async {
     setState(() => _loading = true);
 
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
+      // Check if user is authenticated
+      if (!_profileService.isAuthenticated) {
         // User not logged in, redirect to login
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/login');
@@ -55,17 +51,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      // Get user profile from Firestore
-      final profile = await _profileService.getUserProfile();
+      // Get user profile from backend
+      final profile = await _profileService.fetchUserProfile();
 
       if (profile != null) {
-        _nameController.text = profile['displayName'] ?? '';
-        _emailController.text = profile['email'] ?? user.email ?? '';
-        _profileAvatarPath = profile['avatarPath']; // Stored avatar selection
+        _nameController.text = profile['username'] ?? profile['first_name'] ?? '';
+        _emailController.text = profile['email'] ?? '';
+        // Load avatar path from shared preferences
+        final prefs = await SharedPreferences.getInstance();
+        _profileAvatarPath = prefs.getString('avatarPath');
       } else {
-        // Fallback to Firebase Auth data if Firestore profile doesn't exist
-        _nameController.text = user.displayName ?? '';
-        _emailController.text = user.email ?? '';
+        // Fallback to local storage if backend profile doesn't exist
+        final prefs = await SharedPreferences.getInstance();
+        _nameController.text = prefs.getString('displayName') ?? '';
+        _emailController.text = prefs.getString('email') ?? '';
       }
     } catch (e) {
       debugPrint('Error loading profile: $e');
@@ -79,8 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // UPDATE: Save name to Firebase
-  Future<void> _saveNameToFirebase() async {
+  // UPDATE: Save name to backend
+  Future<void> _saveNameToBackend() async {
     try {
       final name = _nameController.text.trim();
       if (name.isEmpty) {
@@ -90,13 +89,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      // Update in Firestore
-      await _profileService.updateUserProfile(displayName: name);
+      // Update in backend
+      final success = await _profileService.updateUserProfile(displayName: name);
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name saved successfully')),
-      );
+      if (success) {
+        // Update local storage as well
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('displayName', name);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Name saved successfully')),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save name to server')),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -105,14 +115,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // UPDATE: Save avatar to Firebase
+  // UPDATE: Save avatar to local storage
   Future<void> _saveProfileAvatarPath(String assetPath) async {
     try {
-      // Save to Firestore
-      await _firestore
-          .collection('users')
-          .doc(_auth.currentUser!.uid)
-          .update({'avatarPath': assetPath});
+      // Save to shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('avatarPath', assetPath);
 
       setState(() => _profileAvatarPath = assetPath);
 
@@ -149,68 +157,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 const Text(
-                  'Choose profile picture',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  'Choose Avatar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 220,
+                const SizedBox(height: 16),
+                Expanded(
                   child: GridView.builder(
-                    itemCount: _avatarPool.length,
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    shrinkWrap: true,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1,
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
                     ),
+                    itemCount: _avatarPool.length,
                     itemBuilder: (context, index) {
-                      final asset = _avatarPool[index];
-                      final selected = asset == _profileAvatarPath;
+                      final assetPath = _avatarPool[index];
+                      final isSelected = _profileAvatarPath == assetPath;
+                      
                       return GestureDetector(
                         onTap: () async {
-                          Navigator.of(ctx).pop();
-                          await _saveProfileAvatarPath(asset);
+                          await _saveProfileAvatarPath(assetPath);
+                          Navigator.of(context).pop(); // Close the modal
                         },
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircleAvatar(
-                              backgroundImage: AssetImage(asset),
-                              radius: 36,
-                              backgroundColor: Colors.grey.shade200,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isSelected ? Colors.blue : Colors.transparent,
+                              width: isSelected ? 3 : 0,
                             ),
-                            if (selected)
-                              Container(
-                                width: 72,
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.black.withValues(alpha: 0.28),
-                                  border: Border.all(color: Colors.white, width: 2),
-                                ),
-                                child: const Icon(Icons.check, color: Colors.white),
-                              ),
-                          ],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(
+                              assetPath,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                    _saveProfileAvatarPath('');
-                  },
-                  child: const Text('Remove / Reset to default'),
-                ),
-                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -219,206 +215,113 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // UPDATE: Email change via Firebase
-  Future<void> _showEditEmailDialog() async {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Change Email'),
-          content: const Text(
-            'To change your email, we\'ll send a verification link to your new email address. '
-                'Please check your inbox and click the link to verify.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
+  Future<void> _handleLogout() async {
+    final authService = AuthService();
+    await authService.logout();
 
-                // Firebase will send email verification automatically
-                // when user calls verifyBeforeUpdateEmail()
-                final user = _auth.currentUser;
-                if (user != null) {
-                  try {
-                    // This requires re-authentication for security
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please contact support to change your email'),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('Contact Support'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // UPDATE: Password reset via Firebase
-  Future<void> _showResetPasswordDialog() async {
-    final user = _auth.currentUser;
-    if (user == null || user.email == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No email found for this account')),
-      );
-      return;
-    }
-
-    final shouldSend = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Reset Password'),
-          content: Text(
-            'We will send a password reset link to:\n${user.email}\n\n'
-                'Click the link in your email to reset your password.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Send Link'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldSend == true) {
-      try {
-        await _auth.sendPasswordResetEmail(email: user.email!);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset link sent! Check your email.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed('/welcome');
     }
   }
 
-  // UPDATE: Logout with Firebase
-  Future<void> _confirmLogout() async {
-    final should = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to log out?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('No'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Yes'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (should == true) {
-      try {
-        // Use AuthService to logout
-        await AuthService().logout();
-
-        if (!mounted) return;
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-        );
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout error: $e')),
-        );
-      }
-    }
-  }
-
-  Widget _buildProfileAvatar(double size) {
-    final placeholder = CircleAvatar(
-      radius: size / 2,
-      backgroundColor: Colors.white,
-      child: Icon(
-        Icons.person,
-        size: size * 0.5,
-        color: Colors.grey.shade400,
-      ),
-    );
-
-    Widget avatar;
-    if (_profileAvatarPath == null || _profileAvatarPath!.isEmpty) {
-      avatar = placeholder;
-    } else {
-      avatar = CircleAvatar(
-        radius: size / 2,
-        backgroundImage: AssetImage(_profileAvatarPath!),
-        backgroundColor: Colors.white,
-      );
-    }
-
-    return GestureDetector(
-      onTap: _showAvatarSelectionSheet,
-      child: Stack(
-        alignment: Alignment.bottomRight,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 4),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: avatar,
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF2196F3),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            padding: const EdgeInsets.all(8),
-            child: const Icon(
-              Icons.edit,
-              size: 18,
-              color: Colors.white,
-            ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _handleLogout,
           ),
         ],
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Avatar Section
+                    Center(
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: _showAvatarSelectionSheet,
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundImage: _profileAvatarPath != null
+                                  ? AssetImage(_profileAvatarPath!)
+                                  : const AssetImage(
+                                      'assets/images/avatars/botttsNeutral-cool.png', // Default avatar
+                                    ),
+                              backgroundColor: Colors.grey.shade300,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              height: 40,
+                              width: 40,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Name Input
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    ElevatedButton(
+                      onPressed: _saveNameToBackend,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Save Name'),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Email Display (read-only for now)
+                    TextField(
+                      controller: _emailController,
+                      enabled: false, // Read-only
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                        disabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Additional profile fields could be added here
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
@@ -427,330 +330,5 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController.dispose();
     _emailController.dispose();
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenW = MediaQuery.of(context).size.width;
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        toolbarHeight: 50,
-        leadingWidth: 105,
-        leading: Padding(
-          padding: const EdgeInsets.all(0.0),
-          child: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 68, minHeight: 70),
-            icon: Image.asset(
-              ProfileScreen.backButtonAsset,
-              width: 167,
-              height: 90,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Background image
-          Positioned.fill(
-            child: Image.asset(
-              ProfileScreen._bg,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Colors.blue.shade200,
-              ),
-            ),
-          ),
-
-          // Content with flexbox
-          SafeArea(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: IntrinsicHeight(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20.0,
-                          vertical: 20.0,
-                        ),
-                        child: Column(
-                          children: [
-                            // Top spacer
-                            const Spacer(flex: 2),
-
-                            // Profile section with less transparency
-                            Container(
-                              width: double.infinity,
-                              constraints: BoxConstraints(
-                                maxWidth: screenW > 600 ? 500 : double.infinity,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 24,
-                                horizontal: 20,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFA726).withValues(alpha: 0.85),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  Center(child: _buildProfileAvatar(120)),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    _nameController.text.isEmpty
-                                        ? 'Your name'
-                                        : _nameController.text,
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black38,
-                                          blurRadius: 4,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _emailController.text.isEmpty
-                                        ? 'your.email@example.com'
-                                        : _emailController.text,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black26,
-                                          blurRadius: 4,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Form fields container
-                            Container(
-                              width: double.infinity,
-                              constraints: BoxConstraints(
-                                maxWidth: screenW > 600 ? 500 : double.infinity,
-                              ),
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.95),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Full name',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  TextFormField(
-                                    controller: _nameController,
-                                    decoration: InputDecoration(
-                                      hintText: 'Your full name',
-                                      filled: true,
-                                      fillColor: Colors.grey.shade50,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 14,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    'Email',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _emailController,
-                                          readOnly: true,
-                                          decoration: InputDecoration(
-                                            hintText: 'your.email@example.com',
-                                            filled: true,
-                                            fillColor: Colors.grey.shade50,
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                              borderSide: BorderSide.none,
-                                            ),
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 14,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      ElevatedButton(
-                                        onPressed: _showEditEmailDialog,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF2196F3),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 14,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.edit,
-                                          size: 18,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: _showResetPasswordDialog,
-                                          style: OutlinedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(vertical: 14),
-                                            side: const BorderSide(
-                                              color: Color(0xFF2196F3),
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            'Reset password',
-                                            style: TextStyle(
-                                              color: Color(0xFF2196F3),
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          onPressed: _saveNameToFirebase,
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF57BF0F),
-                                            padding: const EdgeInsets.symmetric(vertical: 14),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            'Save profile',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: OutlinedButton(
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(0xFFE53935),
-                                        side: const BorderSide(
-                                          color: Color(0xFFE53935),
-                                          width: 2,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      onPressed: _confirmLogout,
-                                      child: const Text(
-                                        'Logout',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Bottom spacer
-                            const Spacer(flex: 2),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

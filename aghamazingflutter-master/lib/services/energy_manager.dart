@@ -1,115 +1,244 @@
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class EnergyManager {
-  static final EnergyManager instance = EnergyManager._();
-  EnergyManager._();
+  static final EnergyManager _instance = EnergyManager._internal();
+  factory EnergyManager() => _instance;
+  EnergyManager._internal();
 
-  // Constants
-  static const int maxEnergy = 100;
-  static const int energyPerPlay = 5;
-  static const int energyRegenMinutes = 5;
-  static const int dailyEnergyGrant = 100;
+  static const String _keyCurrentEnergy = 'current_energy';
+  static const String _keyLastEnergyUpdateTime = 'last_energy_update_time';
+  static const String _keyMaxEnergy = 'max_energy';
+  static const String _keyEnergyRegenMinutes = 'energy_regen_minutes';
+  static const String _keyLastSyncTime = 'last_sync_time';
 
-  // SharedPreferences keys
-  static const String _keyEnergy = 'current_energy';
-  static const String _keyLastUpdate = 'last_energy_update';
-  static const String _keyLastDailyReset = 'last_daily_reset';
-  static const String _keyLastSyncTime = 'last_energy_sync_time';
+  // Default values
+  static const int defaultMaxEnergy = 100;
+  static const int defaultEnergyRegenMinutes = 10; // Regenerate 1 energy every 10 minutes
 
-  // ============================================================
-  // CORE ENERGY METHODS
-  // ============================================================
+  // Singleton instance
+  static EnergyManager? _cachedInstance;
 
-  /// Initialize energy system (call on app start)
-  Future<void> initialize() async {
-    await _checkDailyReset();
-    await _regenerateEnergy();
+  static Future<EnergyManager> get instance async {
+    _cachedInstance ??= await _getInstance();
+    return _cachedInstance!;
   }
 
-  /// Get current energy
+  static Future<EnergyManager> _getInstance() async {
+    final manager = EnergyManager._internal();
+    await manager._initializeDefaults();
+    return manager;
+  }
+
+  Future<void> _initializeDefaults() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Set defaults if not already set
+    if (!prefs.containsKey(_keyMaxEnergy)) {
+      await prefs.setInt(_keyMaxEnergy, defaultMaxEnergy);
+    }
+    if (!prefs.containsKey(_keyEnergyRegenMinutes)) {
+      await prefs.setInt(_keyEnergyRegenMinutes, defaultEnergyRegenMinutes);
+    }
+    
+    // Initialize energy to max if not set
+    if (!prefs.containsKey(_keyCurrentEnergy)) {
+      await prefs.setInt(_keyCurrentEnergy, getMaxEnergy());
+    }
+  }
+
+  // Get current energy
   Future<int> getCurrentEnergy() async {
-    // First regenerate any pending energy
-    await _regenerateEnergy();
-
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_keyEnergy) ?? maxEnergy;
+    return prefs.getInt(_keyCurrentEnergy) ?? 0;
   }
 
-  /// Use energy (when playing game)
-  Future<bool> useEnergy({int amount = energyPerPlay}) async {
-    await _regenerateEnergy();
+  // Get max energy
+  int getMaxEnergy() {
+    final prefs = SharedPreferences.getInstance();
+    return prefs.getInt(_keyMaxEnergy) ?? defaultMaxEnergy;
+  }
 
+  // Get energy regeneration rate (minutes per energy point)
+  int getEnergyRegenMinutes() {
+    final prefs = SharedPreferences.getInstance();
+    return prefs.getInt(_keyEnergyRegenMinutes) ?? defaultEnergyRegenMinutes;
+  }
+
+  // Set max energy
+  Future<void> setMaxEnergy(int maxEnergy) async {
     final prefs = await SharedPreferences.getInstance();
-    int currentEnergy = prefs.getInt(_keyEnergy) ?? maxEnergy;
+    await prefs.setInt(_keyMaxEnergy, maxEnergy);
+  }
+
+  // Set energy regeneration rate
+  Future<void> setEnergyRegenMinutes(int minutes) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyEnergyRegenMinutes, minutes);
+  }
+
+  // Spend energy (reduce by specified amount)
+  Future<bool> spendEnergy(int amount) async {
+    int currentEnergy = await getCurrentEnergy();
+    int maxEnergy = getMaxEnergy();
 
     if (currentEnergy < amount) {
       return false; // Not enough energy
     }
 
-    int newEnergy = currentEnergy - amount;
-    await prefs.setInt(_keyEnergy, newEnergy);
-    await prefs.setString(_keyLastUpdate, DateTime.now().toIso8601String());
-
+    int newEnergy = (currentEnergy - amount).clamp(0, maxEnergy);
+    await setCurrentEnergy(newEnergy);
     return true;
   }
 
-  /// Get time until next energy point (in seconds)
-  Future<int> getSecondsUntilNextEnergy() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastUpdateStr = prefs.getString(_keyLastUpdate);
-
-    if (lastUpdateStr == null) {
-      return 0; // Energy can regenerate immediately
-    }
-
-    final lastUpdate = DateTime.parse(lastUpdateStr);
-    final now = DateTime.now();
-    final timePassed = now.difference(lastUpdate);
-
-    // Calculate seconds since last full 5-minute interval
-    final secondsSinceLastRegen = timePassed.inSeconds % (energyRegenMinutes * 60);
-    final secondsUntilNext = (energyRegenMinutes * 60) - secondsSinceLastRegen;
-
-    return secondsUntilNext;
+  // Restore energy to full
+  Future<void> restoreFullEnergy() async {
+    int maxEnergy = getMaxEnergy();
+    await setCurrentEnergy(maxEnergy);
   }
 
-  /// Check if user has enough energy
-  Future<bool> hasEnoughEnergy({int required = energyPerPlay}) async {
-    int current = await getCurrentEnergy();
-    return current >= required;
-  }
-
-  /// Get time until full energy (in seconds)
-  Future<int> getSecondsUntilFull() async {
+  // Reduce energy by specific amount
+  Future<void> reduceEnergy(int amount) async {
     int currentEnergy = await getCurrentEnergy();
+    int maxEnergy = getMaxEnergy();
+    int newEnergy = (currentEnergy - amount).clamp(0, maxEnergy);
+    await setCurrentEnergy(newEnergy);
+  }
 
-    if (currentEnergy >= maxEnergy) {
+  // Increase energy by specific amount
+  Future<void> increaseEnergy(int amount) async {
+    int currentEnergy = await getCurrentEnergy();
+    int maxEnergy = getMaxEnergy();
+    int newEnergy = (currentEnergy + amount).clamp(0, maxEnergy);
+    await setCurrentEnergy(newEnergy);
+  }
+
+  // Set current energy value
+  Future<void> setCurrentEnergy(int energy) async {
+    final prefs = await SharedPreferences.getInstance();
+    int maxEnergy = getMaxEnergy();
+    int clampedEnergy = energy.clamp(0, maxEnergy);
+    
+    await prefs.setInt(_keyCurrentEnergy, clampedEnergy);
+    await prefs.setString(
+      _keyLastEnergyUpdateTime,
+      DateTime.now().toIso8601String(),
+    );
+  }
+
+  // Calculate regenerated energy based on time passed
+  Future<int> calculateRegeneratedEnergy() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? lastUpdateStr = prefs.getString(_keyLastEnergyUpdateTime);
+    
+    if (lastUpdateStr == null) return 0;
+
+    try {
+      DateTime lastUpdate = DateTime.parse(lastUpdateStr);
+      Duration duration = DateTime.now().difference(lastUpdate);
+      int minutesPassed = duration.inMinutes;
+      int energyRegenMinutes = getEnergyRegenMinutes();
+      
+      if (minutesPassed < energyRegenMinutes) return 0;
+      
+      int regeneratedEnergy = (minutesPassed / energyRegenMinutes).floor();
+      int currentEnergy = await getCurrentEnergy();
+      int maxEnergy = getMaxEnergy();
+      int potentialEnergy = (currentEnergy + regeneratedEnergy).clamp(0, maxEnergy);
+      
+      return potentialEnergy - currentEnergy;
+    } catch (e) {
+      debugPrint("Error calculating regenerated energy: $e");
       return 0;
     }
+  }
 
-    int energyNeeded = maxEnergy - currentEnergy;
-    int secondsNeeded = energyNeeded * energyRegenMinutes * 60;
+  // Regenerate energy based on time passed
+  Future<void> regenerateEnergy() async {
+    int regeneratedEnergy = await calculateRegeneratedEnergy();
+    if (regeneratedEnergy > 0) {
+      await increaseEnergy(regeneratedEnergy);
+    }
+  }
 
-    // Account for partial progress toward next energy point
-    int secondsUntilNext = await getSecondsUntilNextEnergy();
+  // Get formatted time until next energy regeneration
+  Future<String> getTimeUntilNextEnergy() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? lastUpdateStr = prefs.getString(_keyLastEnergyUpdateTime);
+    
+    if (lastUpdateStr == null) return "00:00";
+    
+    try {
+      DateTime lastUpdate = DateTime.parse(lastUpdateStr);
+      int energyRegenMinutes = getEnergyRegenMinutes();
+      Duration elapsed = DateTime.now().difference(lastUpdate);
+      int minutesUntilNext = (energyRegenMinutes - elapsed.inMinutes % energyRegenMinutes) % energyRegenMinutes;
+      
+      // If current energy is at max, no regeneration needed
+      if (await getCurrentEnergy() >= getMaxEnergy()) {
+        return "Fully Charged";
+      }
+      
+      if (minutesUntilNext <= 0) return "Ready";
+      
+      int secondsUntilNext = (energyRegenMinutes * 60) - elapsed.inSeconds % (energyRegenMinutes * 60);
+      int minutes = secondsUntilNext ~/ 60;
+      int seconds = secondsUntilNext % 60;
+      
+      return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
+    } catch (e) {
+      debugPrint("Error calculating time until next energy: $e");
+      return "00:00";
+    }
+  }
 
-    return secondsNeeded - (energyRegenMinutes * 60) + secondsUntilNext;
+  // Calculate time needed to regenerate to full energy
+  Future<String> getTimeUntilFullEnergy() async {
+    int currentEnergy = await getCurrentEnergy();
+    int maxEnergy = getMaxEnergy();
+    int missingEnergy = maxEnergy - currentEnergy;
+    
+    if (missingEnergy <= 0) return "Fully Charged";
+    
+    int energyRegenMinutes = getEnergyRegenMinutes();
+    int totalMinutesNeeded = missingEnergy * energyRegenMinutes;
+    
+    int hours = totalMinutesNeeded ~/ 60;
+    int minutes = totalMinutesNeeded % 60;
+    
+    return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:00";
+  }
+
+  // Calculate seconds needed to regenerate to full energy
+  Future<int> getSecondsUntilFullEnergy() async {
+    int currentEnergy = await getCurrentEnergy();
+    int maxEnergy = getMaxEnergy();
+    int missingEnergy = maxEnergy - currentEnergy;
+    
+    if (missingEnergy <= 0) return 0;
+    
+    int energyRegenMinutes = getEnergyRegenMinutes();
+    return missingEnergy * energyRegenMinutes * 60; // Convert to seconds
   }
 
   // ============================================================
-  // SYNC METHODS (Hybrid approach - sync with Firebase)
+  // SYNC METHODS (Sync with CMS backend)
   // ============================================================
 
-  /// Sync local energy with Firebase
+  /// Sync local energy with CMS backend
   /// Call this periodically or when internet connection is restored
-  Future<bool> syncWithFirebase(
-      Future<bool> Function(int energy) firebaseUpdateFn,
-      ) async {
+  Future<bool> syncWithBackend(String? token) async {
+    if (token == null) {
+      debugPrint('No token available for sync, skipping');
+      return false;
+    }
+
     try {
       int currentEnergy = await getCurrentEnergy();
 
-      // Update Firebase with current local energy
-      bool success = await firebaseUpdateFn(currentEnergy);
+      // Update CMS backend with current local energy
+      bool success = await _updateEnergyOnBackend(token, currentEnergy);
 
       if (success) {
         final prefs = await SharedPreferences.getInstance();
@@ -121,164 +250,82 @@ class EnergyManager {
 
       return success;
     } catch (e) {
-      print('Error syncing energy with Firebase: $e');
+      debugPrint('Error syncing energy with backend: $e');
       return false;
     }
   }
 
-  /// Get last sync time
-  Future<DateTime?> getLastSyncTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    final syncTimeStr = prefs.getString(_keyLastSyncTime);
-    return syncTimeStr != null ? DateTime.parse(syncTimeStr) : null;
-  }
+  /// Update energy on backend via CMS API
+  Future<bool> _updateEnergyOnBackend(String token, int energy) async {
+    try {
+      // Note: Currently we don't have a specific energy field in the user profile
+      // So we'll skip backend sync for energy until the backend is updated to support it
+      debugPrint('Energy sync skipped - no backend energy field implemented');
+      return true;
+      
+      /* // Original code commented out until backend supports energy field
+      final url = Uri.parse('${ApiConfig.getBaseUrl()}/api/mobile/user-profiles/');
+      final headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      };
+      final body = jsonEncode({'energy': energy});
 
-  // ============================================================
-  // PRIVATE HELPER METHODS
-  // ============================================================
+      final response = await http.patch(url, headers: headers, body: body);
 
-  /// Regenerate energy based on time passed
-  Future<void> _regenerateEnergy() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    int currentEnergy = prefs.getInt(_keyEnergy) ?? maxEnergy;
-
-    // If already at max, no need to regenerate
-    if (currentEnergy >= maxEnergy) {
-      await prefs.setInt(_keyEnergy, maxEnergy);
-      return;
-    }
-
-    final lastUpdateStr = prefs.getString(_keyLastUpdate);
-
-    if (lastUpdateStr == null) {
-      // First time, set to max
-      await prefs.setInt(_keyEnergy, maxEnergy);
-      await prefs.setString(_keyLastUpdate, DateTime.now().toIso8601String());
-      return;
-    }
-
-    final lastUpdate = DateTime.parse(lastUpdateStr);
-    final now = DateTime.now();
-    final timePassed = now.difference(lastUpdate);
-
-    // Calculate how many energy points to add (1 per 5 minutes)
-    int minutesPassed = timePassed.inMinutes;
-    int energyToAdd = minutesPassed ~/ energyRegenMinutes;
-
-    if (energyToAdd > 0) {
-      int newEnergy = (currentEnergy + energyToAdd).clamp(0, maxEnergy);
-      await prefs.setInt(_keyEnergy, newEnergy);
-
-      // Update timestamp to account for energy added
-      // This prevents "losing" partial progress
-      final energyAddedMinutes = energyToAdd * energyRegenMinutes;
-      final newLastUpdate = lastUpdate.add(Duration(minutes: energyAddedMinutes));
-      await prefs.setString(_keyLastUpdate, newLastUpdate.toIso8601String());
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('Successfully synced energy ($energy) with backend');
+        return true;
+      } else {
+        debugPrint('Failed to sync energy with backend: ${response.statusCode}');
+        return false;
+      }
+      */
+    } catch (e) {
+      debugPrint('Exception syncing energy with backend: $e');
+      return false;
     }
   }
 
-  /// Check and perform daily energy reset (100 energy per day)
-  Future<void> _checkDailyReset() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastResetStr = prefs.getString(_keyLastDailyReset);
-    final now = DateTime.now();
-
-    if (lastResetStr == null) {
-      // First time, grant energy
-      await prefs.setInt(_keyEnergy, dailyEnergyGrant);
-      await prefs.setString(_keyLastDailyReset, _getDateKey(now));
-      await prefs.setString(_keyLastUpdate, now.toIso8601String());
-      return;
+  /// Fetch energy from backend to sync local state
+  Future<bool> refreshFromBackend(String? token) async {
+    if (token == null) {
+      debugPrint('No token available for refresh, skipping');
+      return false;
     }
 
-    final todayKey = _getDateKey(now);
+    // Note: Currently we don't have a specific energy field in the user profile
+    // So we'll skip backend sync for energy until the backend is updated to support it
+    debugPrint('Energy refresh from backend skipped - no backend energy field implemented');
+    return true;
+    
+    /* // Original code commented out until backend supports energy field
+    try {
+      final url = Uri.parse('${ApiConfig.getBaseUrl()}/api/mobile/user-profiles/');
+      final headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      };
 
-    if (lastResetStr != todayKey) {
-      // New day! Grant daily energy
-      await prefs.setInt(_keyEnergy, dailyEnergyGrant);
-      await prefs.setString(_keyLastDailyReset, todayKey);
-      await prefs.setString(_keyLastUpdate, now.toIso8601String());
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final backendEnergy = data['energy'] as int?;
+        
+        if (backendEnergy != null) {
+          await setCurrentEnergy(backendEnergy);
+          debugPrint('Successfully refreshed energy ($backendEnergy) from backend');
+          return true;
+        }
+      }
+      
+      debugPrint('Failed to refresh energy from backend: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      debugPrint('Exception refreshing energy from backend: $e');
+      return false;
     }
-  }
-
-  /// Get date key for daily reset (YYYY-MM-DD)
-  String _getDateKey(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  // ============================================================
-  // DEBUG/ADMIN METHODS (Remove in production)
-  // ============================================================
-
-  /// Reset energy to max (for testing)
-  Future<void> resetEnergy() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_keyEnergy, maxEnergy);
-    await prefs.setString(_keyLastUpdate, DateTime.now().toIso8601String());
-  }
-
-  /// Set custom energy amount (for testing)
-  Future<void> setEnergy(int amount) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_keyEnergy, amount.clamp(0, maxEnergy));
-    await prefs.setString(_keyLastUpdate, DateTime.now().toIso8601String());
-  }
-
-  /// Clear all energy data (for testing)
-  Future<void> clearEnergyData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyEnergy);
-    await prefs.remove(_keyLastUpdate);
-    await prefs.remove(_keyLastDailyReset);
-    await prefs.remove(_keyLastSyncTime);
-  }
-
-  // ============================================================
-  // STATS/INFO METHODS
-  // ============================================================
-
-  /// Get formatted time string until next energy
-  Future<String> getTimeUntilNextEnergyFormatted() async {
-    int seconds = await getSecondsUntilNextEnergy();
-    int minutes = seconds ~/ 60;
-    int secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
-
-  /// Get formatted time string until full energy
-  Future<String> getTimeUntilFullFormatted() async {
-    int totalSeconds = await getSecondsUntilFull();
-
-    if (totalSeconds == 0) return 'Full';
-
-    int hours = totalSeconds ~/ 3600;
-    int minutes = (totalSeconds % 3600) ~/ 60;
-    int seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    } else {
-      return '${seconds}s';
-    }
-  }
-
-  /// Get energy info as a map
-  Future<Map<String, dynamic>> getEnergyInfo() async {
-    int current = await getCurrentEnergy();
-    int secondsNext = await getSecondsUntilNextEnergy();
-    int secondsFull = await getSecondsUntilFull();
-
-    return {
-      'current': current,
-      'max': maxEnergy,
-      'percentage': (current / maxEnergy * 100).toInt(),
-      'secondsUntilNext': secondsNext,
-      'secondsUntilFull': secondsFull,
-      'canPlay': current >= energyPerPlay,
-      'energyNeeded': energyPerPlay,
-    };
+    */
   }
 }

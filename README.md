@@ -1,38 +1,37 @@
-# Aghamazing Quest - Content Management System
+# AGHAMazingQuestCMS
 
-A comprehensive content management system for managing educational content with role-based access control, content approval workflows, and multi-platform support.
+Welcome to the AGHAMazing Quest Content Management System (CMS). This system was developed for the Philippine Department of Science and Technology - Science Education Institute (DOST-SEI) to manage augmented reality (AR) guided tour content for the AGHAMazing Quest project.
 
 ## Overview
 
-The Aghamazing Quest CMS is a full-stack application designed to manage content creation, approval, and publication workflows. It includes:
-
-- **Backend**: Django REST API with role-based access control
-- **Frontend**: React-based dashboard for content management
-- **Mobile**: Flutter application for mobile access
-- **Database**: PostgreSQL for data storage
-
-## Features
-
-- Role-based access control (Super Admin, Admin, Editor, Encoder, Approver)
-- Content management with approval workflows
-- User management system
-- Mobile application integration
-- Analytics and reporting capabilities
-- Real-time notifications
+The AGHAMazingQuestCMS is a full-stack web application featuring:
+- A React-based frontend for content management
+- A Django REST API backend for data handling
+- Role-based access control for content creators, approvers, and administrators
+- Integration with the companion mobile AR application
 
 ## Tech Stack
 
-- **Backend**: Django, Django REST Framework, JWT Authentication
-- **Frontend**: React, Ant Design, Axios
-- **Mobile**: Flutter, Dart
+- **Frontend**: React 18, Ant Design, Axios
+- **Backend**: Django 4+, Django REST Framework
 - **Database**: PostgreSQL
-- **Development**: Python 3.12+, Node.js 18+, Flutter 3.16+
+- **Mobile App**: Flutter (separate integration)
 
 ## Development Setup
 
-For detailed setup instructions, see:
-- [Development Setup Guide](./DEVELOPMENT_SETUP_GUIDE.md)
-- [Full Stack Development Setup Guide](./FULL_STACK_DEVELOPMENT_SETUP.md)
+For a complete development environment setup, please refer to our comprehensive guide:
+
+[Full Stack Development Setup Guide](FULL_STACK_DEVELOPMENT_SETUP.md)
+
+For daily development quick start, see:
+
+[Quick Start Guide](QUICK_START_GUIDE.md)
+
+## Scripts
+
+We provide an automated setup script to simplify the initial environment configuration:
+
+- [setup_full_stack.sh](setup_full_stack.sh): Automated setup script for the full-stack development environment
 
 ## Architecture
 
@@ -90,42 +89,28 @@ Located in the `aghamazingflutter-master/` directory, this component provides:
 ```
 MCSPROJ_AGHAMazingQuestCMS/
 ├── backend/                 # Django REST API backend
-│   ├── config/             # Django project settings
 │   ├── apps/               # Custom Django apps
-│   │   ├── contentmanagement/  # Content management module
-│   │   └── usermanagement/     # User management module
-│   ├── static/             # Static files
-│   ├── media/              # Media uploads
-│   ├── requirements.txt    # Python dependencies
-│   └── manage.py          # Django management script
-├── frontend/              # React frontend application
-│   ├── public/            # Public assets
-│   ├── src/               # Source code
-│   │   ├── components/    # React components
-│   │   ├── pages/         # Page components
-│   │   ├── api/           # API client code
-│   │   └── utils/         # Utility functions
-│   ├── package.json       # Node.js dependencies
-│   └── .env               # Environment variables
+│   │   ├── authentication/
+│   │   ├── contentmanagement/
+│   │   ├── usermanagement/
+│   │   └── analyticsmanagement/
+│   └── ...
+├── frontend/               # React frontend application
+│   ├── src/
+│   ├── package.json
+│   └── ...
 ├── aghamazingflutter-master/  # Flutter mobile application
-│   ├── lib/               # Dart source code
-│   ├── assets/            # Asset files
-│   ├── android/           # Android-specific files
-│   ├── ios/               # iOS-specific files
-│   └── pubspec.yaml       # Flutter dependencies
-├── docs/                  # Documentation
-├── ECOCODERS_FINAL PAPERS/ # Project papers
-└── README.md              # This file
+└── ...
 ```
+
+## API Documentation
+
+API documentation is available via Swagger when the backend is running at `/api/swagger/`.
 
 ## Contributing
 
-We welcome contributions to the project. Please read our contributing guidelines before submitting pull requests.
+Please read the [Full Stack Development Setup Guide](FULL_STACK_DEVELOPMENT_SETUP.md) before contributing to ensure your development environment is properly configured.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-For questions or support, please contact the development team.
+This project is developed for DOST-SEI. For licensing information, please contact the project maintainers.

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/welcome_screen.dart';
 import 'services/auth_service.dart';
-import 'services/energy_manager.dart';  // ADD THIS
+import 'services/energy_manager.dart';  // This was moved up in the imports
+// ADD THIS
 import 'services/auth_api.dart';  // ADD THIS IMPORT
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -13,6 +12,7 @@ import 'screens/mainmenu_screen.dart';
 import 'screens/trivia_game1/main_trivia_screen.dart';
 import 'screens/gemgrab/gem_grab_game_screen.dart';
 import 'screens/content_screen.dart';  // ADD CONTENT SCREEN IMPORT
+import 'config/api_config.dart'; // Import the new config
 
 void main() async {
   // Ensure Flutter bindings are initialized
@@ -24,25 +24,23 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
 
   // Initialize Energy System (ADD THIS)
   await EnergyManager.instance.initialize();
 
-  // Initialize services with the base API URL
-  const baseUrl = 'https://your-api-url.com'; // Replace with your actual API URL
-    
+  // Print current API configuration for debugging
+  ApiConfig.printCurrentConfig();
+
+  // Initialize services with the base API URL from config
   final authApi = AuthApi(
-    registerUrl: '$baseUrl/api/auth/register/',
-    loginUrl: '$baseUrl/api/auth/login/',
-    otpRequestUrl: '$baseUrl/api/auth/otp/request/',
-    otpVerifyUrl: '$baseUrl/api/auth/otp/verify/',
-    passwordResetUrl: '$baseUrl/api/auth/password/reset/', // ADD THIS LINE
+    registerUrl: ApiConfig.authRegisterEndpoint,
+    loginUrl: ApiConfig.authLoginEndpoint,
+    otpRequestUrl: ApiConfig.otpRequestEndpoint,
+    otpVerifyUrl: ApiConfig.otpVerifyEndpoint,
+    passwordResetUrl: ApiConfig.passwordResetEndpoint,
     timeout: const Duration(seconds: 15),
   );
 
-  final authService = AuthService(authApi: authApi);
 
   runApp(const MyApp());
 }

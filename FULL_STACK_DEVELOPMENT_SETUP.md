@@ -1,40 +1,38 @@
-# Full Stack Development Setup Guide
+# AGHAMazingQuestCMS - Unified Full Stack Development Setup
 
-This guide provides comprehensive instructions for setting up the full-stack development environment for the Aghamazing Quest CMS project using a virtual environment (venv) only setup.
+This is the official, unified development setup guide for the AGHAMazingQuestCMS project. This document contains everything you need to set up and run the full-stack application reliably.
 
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
-2. [Development Environment Setup](#development-environment-setup)
-3. [Backend Setup (Django)](#backend-setup-django)
-4. [Frontend Setup (React)](#frontend-setup-react)
-5. [Running the Applications](#running-the-applications)
-6. [Database Setup](#database-setup)
+2. [System Setup](#system-setup)
+3. [Project Cloning and Structure](#project-cloning-and-structure)
+4. [Backend Setup (Django)](#backend-setup-django)
+5. [Frontend Setup (React)](#frontend-setup-react)
+6. [Database Configuration](#database-configuration)
 7. [Environment Configuration](#environment-configuration)
-8. [Project Structure](#project-structure)
-9. [API Endpoints](#api-endpoints)
+8. [Running the Applications](#running-the-applications)
+9. [API Documentation Access](#api-documentation-access)
 10. [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
-Before starting, ensure your system meets these requirements:
-
-### System Requirements
 - **OS**: Linux, macOS, or Windows with WSL2
 - **Git**: Version 2.25 or higher
 - **Python**: Version 3.9 or higher
-- **Node.js**: Version 16 or higher
+- **Node.js**: Version 18 or higher
+- **npm**: Latest version (comes with Node.js)
 - **PostgreSQL**: Version 12 or higher
 - **Text Editor/IDE**: VSCode recommended
 
-### Installation Commands
+## System Setup
 
-For Ubuntu/Debian:
+### For Ubuntu/Debian:
 ```bash
 sudo apt update
 sudo apt install -y git python3 python3-pip python3-venv nodejs npm postgresql postgresql-contrib
 ```
 
-For macOS:
+### For macOS:
 ```bash
 # Install Homebrew if not already installed
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -43,339 +41,225 @@ For macOS:
 brew install git python node postgresql
 ```
 
-For Windows (WSL2):
-```powershell
-# In PowerShell as Administrator
-wsl --install
-# Then in WSL terminal:
-sudo apt update && sudo apt install -y git python3 python3-pip python3-venv nodejs npm postgresql postgresql-contrib
+### For Windows (Recommended approach):
+1. Install WSL2 with Ubuntu
+2. Follow the Ubuntu/Debian instructions inside WSL2 terminal
+
+## Project Cloning and Structure
+
+Clone the repository:
+```bash
+git clone https://github.com/your-repo/MCSPROJ_AGHAMazingQuestCMS.git
+cd MCSPROJ_AGHAMazingQuestCMS
 ```
 
-## Repository Structure
-
+Project structure:
 ```
 MCSPROJ_AGHAMazingQuestCMS/
-├── backend/
-│   ├── apps/
+├── backend/                 # Django REST API backend
+│   ├── apps/               # Custom Django apps
 │   │   ├── authentication/
 │   │   ├── contentmanagement/
 │   │   ├── usermanagement/
 │   │   └── analyticsmanagement/
-│   ├── config/
+│   ├── config/             # Django project settings
 │   ├── middleware/
-│   ├── requirements.txt
-│   └── manage.py
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── api/
-│   │   ├── styles.css
-│   │   └── App.jsx
-│   ├── package.json
-│   └── Dockerfile
-├── devops/
-│   ├── docker-compose-fullstack.yml
-│   └── nginx-config/
-│       └── agha-proxy.conf
-└── docs/
-    └── setup-guide.md
+│   ├── static/             # Static files
+│   ├── media/              # Media uploads
+│   ├── requirements.txt    # Python dependencies
+│   └── manage.py           # Django management script
+├── frontend/               # React frontend application
+│   ├── public/             # Public assets
+│   ├── src/                # Source code
+│   │   ├── components/     # React components
+│   │   ├── pages/          # Page components
+│   │   ├── api/            # API client code
+│   │   └── utils/          # Utility functions
+│   ├── package.json        # Node.js dependencies
+│   └── .env                # Environment variables
+└── FULL_STACK_DEVELOPMENT_SETUP.md # This file
 ```
 
-## Configuration Files
+## Backend Setup (Django)
 
-### Environment Variables (.env)
-
-The project uses environment variables for configuration. Create a `.env` file in the repository root:
-
-```env
-# Database Configuration
-DB_NAME=aghamazing_db
-DB_USER=admin
-DB_PASSWORD=password123
-DB_HOST=localhost
-DB_PORT=5432
-
-# Django Configuration
-DJANGO_SECRET_KEY=your-secret-key-here
-DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
-
-# CORS Configuration
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
-CSRF_TRUSTED_ORIGINS=http://localhost:8080,http://localhost:8081
-
-# JWT Configuration
-JWT_SECRET_KEY=your-jwt-secret
-```
-
-### Docker Compose Configuration
-
-The `devops/docker-compose-fullstack.yml` file orchestrates all services:
-
-- **PostgreSQL**: Database server (port 5432)
-- **pgAdmin**: Database administration (port 5050)
-- **Backend**: Django API server (internal port 8000)
-- **Frontend**: React development server (internal port 3000)
-- **Nginx**: Reverse proxy (port 8081)
-
-### Nginx Configuration
-
-The `devops/nginx-config/agha-proxy.conf` file defines:
-
-- API routes: `/api/` → Backend
-- Admin panel: `/admin/` → Backend
-- Static files: `/static/` → Backend
-- All other routes: `/` → Frontend
-
-## Development Setup
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/MCSPROJ_AGHAMazingQuestCMS.git
-cd MCSPROJ_AGHAMazingQuestCMS
-```
-
-### 2. Build and Start Services
-
-```bash
-cd devops
-docker compose -f docker-compose-fullstack.yml up -d
-```
-
-### 3. Initial Database Setup
-
-After starting the services, run migrations:
-
-```bash
-docker exec agha-backend python manage.py migrate
-docker exec agha-backend python manage.py populate_sample_data
-```
-
-### 4. Access the Applications
-
-- **Main Application**: http://localhost:8081
-- **Sign-In Page**: http://localhost:8081/signin
-- **API Documentation**: http://localhost:8081/api/swagger/
-- **Django Admin**: http://localhost:8081/admin/
-- **pgAdmin**: http://localhost:5050
-
-### 5. Default Credentials
-
-#### Demo Users
-- Username: `demo_user` | Password: `demopass123`
-- Username: `encoder_user` | Password: `demopass123`
-- Username: `editor_user` | Password: `demopass123`
-- Username: `approver_user` | Password: `demopass123`
-- Username: `admin_user` | Password: `demopass123`
-- Username: `superadmin` | Password: `superadmin123`
-
-#### pgAdmin Credentials
-- Email: `aghamazingdost@gmail.com`
-- Password: `DOSTAGHAMazingQuestAdmin1234`
-
-#### Database Connection (for direct access)
-- Host: localhost
-- Port: 5432
-- Database: `aghamazing_db`
-- Username: `admin`
-- Password: `password123`
-
-## Production Deployment
-
-For production deployment, consider these additional configurations:
-
-### Environment Configuration
-
-```env
-# Disable debug mode
-DJANGO_DEBUG=False
-
-# Set production-ready secret key
-DJANGO_SECRET_KEY=your-production-secret-key
-
-# Restrict allowed hosts
-DJANGO_ALLOWED_HOSTS=your-domain.com,www.your-domain.com
-
-# Production database settings
-DB_HOST=your-db-host
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-```
-
-### SSL/TLS Configuration
-
-Update nginx configuration for HTTPS:
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name your-domain.com;
-
-    ssl_certificate /path/to/your/certificate.crt;
-    ssl_certificate_key /path/to/your/private.key;
-    
-    # ... rest of configuration
-}
-```
-
-### Performance Tuning
-
-Adjust Gunicorn workers for production:
-
-```bash
-# In backend Dockerfile
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "config.wsgi:application"]
-```
-
-## Local Development Setup
-
-Instead of using Docker Compose, this project can be run using native processes with Python virtual environments:
-
-1. Backend setup:
-   ```bash
-   cd backend
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   python manage.py migrate
-   python manage.py runserver 8001
-   ```
-
-2. Frontend setup:
-   ```bash
-   cd frontend
-   npm install
-   npm start
-   ```
-
-## Running the Applications
-
-To start the backend server:
+1. Navigate to the backend directory:
 ```bash
 cd backend
-source venv/bin/activate  # Activate virtual environment
-python manage.py runserver 8001
 ```
 
-To start the frontend development server:
+2. Create and activate a Python virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install Python dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Verify your virtual environment is working:
+```bash
+python -c "import django; print(django.get_version())"
+```
+
+## Frontend Setup (React)
+
+1. Open a new terminal window/tab and navigate to the frontend directory:
 ```bash
 cd frontend
-npm start
 ```
 
-## Database Setup
+2. Install Node.js dependencies:
+```bash
+npm install
+```
 
-### Database Configuration
+## Database Configuration
 
-The project uses PostgreSQL as the database. Ensure PostgreSQL is installed and running.
+### PostgreSQL Setup
 
-### Database Initialization
+1. Start PostgreSQL service:
+   - **Ubuntu/Debian**: `sudo systemctl start postgresql`
+   - **macOS**: `brew services start postgresql`
 
-1. Create a new database:
+2. Create a database and user:
+   - Switch to PostgreSQL superuser:
    ```bash
-   createdb aghamazing_db
+   sudo -u postgres psql
    ```
-
-2. Create a new user with appropriate permissions:
-   ```bash
-   createuser -P admin
-   psql -c "GRANT ALL PRIVILEGES ON DATABASE aghamazing_db TO admin;"
+   
+   - In the PostgreSQL prompt, run:
+   ```sql
+   CREATE DATABASE aghamazing_db;
+   CREATE USER cms_user WITH PASSWORD 'secure_password123';
+   ALTER ROLE cms_user SET client_encoding TO 'utf8';
+   ALTER ROLE cms_user SET default_transaction_isolation TO 'read committed';
+   ALTER ROLE cms_user SET timezone TO 'UTC';
+   GRANT ALL PRIVILEGES ON DATABASE aghamazing_db TO cms_user;
+   ALTER USER cms_user CREATEDB;
+   \q
    ```
 
 ## Environment Configuration
 
-### Environment Variables
+### Backend Environment Variables
 
-Create a `.env` file in the repository root with the following content:
-
-```
+1. In the `backend` directory, create a `.env` file:
+```env
 # Database Configuration
 DB_NAME=aghamazing_db
-DB_USER=admin
-DB_PASSWORD=password123
+DB_USER=cms_user
+DB_PASSWORD=secure_password123
 DB_HOST=localhost
 DB_PORT=5432
 
 # Django Configuration
-DJANGO_SECRET_KEY=your-secret-key-here
+DJANGO_SECRET_KEY=your-super-secret-and-long-key-here-replace-this-default-value
 DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
-CSRF_TRUSTED_ORIGINS=http://localhost:8080,http://localhost:8081
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+CSRF_TRUSTED_ORIGINS=http://localhost:8001
 
 # JWT Configuration
-JWT_SECRET_KEY=your-jwt-secret
+JWT_SECRET_KEY=your-jwt-secret-key-here-replace-this-default-value
 ```
 
-## Project Structure
+### Frontend Environment Variables
 
+1. In the `frontend` directory, create a `.env` file:
+```env
+# Backend API URL
+REACT_APP_BACKEND_API_URL=http://localhost:8001
+
+# WebSocket URL (if applicable)
+REACT_APP_WS_URL=ws://localhost:8001/ws
+
+# Other environment variables
+GENERATE_SOURCEMAP=false
 ```
-MCSPROJ_AGHAMazingQuestCMS/
-├── backend/
-│   ├── apps/
-│   │   ├── authentication/
-│   │   ├── contentmanagement/
-│   │   ├── usermanagement/
-│   │   └── analyticsmanagement/
-│   ├── config/
-│   ├── middleware/
-│   ├── requirements.txt
-│   └── manage.py
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── api/
-│   │   ├── styles.css
-│   │   └── App.jsx
-│   ├── package.json
-│   └── Dockerfile
-├── devops/
-│   ├── docker-compose-fullstack.yml
-│   └── nginx-config/
-│       └── agha-proxy.conf
-└── docs/
-    └── setup-guide.md
+
+## Running the Applications
+
+### Backend Server
+
+1. Ensure you're in the `backend` directory with the virtual environment activated:
+```bash
+cd backend
+source venv/bin/activate  # Only if you haven't already activated it
+```
+
+2. Run database migrations:
+```bash
+python manage.py migrate
+```
+
+3. Create a superuser account (optional but recommended):
+```bash
+python manage.py createsuperuser
+```
+
+4. Start the backend server on port 8001:
+```bash
+python manage.py runserver 8001
+```
+
+The backend API will be available at `http://localhost:8001/api/`
+
+### Frontend Server
+
+1. In a new terminal tab/window, navigate to the `frontend` directory:
+```bash
+cd frontend
+```
+
+2. Start the development server:
+```bash
+npm start
+```
+
+The frontend application will be available at `http://localhost:3000`
+
+### Complete Development Workflow
+
+For efficient development, we recommend using separate terminal windows/tabs:
+
+**Terminal 1 (Backend)**:
+```bash
+cd /path/to/MCSPROJ_AGHAMazingQuestCMS/backend
+source venv/bin/activate
+python manage.py runserver 8001
+```
+
+**Terminal 2 (Frontend)**:
+```bash
+cd /path/to/MCSPROJ_AGHAMazingQuestCMS/frontend
+npm start
 ```
 
 ## API Documentation Access
 
-### Accessing Swagger API Documentation in Development
+### Accessing Swagger API Documentation
 
-With the Django development server running, you can access the API documentation via Swagger UI:
+Once your backend server is running:
 
-1. Start the Django development server:
-   ```bash
-   cd backend
-   source venv/bin/activate  # Activate virtual environment
-   python manage.py runserver
-   ```
+1. Open your browser
+2. Navigate to `http://localhost:8001/api/swagger/`
+3. Explore the available API endpoints interactively
 
-2. Navigate to the API documentation:
-   - Open your browser
-   - Go to `http://localhost:8000/api/swagger/` (or the port shown in your terminal output)
-   
-3. The Swagger UI will display all available API endpoints with interactive documentation.
+### Key API Endpoints
 
-### API Endpoints Available
+When running on port 8001, these endpoints will be available:
 
-After starting the development server, the following endpoints will be available:
-
-- API Root: `http://localhost:8000/api/`
-- API Documentation (Swagger): `http://localhost:8000/api/swagger/`
-- Authentication: `http://localhost:8000/api/auth/`
-- Content Management: `http://localhost:8000/api/content/`
-- User Management: `http://localhost:8000/api/users/`
-- Analytics: `http://localhost:8000/api/analytics/`
-- Mobile Management: `http://localhost:8000/api/mobile/`
-
-*Note: The actual port may vary (e.g., 8000, 8001, etc.) depending on availability. Check the terminal output when starting the server.*
+- API Root: `http://localhost:8001/api/`
+- API Documentation (Swagger): `http://localhost:8001/api/swagger/`
+- Authentication: `http://localhost:8001/api/auth/`
+- Content Management: `http://localhost:8001/api/content/`
+- User Management: `http://localhost:8001/api/users/`
+- Analytics: `http://localhost:8001/api/analytics/`
+- Mobile Management: `http://localhost:8001/api/mobile/`
 
 ## Troubleshooting
 
@@ -383,15 +267,24 @@ After starting the development server, the following endpoints will be available
 
 **Problem**: Database migration errors
 **Solution**: 
-- Ensure PostgreSQL is running
-- Verify database credentials in `.env`
-- Check that the database user has proper permissions (`CREATEDB`, `GRANT ALL PRIVILEGES`)
+- Ensure PostgreSQL is running: `sudo systemctl status postgresql`
+- Verify database credentials in your backend `.env` file
+- Confirm database user has proper permissions
 
 **Problem**: ImportError or module not found
-**Solution**: Make sure your virtual environment is activated and all dependencies are installed
+**Solution**: Ensure your virtual environment is activated and all dependencies are installed:
+```bash
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
 **Problem**: Port already in use
-**Solution**: Change the port number in the runserver command (`python manage.py runserver 8002`)
+**Solution**: Change the port number in the runserver command:
+```bash
+python manage.py runserver 8002
+```
+Remember to update your frontend `.env` file accordingly.
 
 ### Frontend Issues
 
@@ -399,21 +292,40 @@ After starting the development server, the following endpoints will be available
 **Solution**: 
 - Verify `REACT_APP_BACKEND_API_URL` in frontend `.env` matches the backend address
 - Check that the backend server is running
+- Look for CORS errors in browser console
 
 **Problem**: Module resolution errors
-**Solution**: Delete `node_modules` and `package-lock.json`, then run `npm install` again
+**Solution**: Delete `node_modules` and `package-lock.json`, then reinstall:
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
 
-**Problem**: ESLint/linting errors
-**Solution**: Run `npm run lint` to identify issues, or `npm run lint -- --fix` to auto-fix some issues
+**Problem**: Application fails to start
+**Solution**: Check that environment variables are set correctly and restart the development server
 
 ### General Issues
 
 **Problem**: Permission errors
-**Solution**: Ensure you're using a virtual environment and not installing packages globally
+**Solution**: Ensure you're using a virtual environment for Python and have proper permissions for Node.js
 
 **Problem**: Environment variables not taking effect
 **Solution**: 
 - Restart your terminal after changing environment files
-- For React, you may need to restart the development server after changing `.env`
+- For React, restart the development server after changing `.env`
 
-This completes the comprehensive setup guide for AGHAMazingQuestCMS. The system is now ready for development, testing, and production deployment.
+**Problem**: Unable to access the application
+**Solution**: 
+- Verify both servers are running
+- Check that ports 3000 (frontend) and 8001 (backend) are available
+- Ensure CORS settings allow communication between frontend and backend
+
+## Important Notes
+
+- Keep both the backend and frontend servers running during development
+- Changes to backend code require restarting the Django server
+- Changes to frontend code automatically reload in the browser
+- Always use the virtual environment when working with the backend
+- Store sensitive information in environment variables, never in code
+
+This completes the unified setup guide for AGHAMazingQuestCMS. Your development environment is now ready for full-stack development!
