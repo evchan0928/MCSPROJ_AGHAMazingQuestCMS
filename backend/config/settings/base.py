@@ -38,20 +38,13 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"  # Default to True for staging
 
 # Hosts allowed to serve the app. Read from env, splitting on commas and
-# stripping whitespace. If the env var is missing or doesn't include the
-# machine's hostname (common in some container setups), append a sensible
-# fallback (hostname + '.ts.net') so requests to the provided domain are
-# accepted when no explicit env var is provided.
+# stripping whitespace. Default to common development values.
 _raw_allowed = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1,hosting-pc.tail013787.ts.net,0.0.0.0,[::],192.168.0.0/16,10.0.0.0/8,172.16.0.0/12",
+    "localhost,127.0.0.1,0.0.0.0",
 )
 ALLOWED_HOSTS = [h.strip() for h in _raw_allowed.split(",") if h.strip()]
 try:
-    _fallback = socket.gethostname() + ".ts.net"
-    if _fallback and _fallback not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(_fallback)
-        
     # Add local IP to allow access from local network
     local_ip = socket.gethostbyname(socket.gethostname())
     if local_ip and local_ip not in ALLOWED_HOSTS:
@@ -62,18 +55,15 @@ except Exception:
 
 
 # Database
-# Support switching between sqlite and PostgreSQL via environment variables.
-# DB_ENGINE: 'sqlite' | 'postgres'/'postgresql' (default when DEBUG is False)
-# For local development (DEBUG=True) default to sqlite to avoid requiring a DB server.
-# Removed conditional logic - always use PostgreSQL
+# Use PostgreSQL for local development with more secure default credentials
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
-        'USER': os.environ.get('DB_USER', 'admin'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
+        'USER': os.environ.get('DB_USER', 'cms_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'secure_password123'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),  # Changed to 5432 for local PostgreSQL
+        'PORT': os.environ.get('DB_PORT', '5432'),
         'OPTIONS': {
             # PostgreSQL specific options
             'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
@@ -234,17 +224,10 @@ CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'T
 
 # CSRF Trusted Origins for development
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',  # React development server
-    'http://127.0.0.1:3000',  # IPv4 localhost
-    'http://localhost:8000',  # Django development server
-    'http://127.0.0.1:8000',  # IPv4 localhost
-    'http://localhost:8081',  # Nginx proxy server
-    'https://localhost:8081', # Nginx proxy server (HTTPS)
-    'http://0.0.0.0:8081',    # Additional host for container access
-    'http://127.0.0.1:8081',  # Additional host for local access
-    # Adding the frontend port where it's actually running
-    'http://localhost:3001',  # Frontend development server
-    'http://127.0.0.1:3001',  # IPv4 localhost for frontend
+    'http://localhost:3000',    # React development server
+    'http://127.0.0.1:3000',    # IPv4 localhost
+    'http://localhost:8001',    # Django development server
+    'http://127.0.0.1:8001',    # IPv4 localhost
 ]
 
 # Add additional trusted origins from environment variable if set
@@ -252,10 +235,6 @@ CSRF_TRUSTED_ORIGINS = [
 if os.environ.get('CSRF_TRUSTED_ORIGINS'):
     additional_origins = [origin.strip() for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()]
     CSRF_TRUSTED_ORIGINS.extend(additional_origins)
-    
-# Note: Browsers cache CORS preflight responses (OPTIONS) for 5-15 minutes by default.
-# Use Vary: Origin header in responses to ensure proper caching behavior.
-# Consider adding Cache-Control header with max-age directive if needed.
 
 # Security settings for CORS
 CORS_ALLOW_METHODS = [
@@ -345,48 +324,13 @@ SIMPLE_JWT = {
 
 
 # ---------- Security / production defaults
-# When STAGING_ENVIRONMENT is True, use relaxed security settings appropriate for staging
-STAGING_ENVIRONMENT = os.environ.get('STAGING_ENVIRONMENT', 'False') == 'True'
+# For local development, we'll keep security settings reasonable but not overly strict
+SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.environ.get('DJANGO_SESSION_COOKIE_SECURE', 'False') == 'True'
+CSRF_COOKIE_SECURE = os.environ.get('DJANGO_CSRF_COOKIE_SECURE', 'False') == 'True'
 
-if STAGING_ENVIRONMENT:
-    # Relaxed security for staging environment
-    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'False') == 'True'
-    SECURE_HSTS_SECONDS = 0  # Don't enforce HSTS in staging
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-    SECURE_HSTS_PRELOAD = False
-    
-    # Allow insecure cookies in staging (not recommended for production)
-    SESSION_COOKIE_SECURE = os.environ.get('DJANGO_SESSION_COOKIE_SECURE', 'False') == 'True'
-    CSRF_COOKIE_SECURE = os.environ.get('DJANGO_CSRF_COOKIE_SECURE', 'False') == 'True'
-elif not DEBUG:
-    # Production security settings
-    # Force SSL redirect in production unless explicitly disabled
-    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'True') == 'True'
-
-    # HSTS: one year by default. When testing set to a small value first.
-    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_SECURE_HSTS_SECONDS', '31536000'))
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', 'True') == 'True'
-    SECURE_HSTS_PRELOAD = os.environ.get('DJANGO_SECURE_HSTS_PRELOAD', 'False') == 'True'
-
-    # Cookies: mark secure so browsers only send them over HTTPS
-    SESSION_COOKIE_SECURE = os.environ.get('DJANGO_SESSION_COOKIE_SECURE', 'True') == 'True'
-    CSRF_COOKIE_SECURE = os.environ.get('DJANGO_CSRF_COOKIE_SECURE', 'True') == 'True'
-
-    # SECRET_KEY should be set externally in production and be long/random.
-    if not SECRET_KEY or SECRET_KEY.startswith('django-insecure-'):
-        # Do not silently accept insecure keys in production — raise to fail fast
+# SECRET_KEY should be set externally in production and be long/random.
+if not SECRET_KEY or SECRET_KEY.startswith('django-insecure-'):
+    # Do not silently accept insecure keys in production — raise to fail fast
+    if not DEBUG:
         raise RuntimeError('Insecure SECRET_KEY in production. Set DJANGO_SECRET_KEY environment variable to a secure value.')
-
-    # If running behind a proxy/load-balancer that terminates SSL, set this header
-    # Example: SECURE_PROXY_SSL_HEADER='HTTP_X_FORWARDED_PROTO,https'
-    _proxy = os.environ.get('DJANGO_SECURE_PROXY_SSL_HEADER')
-    if _proxy:
-        try:
-            header_name, header_value = _proxy.split(',', 1)
-            SECURE_PROXY_SSL_HEADER = (header_name.strip(), header_value.strip())
-        except Exception:
-            # ignore malformed setting and proceed without proxy header
-            pass
-
-    # Ensure DEBUG is False in production
-    DEBUG = False

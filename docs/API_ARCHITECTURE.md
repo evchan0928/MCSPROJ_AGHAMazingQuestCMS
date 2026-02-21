@@ -16,7 +16,5 @@ Real-time Updates: All actions (editing, deleting, approving, publishing content
 
 The application is already fully connected to the backend database and does not contain static data representations. All content is properly stored in the main PostgreSQL database through the Django backend APIs. The frontend communicates with the backend using JWT authentication tokens and follows a proper CRUD (Create, Read, Update, Delete) pattern with the backend database.
 
-note: I see that the containers are running. The issue is that the frontend container is running in development mode, and when files are changed externally (like we did with the editor), the container needs to be restarted to pick up the changes. Let me restart the frontend container to ensure the changes are reflected:
-
 
 

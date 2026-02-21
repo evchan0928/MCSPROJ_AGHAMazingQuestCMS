@@ -1,11 +1,9 @@
 # User Management Access Guide
 
-## Important Note About Port Numbers
+## Access Information for Local Development
 
-**The application does not run on port 3002.** The standard React development server runs on port 3000, not 3002. Here's the correct access information:
-
-- **Frontend Application**: `http://localhost:3000` (or `http://172.19.91.23:3000` for network access)
-- **Backend API**: `http://172.19.91.23:8080`
+- **Frontend Application**: `http://localhost:3000`
+- **Backend API**: `http://localhost:8001`
 - **User Management Page**: `http://localhost:3000/dashboard/users`
 
 ## How User Creation Works
@@ -33,8 +31,8 @@ The user creation functionality connects to the PostgreSQL database as follows:
 ## Correct Access Information
 
 ### To access the user management page:
-1. Start the backend: `python manage.py runserver 0.0.0.0:8080`
-2. Start the frontend: `cd frontend && HOST=0.0.0.0 npm start`
+1. Start the backend: `cd backend && source venv/bin/activate && python manage.py runserver 8001`
+2. Start the frontend: `cd frontend && npm start`
 3. Access the frontend: `http://localhost:3000`
 4. Navigate to user management: Click "Users" in the sidebar or go to `/dashboard/users`
 
@@ -54,11 +52,10 @@ The user creation functionality connects to the PostgreSQL database as follows:
    - User can be found in the database
 
 ### To verify database persistence:
-You can verify that users are saved to the database by:
-1. Accessing pgAdmin4 at `http://172.19.91.23/pgadmin4`
-2. Connecting to the `aghamazing_db` database
-3. Navigating to the `auth_user` table
-4. Verifying the new user exists in the table
+You can verify that users are saved to the database by connecting directly to PostgreSQL:
+1. Access PostgreSQL: `psql -h localhost -p 5432 -U cms_user -d aghamazing_db`
+2. Query the users: `SELECT * FROM auth_user;`
+3. Verify the new user exists in the table
 
 ## Troubleshooting
 
@@ -85,6 +82,6 @@ These files ensure that user creation requests are properly handled and saved to
 
 For developers working with the API, the Swagger documentation is available at:
 
-- API Documentation: `http://localhost:8000/api/swagger/`
+- API Documentation: `http://localhost:8001/api/swagger/`
 
 This provides detailed information about all available endpoints, including user management APIs.

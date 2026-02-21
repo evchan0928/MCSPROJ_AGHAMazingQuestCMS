@@ -6,57 +6,47 @@ This document explains how to ensure the frontend is fully functional and connec
 ## Current Configuration
 
 ### Backend Settings
-- Backend URL: `http://172.19.91.23:8080/api`
-- Allowed hosts include: `172.19.91.23`
-- CORS origins include: `http://172.19.91.23:3000` and `http://172.19.91.23:8080`
+- Backend URL: `http://localhost:8001/api`
+- Allowed hosts include: `localhost`, `127.0.0.1`, `0.0.0.0`
+- CORS origins include: `http://localhost:3000` and `http://127.0.0.1:3000`
 
 ### Frontend Settings
-- Environment variable: `REACT_APP_BACKEND_API_URL=http://172.19.91.23:8080/api`
-- Runs on: `http://localhost:3000` or `http://172.19.91.23:3000` (with proper configuration)
+- Environment variable: `REACT_APP_BACKEND_API_URL=http://localhost:8001`
+- Runs on: `http://localhost:3000`
 
 ## Running the Full Stack Application
 
-### Option 1: Docker Deployment (Recommended)
-```bash
-cd /home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/devops
-docker-compose -f docker-compose-fullstack.yml up -d
-```
+### Manual startup (venv approach)
 
-### Option 2: Manual startup
 1. **Start the backend:**
    ```bash
-   cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
+   cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/backend
    source venv/bin/activate
-   python manage.py runserver 0.0.0.0:8080
+   python manage.py runserver 8001
    ```
 
-2. **In a new terminal, start the frontend with network access:**
+2. **In a new terminal, start the frontend:**
    ```bash
-   cd /home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/frontend
-   HOST=0.0.0.0 npm start
+   cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/frontend
+   npm start
    ```
-
-### Option 3: Docker Deployment (Recommended)
-```bash
-cd /home/apcadmin/MCSPROJ_AGHAMazingQuestCMS/devops
-docker-compose -f docker-compose-fullstack.yml up -d
-```
 
 ## Verifying the Connection
 
 ### 1. Test Backend Endpoints
 ```bash
 # Test authentication endpoint
-curl -X OPTIONS http://100.93.255.84:8000/api/auth/login/
+curl -X OPTIONS http://localhost:8001/api/auth/login/
 
 # Test content endpoint
-curl -X OPTIONS http://172.19.91.23:8080/api/content/items/
+curl -X OPTIONS http://localhost:8001/api/content/items/
 ```
 
 ### 2. Check Database Connectivity
 ```bash
 # Verify database connectivity
-cd /home/apcadmin/Documents/GitHub/MCSPROJ_AGHAMazingQuestCMS
+cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/backend
+source venv/bin/activate
 python manage.py check_integrity
 ```
 
@@ -67,13 +57,10 @@ After starting the frontend, open browser developer tools and check:
 
 ## Common Issue: Blank White Page
 
-If you're accessing `http://172.19.91.23:3000` and seeing a blank white page, this is likely because:
+If you're accessing `http://localhost:3000` and seeing a blank white page, this is likely because:
 
 1. **The React development server is not running**: Make sure you've started the frontend with `npm start`
-2. **The React server is only binding to localhost**: By default, React development server only listens on 127.0.0.1 (localhost), which prevents access from other machines on the network
-3. **Solution**: Start the React server with `HOST=0.0.0.0 npm start` to allow external connections
-
-For Docker deployment, the frontend is automatically configured for network access.
+2. **Missing environment variables**: Ensure the frontend environment variables are set correctly
 
 ## Troubleshooting Common Issues
 
@@ -84,9 +71,8 @@ If you see CORS errors in the browser console:
 
 ### Issue 2: Cannot Connect to Backend
 If the frontend reports "Network Error":
-1. Check if the backend is running on the correct IP and port (8000 for Docker)
-2. Verify firewall settings allow connections on port 8000
-3. Confirm the REACT_APP_BACKEND_API_URL matches the backend address
+1. Check if the backend is running on the correct IP and port (8001)
+2. Verify the REACT_APP_BACKEND_API_URL matches the backend address
 
 ### Issue 3: Blank Page on Frontend Access
 If you see a blank white page when accessing the frontend:
@@ -100,9 +86,11 @@ If you see a blank white page when accessing the frontend:
 Run the following to verify API connectivity:
 ```bash
 # Backend connectivity
-curl http://172.19.91.23:8080/api/auth/csrf/
+curl http://localhost:8001/api/auth/csrf/
 
 # Database connectivity
+cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/backend
+source venv/bin/activate
 echo "SELECT COUNT(*) FROM django_migrations;" | python manage.py dbshell
 ```
 
@@ -117,7 +105,6 @@ echo "SELECT COUNT(*) FROM django_migrations;" | python manage.py dbshell
 
 ### Backend Components
 - Django REST Framework APIs
-- Wagtail CMS integration
 - PostgreSQL database connection
 - JWT authentication
 - Role-based permissions
@@ -138,8 +125,8 @@ echo "SELECT COUNT(*) FROM django_migrations;" | python manage.py dbshell
 
 ## Verification Checklist
 
-- [ ] Backend running on `http://0.0.0.0:8080`
-- [ ] Frontend running on `http://0.0.0.0:3000` (accessible externally)
+- [ ] Backend running on `http://localhost:8001`
+- [ ] Frontend running on `http://localhost:3000`
 - [ ] Environment variables correctly set
 - [ ] CORS configuration allows frontend-backend communication
 - [ ] Database connectivity verified

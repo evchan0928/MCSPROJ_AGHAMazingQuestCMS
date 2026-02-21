@@ -1,4 +1,4 @@
-# AGHAMazingQuestCMS
+# AGHAMazingQuestCMS - Optimized for Local Development
 
 Welcome to the AGHAMazing Quest Content Management System (CMS). This system was developed for the Philippine Department of Science and Technology - Science Education Institute (DOST-SEI) to manage augmented reality (AR) guided tour content for the AGHAMazing Quest project.
 
@@ -8,14 +8,13 @@ The AGHAMazingQuestCMS is a full-stack web application featuring:
 - A React-based frontend for content management
 - A Django REST API backend for data handling
 - Role-based access control for content creators, approvers, and administrators
-- Integration with the companion mobile AR application
 
 ## Tech Stack
 
 - **Frontend**: React 18, Ant Design, Axios
-- **Backend**: Django 4+, Django REST Framework
+- **Backend**: Django 6+, Django REST Framework
 - **Database**: PostgreSQL
-- **Mobile App**: Flutter (separate integration)
+- **Local Development**: Python Virtual Environment (venv)
 
 ## Development Setup
 
@@ -29,13 +28,15 @@ For daily development quick start, see:
 
 ## Scripts
 
-We provide an automated setup script to simplify the initial environment configuration:
+We provide automated setup scripts to simplify the environment configuration:
 
 - [setup_full_stack.sh](setup_full_stack.sh): Automated setup script for the full-stack development environment
+- [start_development.sh](start_development.sh): Script to start the development servers
+- [start_cms_only.sh](start_cms_only.sh): Optimized script for CMS-only development in venv
 
 ## Architecture
 
-The system consists of three main components:
+The system consists of two main components:
 
 ### Backend (Django)
 Located in the `backend/` directory, this component provides:
@@ -51,16 +52,8 @@ Located in the `frontend/` directory, this component provides:
 - User role management
 - Content upload and editing
 - Analytics and reporting
-- Mobile management features
 
-### Mobile (Flutter)
-Located in the `aghamazingflutter-master/` directory, this component provides:
-- Mobile access to content
-- User profiles and authentication
-- Game mechanics and scoring
-- Offline content access
-
-## Getting Started
+## Getting Started with CMS-only Development
 
 1. Clone the repository:
    ```bash
@@ -76,13 +69,25 @@ Located in the `aghamazingflutter-master/` directory, this component provides:
    - Run migrations
    - Start the server
 
-3. Set up the frontend:
-   - Navigate to `frontend/` directory
-   - Install dependencies with `npm install`
-   - Configure environment variables
-   - Start the development server
+3. For optimized CMS-only development in venv:
+   ```bash
+   ./start_cms_only.sh
+   ```
 
-4. For detailed instructions, refer to the setup guides mentioned above.
+## Running the CMS
+
+### Terminal 1 - Backend Server
+```bash
+cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/backend
+source venv/bin/activate
+python manage.py runserver 8001
+```
+
+### Terminal 2 - Frontend Server
+```bash
+cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/frontend
+npm start
+```
 
 ## Project Structure
 
@@ -99,13 +104,20 @@ MCSPROJ_AGHAMazingQuestCMS/
 │   ├── src/
 │   ├── package.json
 │   └── ...
-├── aghamazingflutter-master/  # Flutter mobile application
 └── ...
 ```
 
 ## API Documentation
 
-API documentation is available via Swagger when the backend is running at `/api/swagger/`.
+API documentation is available via Swagger when the backend is running at `http://localhost:8001/api/swagger/`.
+
+## Optimized Development Features
+
+- Pure Python virtual environment (venv) approach
+- No Docker dependencies
+- Faster startup times
+- Simplified debugging
+- Direct access to system resources
 
 ## Contributing
 

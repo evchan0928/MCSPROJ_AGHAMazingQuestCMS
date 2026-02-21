@@ -1,10 +1,10 @@
 # API Documentation Access Guide
 
-This guide explains how to access the API documentation within the development environment.
+This guide explains how to access the API documentation within the local venv development environment.
 
 ## Overview
 
-The AGHAMazingQuestCMS project provides interactive API documentation using Swagger UI, which is accessible when the Django development server is running.
+The AGHAMazingQuestCMS project provides interactive API documentation using Swagger UI, which is accessible when the Django development server is running in the virtual environment.
 
 ## Accessing the API Documentation
 
@@ -23,22 +23,20 @@ The AGHAMazingQuestCMS project provides interactive API documentation using Swag
 
 2. **Start the Development Server**
    ```bash
-   python manage.py runserver
+   python manage.py runserver 8001
    ```
    
-   The server will typically start on `http://127.0.0.1:8000/` or `http://localhost:8000/`, though the port may vary if 8000 is busy.
+   The server will start on `http://127.0.0.1:8001/` or `http://localhost:8001/`.
 
 3. **Access the API Documentation**
    - Open your web browser
-   - Navigate to `http://localhost:[PORT]/api/swagger/` (replacing `[PORT]` with the actual port shown in the terminal)
+   - Navigate to `http://localhost:8001/api/swagger/`
    - You should see the interactive Swagger UI with all available API endpoints
 
 ### API Documentation URLs
 
-- **Swagger UI**: `http://localhost:[PORT]/api/swagger/`
-- **API Root**: `http://localhost:[PORT]/api/`
-
-Where `[PORT]` is the port number displayed when you start the development server (typically 8000, 8001, etc.).
+- **Swagger UI**: `http://localhost:8001/api/swagger/`
+- **API Root**: `http://localhost:8001/api/`
 
 ## Available API Sections
 
@@ -48,7 +46,6 @@ The API documentation includes the following sections:
 - **Content Management**: Endpoints for managing content items
 - **User Management**: User-related endpoints
 - **Analytics**: Data and statistics endpoints
-- **Mobile Management**: Mobile-specific endpoints for the Flutter app
 
 ## Troubleshooting
 
@@ -64,8 +61,8 @@ This issue occurred due to:
 
 ### Cannot Access the API Documentation
 
-- Verify that the Django development server is running
-- Check that you're using the correct port number
+- Verify that the Django development server is running on port 8001
+- Check that you're using the correct URL
 - Ensure your firewall is not blocking the connection
 
 ### Blank Page or Error
