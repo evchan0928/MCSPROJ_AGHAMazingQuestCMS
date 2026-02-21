@@ -167,17 +167,6 @@ export const getCurrentUser = async () => {
   }
 };
 
-/**
- * Get the current user profile
- */
-export const getCurrentUserProfile = async () => {
-  try {
-    const response = await apiClient.get('/auth/me/');
-    return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.detail || error.message);
-  }
-};
 
 /**
  * Get content items
@@ -384,8 +373,24 @@ export const createUser = async (userData) => {
  */
 export const updateUser = async (id, userData) => {
   try {
-    const response = await apiClient.patch(`/users/${id}/`, userData);
-    return response.data;
+    // Check if updating current user by checking if id is 'current' or 'me'
+    if (id === 'current' || id === 'me') {
+      // If updating current user, use the profile endpoint
+      const response = await apiClient.patch('/auth/me/', userData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      return response.data;
+    } else {
+      // Otherwise use the regular user endpoint
+      const response = await apiClient.patch(`/users/${id}/`, userData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      return response.data;
+    }
   } catch (error) {
     // Handle both standard API error responses and backend validation errors
     const errorData = error.response?.data;
@@ -525,12 +530,49 @@ export const downloadAnalyticsReport = async (params) => {
   }
 };
 
+/**
+ * Get user notifications
+ */
+export const getNotifications = async () => {
+  try {
+    const response = await apiClient.get('/notifications/');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Mark a specific notification as read
+ */
+export const markNotificationAsRead = async (notificationId) => {
+  try {
+    const response = await apiClient.patch(`/notifications/${notificationId}/mark-as-read/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
+ * Mark all notifications as read
+ */
+export const markAllNotificationsAsRead = async () => {
+  try {
+    const response = await apiClient.post('/notifications/mark-all-as-read/');
+    return response.data;
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
 // 🔑 NEW: Mobile Management API functions
 export async function getUserProfiles(params = {}) {
   const token = localStorage.getItem('access_token');
-  // Use the same BACKEND_API_URL but adjust for mobile endpoints
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/user-profiles/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -545,8 +587,7 @@ export async function getUserProfiles(params = {}) {
 
 export async function createUserProfile(userData) {
   const token = localStorage.getItem('access_token');
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/user-profiles/`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -562,8 +603,7 @@ export async function createUserProfile(userData) {
 
 export async function updateUserProfile(profileId, userData) {
   const token = localStorage.getItem('access_token');
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/user-profiles/${profileId}/`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/${profileId}/`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -579,8 +619,7 @@ export async function updateUserProfile(profileId, userData) {
 
 export async function deleteUserProfile(profileId) {
   const token = localStorage.getItem('access_token');
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/user-profiles/${profileId}/`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/${profileId}/`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -595,8 +634,7 @@ export async function deleteUserProfile(profileId) {
 
 export async function getUserSessions(params = {}) {
   const token = localStorage.getItem('access_token');
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/user-sessions/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/user-sessions/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -611,8 +649,7 @@ export async function getUserSessions(params = {}) {
 
 export async function getScores(params = {}) {
   const token = localStorage.getItem('access_token');
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/scores/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/scores/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -627,8 +664,7 @@ export async function getScores(params = {}) {
 
 export async function getBadges(params = {}) {
   const token = localStorage.getItem('access_token');
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/badges/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/badges/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -643,8 +679,7 @@ export async function getBadges(params = {}) {
 
 export async function getUserBadges(params = {}) {
   const token = localStorage.getItem('access_token');
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/user-badges/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/user-badges/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -659,8 +694,7 @@ export async function getUserBadges(params = {}) {
 
 export async function getLeaderboards(params = {}) {
   const token = localStorage.getItem('access_token');
-  const adjustedUrl = BACKEND_API_URL.replace('/api', '');
-  const response = await fetch(`${adjustedUrl}/api/mobile/leaderboards/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`${BACKEND_API_URL}/mobile/leaderboards/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

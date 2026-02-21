@@ -54,9 +54,12 @@ class ContentItemSerializer(serializers.ModelSerializer):
             url = obj.file.url
             if request:
                 return request.build_absolute_uri(url)
-            # Fallback: if url is already absolute, return it; else prefix origin
+            # Fallback: if url is already absolute, return it; else construct properly
             if url.startswith('http'):
                 return url
-            return f"{request.scheme if request else 'https'}://{request.get_host() if request else ''}{url}"
+            # Construct the full URL using the host from the request or default to localhost:8001
+            host = getattr(request, 'get_host', lambda: 'localhost:8001')()
+            scheme = getattr(request, 'scheme', 'http')
+            return f"{scheme}://{host}{url}"
         except Exception:
             return None

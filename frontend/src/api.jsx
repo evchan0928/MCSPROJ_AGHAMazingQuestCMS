@@ -1,5 +1,5 @@
 // Small API helper: centralize API base and attach Authorization header when present.
-const API_BASE = process.env.REACT_APP_BACKEND_API_URL || ((window.location.hostname === 'localhost' && window.location.port === '3000') ? 'http://localhost:8000' : '');
+const API_BASE = process.env.REACT_APP_BACKEND_API_URL || ((window.location.hostname === 'localhost' && window.location.port === '3000') ? 'http://localhost:8001' : '');
 
 function buildUrl(path) {
   if (!path) return API_BASE;
