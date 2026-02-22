@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import socket
 from datetime import timedelta
+import dj_database_url  # Import for parsing DATABASE_URL
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # `base.py` lives in `config/settings/`, so go up three levels to reach
@@ -44,32 +45,83 @@ _raw_allowed = os.environ.get(
     "localhost,127.0.0.1,0.0.0.0",
 )
 ALLOWED_HOSTS = [h.strip() for h in _raw_allowed.split(",") if h.strip()]
+
+# Add local IP to allow access from local network
 try:
-    # Add local IP to allow access from local network
-    local_ip = socket.gethostbyname(socket.gethostname())
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
     if local_ip and local_ip not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(local_ip)
 except Exception:
     # if socket fails for any reason, just continue with the parsed list
     pass
 
+# Add all local IPs to allowed hosts for development
+try:
+    # Get all local IP addresses
+    import subprocess
+    result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
+    if result.returncode == 0:
+        local_ips = result.stdout.strip().split()
+        for ip in local_ips:
+            if ip not in ALLOWED_HOSTS and not ip.startswith('127.'):
+                ALLOWED_HOSTS.append(ip)
+except Exception:
+    # If hostname -I command is not available, continue with existing hosts
+    pass
+
 
 # Database
-# Use PostgreSQL for local development with more secure default credentials
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
-        'USER': os.environ.get('DB_USER', 'admin'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-        'OPTIONS': {
-            # PostgreSQL specific options
-            'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
-        },
+# Use PostgreSQL - prioritizing Neon configuration if DATABASE_URL is available
+DATABASES = {}
+if os.environ.get('DATABASE_URL'):
+    # Parse DATABASE_URL from environment for Neon connection
+    DATABASES['default'] = dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+elif os.environ.get('NEON_DB_HOST'):
+    # Use Neon Cloud PostgreSQL configuration from individual variables
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('NEON_DB_NAME', 'aghamazing_db'),
+            'USER': os.environ.get('NEON_DB_USER', 'admin'),
+            'PASSWORD': os.environ.get('NEON_DB_PASSWORD', 'password123'),
+            'HOST': os.environ.get('NEON_DB_HOST', 'your-neon-project.aws-neon.tech'),
+            'PORT': os.environ.get('NEON_DB_PORT', '5432'),
+            'OPTIONS': {
+                'sslmode': 'require',  # Required for Neon
+                # TCP keepalive settings for stable connections
+                'keepalives': 1,
+                'keepalives_idle': 30,
+                'keepalives_interval': 10,
+                'keepalives_count': 5,
+            },
+        }
     }
-}
+else:
+    # Fallback to standard PostgreSQL configuration
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
+            'USER': os.environ.get('DB_USER', 'admin'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+            'OPTIONS': {
+                # Require SSL for production environments
+                'sslmode': os.environ.get('DB_SSLMODE', 'require'),
+                # TCP keepalive settings for stable connections
+                'keepalives': 1,
+                'keepalives_idle': 30,
+                'keepalives_interval': 10,
+                'keepalives_count': 5,
+            },
+        }
+    }
 
 
 # Application definition
@@ -328,6 +380,24 @@ SIMPLE_JWT = {
 SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'False') == 'True'
 SESSION_COOKIE_SECURE = os.environ.get('DJANGO_SESSION_COOKIE_SECURE', 'False') == 'True'
 CSRF_COOKIE_SECURE = os.environ.get('DJANGO_CSRF_COOKIE_SECURE', 'False') == 'True'
+
+# Additional security settings
+SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_SECURE_HSTS_SECONDS', '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False') == 'True'
+SECURE_HSTS_PRELOAD = os.environ.get('DJANGO_SECURE_HSTS_PRELOAD', 'False') == 'True'
+X_FRAME_OPTIONS = os.environ.get('DJANGO_X_FRAME_OPTIONS', 'DENY')
+
+# Content Security Policy
+CSP_DEFAULT_SRC = ["'self'"]
+CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'"]
+CSP_IMG_SRC = ["'self'", "data:"]
+CSP_FONT_SRC = ["'self'"]
+CSP_CONNECT_SRC = ["'self'"]
+CSP_OBJECT_SRC = ["'none'"]
+CSP_BASE_URI = ["'self'"]
+CSP_FORM_ACTION = ["'self'"]
+CSP_FRAME_ANCESTORS = ["'none'"]
 
 # SECRET_KEY should be set externally in production and be long/random.
 if not SECRET_KEY or SECRET_KEY.startswith('django-insecure-'):
