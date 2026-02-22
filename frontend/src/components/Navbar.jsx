@@ -89,9 +89,9 @@ const Navbar = ({ collapsed, onToggle }) => {
     }
   ];
 
-  // Notification dropdown overlay
+  // Notification dropdown overlay - wrapped in a div to ensure single element
   const notificationOverlay = (
-    <div style={{ width: 320, padding: 0 }}>
+    <div key="notification-overlay">
       <NotificationPanel />
     </div>
   );

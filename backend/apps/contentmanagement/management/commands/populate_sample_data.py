@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from apps.contentmanagement.models import ContentItem
-from apps.usermanagement.models import CustomUserRole
 import random
 import os
 
@@ -122,7 +121,7 @@ class Command(BaseCommand):
                 content_item.approve(user=default_user)
                 content_item.publish(user=default_user)
         
-        # Create additional users with different roles
+        # Create additional users with different roles and assign Group
         roles = ['Encoder', 'Editor', 'Approver', 'Admin', 'Super Admin']
         for role_name in roles:
             user, created = User.objects.get_or_create(
@@ -139,11 +138,9 @@ class Command(BaseCommand):
                 user.set_password('demopass123')
                 user.save()
                 
-                # Create custom role mapping
-                custom_role, _ = CustomUserRole.objects.get_or_create(
-                    user=user,
-                    role_name=role_name
-                )
+                # Create group mapping
+                group, _ = Group.objects.get_or_create(name=role_name)
+                user.groups.add(group)
                 
                 self.stdout.write(self.style.SUCCESS(f'Created {role_name} user: {user.username}'))
         

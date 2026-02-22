@@ -8,7 +8,6 @@ from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from datetime import timedelta
 from apps.contentmanagement.models import ContentItem
-from .models import CustomUserRole  # Import the custom user role model
 from django.db.models import Count, Q
 import json
 
@@ -120,12 +119,9 @@ def user_list_view(request):
                 'last_login': user.last_login.isoformat() if user.last_login else None,
             }
             
-            # Add role information if available
-            try:
-                custom_roles = CustomUserRole.objects.filter(user=user)
-                user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in custom_roles]
-            except CustomUserRole.DoesNotExist:
-                user_info['roles'] = []
+            # Add role information from Django Groups
+            groups = user.groups.all()
+            user_info['roles'] = [{'id': group.id, 'name': group.name} for group in groups]
                 
             user_data.append(user_info)
         
@@ -208,9 +204,9 @@ def user_list_view(request):
                 'last_login': user.last_login.isoformat() if user.last_login else None,
             }
             
-            # Add role information
-            user_roles = CustomUserRole.objects.filter(user=user)
-            user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in user_roles]
+            # Add role information from Django Groups
+            user_roles = user.groups.all()
+            user_info['roles'] = [{'id': role.id, 'name': role.name} for role in user_roles]
             
             return Response(user_info, status=status.HTTP_201_CREATED)
         
@@ -248,8 +244,8 @@ def user_detail_view(request, user_id):
         }
         
         # Add role information
-        user_roles = CustomUserRole.objects.filter(user=user)
-        user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in user_roles]
+        user_roles = user.groups.all()
+        user_info['roles'] = [{'id': role.id, 'name': role.name} for role in user_roles]
         
         return JsonResponse(user_info)
     
@@ -300,35 +296,22 @@ def user_detail_view(request, user_id):
             if 'roles' in data:
                 roles = data['roles']
                 # Clear existing roles
-                CustomUserRole.objects.filter(user=user).delete()
+                user.groups.clear()
                 
                 # Add new roles
+                group_names = []
                 for role_name in roles:
                     if isinstance(role_name, str):
-                        CustomUserRole.objects.get_or_create(user=user, role_name=role_name)
+                        group_names.append(role_name)
                     elif isinstance(role_name, dict):
-                        CustomUserRole.objects.get_or_create(
-                            user=user,
-                            role_name=role_name.get('name', role_name.get('role_name', ''))
-                        )
-
-                # Synchronize Django Groups for permission checks
-                try:
-                    group_names = []
-                    for r in roles:
-                        if isinstance(r, str):
-                            group_names.append(r)
-                        elif isinstance(r, dict):
-                            group_names.append(r.get('name', r.get('role_name', '')))
-
-                    groups = []
-                    for name in set([n for n in group_names if n]):
-                        g, _ = Group.objects.get_or_create(name=name)
-                        groups.append(g)
-                    # Set user's groups to match roles
-                    user.groups.set(groups)
-                except Exception:
-                    pass
+                        group_names.append(role_name.get('name', role_name.get('role_name', '')))
+                
+                # Set user's groups to match roles
+                groups = []
+                for name in set([n for n in group_names if n]):
+                    g, _ = Group.objects.get_or_create(name=name)
+                    groups.append(g)
+                user.groups.add(*groups)
             
             user.save()
             
@@ -347,8 +330,8 @@ def user_detail_view(request, user_id):
             }
             
             # Add role information
-            user_roles = CustomUserRole.objects.filter(user=user)
-            user_info['roles'] = [{'id': role.id, 'name': role.role_name} for role in user_roles]
+            user_roles = user.groups.all()
+            user_info['roles'] = [{'id': role.id, 'name': role.name} for role in user_roles]
             
             return JsonResponse(user_info)
         
@@ -375,8 +358,6 @@ def user_roles_view(request):
     if request.method != 'GET':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
-    # Get all unique role names from the CustomUserRole model
-    roles = CustomUserRole.objects.values('role_name').distinct()
     # Get all Django Groups (roles)
     groups = Group.objects.all()
     

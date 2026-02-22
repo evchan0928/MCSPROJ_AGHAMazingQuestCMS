@@ -70,6 +70,7 @@ function App() {
           <Route path="content/edit/:id" element={<EditContentPage />} />
 
           <Route path="content/approve" element={<ApproveContentPage />} />
+          <Route path="content/approval" element={<ApproveContentPage />} /> {/* Matches sidebar link */}
           <Route path="content/publish" element={<PublishContentPage />} />
           <Route path="content/published" element={<PublishedContentPage />} />
           <Route path="content/delete" element={<DeleteContentPage />} />
