@@ -1,128 +1,152 @@
-# AGHAMazingQuestCMS - Optimized for Local Development
+# AGHAMazingQuestCMS
 
-Welcome to the AGHAMazing Quest Content Management System (CMS). This system was developed for the Philippine Department of Science and Technology - Science Education Institute (DOST-SEI) to manage augmented reality (AR) guided tour content for the AGHAMazing Quest project.
-
-## Overview
-
-The AGHAMazingQuestCMS is a full-stack web application featuring:
-- A React-based frontend for content management
-- A Django REST API backend for data handling
-- Role-based access control for content creators, approvers, and administrators
-
-## Tech Stack
-
-- **Frontend**: React 18, Ant Design, Axios
-- **Backend**: Django 6+, Django REST Framework
-- **Database**: PostgreSQL
-- **Local Development**: Python Virtual Environment (venv)
-
-## Development Setup
-
-For a complete development environment setup, please refer to our comprehensive guide:
-
-[Full Stack Development Setup Guide](FULL_STACK_DEVELOPMENT_SETUP.md)
-
-For daily development quick start, see:
-
-[Quick Start Guide](QUICK_START_GUIDE.md)
-
-## Scripts
-
-We provide automated setup scripts to simplify the environment configuration:
-
-- [setup_full_stack.sh](setup_full_stack.sh): Automated setup script for the full-stack development environment
-- [start_development.sh](start_development.sh): Script to start the development servers
-- [start_cms_only.sh](start_cms_only.sh): Optimized script for CMS-only development in venv
-
-## Architecture
-
-The system consists of two main components:
-
-### Backend (Django)
-Located in the `backend/` directory, this component provides:
-- RESTful API endpoints
-- User authentication and authorization
-- Content management workflows
-- Role-based access control
-- Database models and migrations
-
-### Frontend (React)
-Located in the `frontend/` directory, this component provides:
-- Dashboard interface for content management
-- User role management
-- Content upload and editing
-- Analytics and reporting
-
-## Getting Started with CMS-only Development
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd MCSPROJ_AGHAMazingQuestCMS
-   ```
-
-2. Set up the backend:
-   - Navigate to `backend/` directory
-   - Create a Python virtual environment
-   - Install dependencies from `requirements.txt`
-   - Set up the database
-   - Run migrations
-   - Start the server
-
-3. For optimized CMS-only development in venv:
-   ```bash
-   ./start_cms_only.sh
-   ```
-
-## Running the CMS
-
-### Terminal 1 - Backend Server
-```bash
-cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/backend
-source venv/bin/activate
-python manage.py runserver 8001
-```
-
-### Terminal 2 - Frontend Server
-```bash
-cd /home/apcadmin/Documents/MCSPROJ_AGHAMazingQuestCMS/frontend
-npm start
-```
+AGHAMazingQuestCMS is a content management system for the AGHAMazing Quest AR-guided tour application, developed for the Department of Science and Technology - Science Education Institute (DOST-SEI) in the Philippines.
 
 ## Project Structure
 
 ```
-MCSPROJ_AGHAMazingQuestCMS/
-├── backend/                 # Django REST API backend
-│   ├── apps/               # Custom Django apps
+AGHAMazingQuestCMS/
+├── backend/                  # Django REST API backend
+│   ├── apps/                 # Django applications
 │   │   ├── authentication/
 │   │   ├── contentmanagement/
 │   │   ├── usermanagement/
 │   │   └── analyticsmanagement/
-│   └── ...
-├── frontend/               # React frontend application
-│   ├── src/
-│   ├── package.json
-│   └── ...
-└── ...
+│   ├── config/               # Django configuration
+│   └── manage.py
+├── frontend/                 # React frontend application
+├── docs/                     # Documentation
+├── aghamazingflutter-master/ # Flutter mobile application
+├── setup_full_stack.sh       # Full stack setup script
+├── stop_services.sh          # Service stop script
+├── .env                     # Environment variables
+└── requirements.txt         # Python dependencies
+```
+
+## Prerequisites
+
+- Python 3.9+
+- Node.js 16+
+- npm
+- Git
+- PostgreSQL (or access to Neon Serverless PostgreSQL)
+
+## Setup Instructions
+
+### Quick Setup (Recommended)
+
+1. Make the setup script executable:
+   ```bash
+   chmod +x setup_full_stack.sh
+   ```
+
+2. Run the full stack setup:
+   ```bash
+   ./setup_full_stack.sh
+   ```
+
+This will:
+- Check all prerequisites
+- Set up the backend with virtual environment
+- Install all dependencies
+- Run database migrations
+- Start the backend server on port 8000
+- Set up and start the frontend server on port 3000 (if available)
+
+### Manual Setup
+
+#### Backend Setup
+
+1. Create a virtual environment:
+   ```bash
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r ../requirements.txt
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp ../.env.example .env
+   # Edit .env with your specific configuration
+   ```
+
+4. Run migrations:
+   ```bash
+   python manage.py migrate
+   ```
+
+5. Start the development server:
+   ```bash
+   python manage.py runserver
+   ```
+
+#### Frontend Setup
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm start
+   ```
+
+## Services
+
+- **Backend API**: `http://localhost:8000`
+- **API Documentation**: `http://localhost:8000/api/`
+- **Admin Panel**: `http://localhost:8000/admin/`
+- **Frontend**: `http://localhost:3000`
+
+## Stopping Services
+
+To stop all running services:
+
+```bash
+./stop_services.sh
+```
+
+## Configuration
+
+The application uses environment variables for configuration. Copy `.env.example` to `.env` and customize as needed.
+
+For Neon Serverless PostgreSQL, ensure your `.env` contains the correct `DATABASE_URL`:
+```
+DATABASE_URL='postgresql://username:password@ep-xxxxxxx.region.aws.neon.tech/dbname?sslmode=require'
 ```
 
 ## API Documentation
 
-API documentation is available via Swagger when the backend is running at `http://localhost:8001/api/swagger/`.
+The API is documented using Swagger and is available at `http://localhost:8000/api/` when the backend is running.
 
-## Optimized Development Features
+## Development
 
-- Pure Python virtual environment (venv) approach
-- No Docker dependencies
-- Faster startup times
-- Simplified debugging
-- Direct access to system resources
+For development, we follow these principles:
+
+1. **Modular Architecture**: Each major feature is contained in its own Django app
+2. **Security First**: All API endpoints are protected by authentication
+3. **Clean Code**: Follow PEP 8 for Python and ESLint standards for JavaScript
+4. **Documentation**: APIs are documented using Swagger
+
+## Deployment
+
+For production deployment, please refer to the documentation in the `docs/` directory.
 
 ## Contributing
 
-Please read the [Full Stack Development Setup Guide](FULL_STACK_DEVELOPMENT_SETUP.md) before contributing to ensure your development environment is properly configured.
-
-## License
-
-This project is developed for DOST-SEI. For licensing information, please contact the project maintainers.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request

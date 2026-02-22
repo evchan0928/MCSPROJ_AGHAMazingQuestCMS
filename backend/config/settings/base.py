@@ -56,72 +56,35 @@ except Exception:
     # if socket fails for any reason, just continue with the parsed list
     pass
 
-# Add all local IPs to allowed hosts for development
-try:
-    # Get all local IP addresses
-    import subprocess
-    result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
-    if result.returncode == 0:
-        local_ips = result.stdout.strip().split()
-        for ip in local_ips:
-            if ip not in ALLOWED_HOSTS and not ip.startswith('127.'):
-                ALLOWED_HOSTS.append(ip)
-except Exception:
-    # If hostname -I command is not available, continue with existing hosts
-    pass
-
-
 # Database
-# Use PostgreSQL - prioritizing Neon configuration if DATABASE_URL is available
-DATABASES = {}
+# Use PostgreSQL - prioritizing external configuration if DATABASE_URL is available
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
+        'USER': os.environ.get('DB_USER', 'admin'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            # Require SSL for production environments
+            'sslmode': os.environ.get('DB_SSLMODE', 'require'),
+            # TCP keepalive settings for stable connections
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+        },
+    }
+}
+
+# If DATABASE_URL is provided, use it instead (for Neon or other cloud providers)
 if os.environ.get('DATABASE_URL'):
-    # Parse DATABASE_URL from environment for Neon connection
     DATABASES['default'] = dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),
         conn_max_age=600,
         conn_health_checks=True,
     )
-elif os.environ.get('NEON_DB_HOST'):
-    # Use Neon Cloud PostgreSQL configuration from individual variables
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('NEON_DB_NAME', 'aghamazing_db'),
-            'USER': os.environ.get('NEON_DB_USER', 'admin'),
-            'PASSWORD': os.environ.get('NEON_DB_PASSWORD', 'password123'),
-            'HOST': os.environ.get('NEON_DB_HOST', 'your-neon-project.aws-neon.tech'),
-            'PORT': os.environ.get('NEON_DB_PORT', '5432'),
-            'OPTIONS': {
-                'sslmode': 'require',  # Required for Neon
-                # TCP keepalive settings for stable connections
-                'keepalives': 1,
-                'keepalives_idle': 30,
-                'keepalives_interval': 10,
-                'keepalives_count': 5,
-            },
-        }
-    }
-else:
-    # Fallback to standard PostgreSQL configuration
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
-            'USER': os.environ.get('DB_USER', 'admin'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-            'OPTIONS': {
-                # Require SSL for production environments
-                'sslmode': os.environ.get('DB_SSLMODE', 'require'),
-                # TCP keepalive settings for stable connections
-                'keepalives': 1,
-                'keepalives_idle': 30,
-                'keepalives_interval': 10,
-                'keepalives_count': 5,
-            },
-        }
-    }
 
 
 # Application definition
@@ -153,24 +116,16 @@ INSTALLED_APPS.extend([
     'apps.contentmanagement',
     'apps.usermanagement',
     'apps.analyticsmanagement',
-    'apps.mobilemanagement',  # Adding mobile management app
+    'apps.mobilemanagement',
 ])
 
 MIDDLEWARE = [
-    # API optimization middleware should be first for performance measurement
-    'middleware.api_optimization.APILoggerMiddleware',
-    'middleware.api_optimization.MobileAppOptimizationMiddleware',
-    'middleware.api_optimization.APIResponseFormatterMiddleware',
-    
-    # CORS middleware should be placed as high as possible
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -179,7 +134,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -288,31 +243,6 @@ if os.environ.get('CSRF_TRUSTED_ORIGINS'):
     additional_origins = [origin.strip() for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()]
     CSRF_TRUSTED_ORIGINS.extend(additional_origins)
 
-# Security settings for CORS
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
-
-CORS_EXPOSE_HEADERS = [
-    'Content-Type',
-    'X-CSRFTOKEN',
-]
 
 # Django REST Framework + Simple JWT configuration
 REST_FRAMEWORK = {
