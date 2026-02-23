@@ -15,6 +15,11 @@ import os
 import socket
 from datetime import timedelta
 import dj_database_url  # Import for parsing DATABASE_URL
+from urllib.parse import urlparse, parse_qsl
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # `base.py` lives in `config/settings/`, so go up three levels to reach
@@ -57,34 +62,58 @@ except Exception:
     pass
 
 # Database
-# Use PostgreSQL - prioritizing external configuration if DATABASE_URL is available
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
-        'USER': os.environ.get('DB_USER', 'admin'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-        'OPTIONS': {
-            # Require SSL for production environments
-            'sslmode': os.environ.get('DB_SSLMODE', 'require'),
-            # TCP keepalive settings for stable connections
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
-        },
-    }
-}
-
-# If DATABASE_URL is provided, use it instead (for Neon or other cloud providers)
+# Parse DATABASE_URL if it exists
 if os.environ.get('DATABASE_URL'):
-    DATABASES['default'] = dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+    tmpPostgres = urlparse(os.environ.get('DATABASE_URL'))
+
+    # Extract and validate components
+    port = tmpPostgres.port or 5432
+    options = dict(parse_qsl(tmpPostgres.query))
+
+    # Only validate port and sslmode if using Neon (contains neon.tech)
+    if 'neon.tech' in tmpPostgres.hostname:
+        if port != 5432:
+            print(f"WARNING: Neon database should use port 5432, got {port}. This may cause connection issues.")
+
+        if options.get('sslmode') != 'require':
+            print("WARNING: Neon database requires sslmode=require. This may cause connection issues.")
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': tmpPostgres.path.replace('/', ''),
+            'USER': tmpPostgres.username,
+            'PASSWORD': tmpPostgres.password,
+            'HOST': tmpPostgres.hostname,
+            'PORT': port,
+            'OPTIONS': options,
+        }
+    }
+else:
+    # Fallback to manual configuration
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'aghamazing_db'),
+            'USER': os.environ.get('DB_USER', 'admin'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'password123'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+            'OPTIONS': {
+                # Require SSL for production environments
+                'sslmode': os.environ.get('DB_SSLMODE', 'require'),
+                # TCP keepalive settings for stable connections
+                'keepalives': 1,
+                'keepalives_idle': 30,
+                'keepalives_interval': 10,
+                'keepalives_count': 5,
+                # Additional settings for Neon compatibility
+                'connect_timeout': 15,
+            },
+        }
+    }
+
+
 
 
 # Application definition
@@ -117,15 +146,18 @@ INSTALLED_APPS.extend([
     'apps.usermanagement',
     'apps.analyticsmanagement',
     'apps.mobilemanagement',
+    'apps.notificationsmanagement',
 ])
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',  # Required for admin
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 

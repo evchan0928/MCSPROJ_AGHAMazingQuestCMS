@@ -81,7 +81,8 @@ urlpatterns = [
     path('api/content/', include('apps.contentmanagement.urls')),
     path('api/users/', include('apps.usermanagement.urls')),
     path('api/analytics/', include('apps.analyticsmanagement.urls')),
-    path('api/mobile/', include('apps.mobilemanagement.urls')),  # Adding mobile management endpoints
+    path('api/mobile/', include('apps.mobilemanagement.urls')),
+    path('api/notifications/', include('apps.notificationsmanagement.urls')),  # Adding notifications endpoints
     
     # API documentation
     path('api/swagger/', schema_view.with_ui(

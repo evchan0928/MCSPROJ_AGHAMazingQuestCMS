@@ -7,6 +7,8 @@ from django.utils import timezone
 User = get_user_model()
 
 class ContentItemSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(required=False)
+    quiz_correct_answers = serializers.JSONField(required=False, default=dict)
     file_url = serializers.SerializerMethodField(read_only=True)
     # Expose related user objects (read-only) so the frontend can show names
     created_by = UserSerializer(read_only=True)
@@ -31,14 +33,17 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # file uploads handled by DRF parser
-        user = self.context['request'].user
-        validated_data['created_by'] = user
+        request = self.context.get('request') if getattr(self, 'context', None) else None
+        # Only set created_by from request if it wasn't already provided
+        if request and 'created_by' not in validated_data:
+            validated_data['created_by'] = request.user
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        # Update edited_by when content is updated
-        user = self.context['request'].user
-        validated_data['edited_by'] = user
+        # Update edited_by when content is updated (defensive: request may be missing)
+        request = self.context.get('request') if getattr(self, 'context', None) else None
+        if request and 'edited_by' not in validated_data:
+            validated_data['edited_by'] = request.user
         validated_data['edited_at'] = timezone.now()
         return super().update(instance, validated_data)
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, DatePicker, Select, Button, Row, Col, Tabs, Statistic, Table, Divider, notification } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
-import { getAnalyticsSummary, getContentAnalytics, getUserActivityAnalytics } from '../api/django-api';
+import { getAnalyticsSummary, getContentAnalytics, getUserActivityAnalytics, getContentEngagementMetrics, getViewsOverTime } from '../api/django-api';
 
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
@@ -30,17 +30,14 @@ const ViewAnalyticsPage = () => {
         getUserActivityAnalytics()
       ]);
       
-      // Prepare user activity data for chart
-      const preparedUserActivityData = userData.top_content_creators?.slice(0, 5).map(creator => ({
-        name: creator.username,
-        contentCount: creator.content_count
-      })) || [];
+      // Fetch engagement metrics
+      const engagementData = await getContentEngagementMetrics();
       
-      setUserActivityData(preparedUserActivityData);
+      // Fetch views over time data
+      const viewsTimeData = await getViewsOverTime();
       
-      // Prepare views over time data (currently using placeholder since backend doesn't provide this yet)
-      // In a real implementation, this would come from analytics tracking
-      const viewsOverTime = []; // Backend doesn't provide view history yet
+      // Prepare views over time data
+      const viewsOverTime = viewsTimeData.views_over_time || [];
       
       // Combine all data into a single object for the UI
       const combinedData = {
@@ -49,8 +46,8 @@ const ViewAnalyticsPage = () => {
           totalContent: summaryData.summary?.total_content_items || 0,
           publishedContent: summaryData.summary?.published_content || 0,
           contentInReview: summaryData.summary?.content_in_review || 0,
-          totalViews: 0, // Backend doesn't provide total views metric yet
-          avgEngagement: 0, // Backend doesn't provide engagement metrics yet
+          totalViews: engagementData.total_views || 0,
+          avgEngagement: engagementData.average_views_per_content || 0,
           newUsers: summaryData.summary?.recently_created || 0
         },
         viewsOverTime: viewsOverTime,

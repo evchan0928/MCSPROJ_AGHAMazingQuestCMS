@@ -2,6 +2,18 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.utils.text import slugify
+import os
+
+
+def content_file_upload_to(instance, filename):
+    """Custom upload path function to organize files by content type and date"""
+    # Get the file extension
+    ext = os.path.splitext(filename)[1]
+    # Create a safe filename
+    filename = f"{instance.title.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d_%H%M%S')}{ext}"
+    # Organize by content type and date
+    return f'content_files/{instance.content_type}/{timezone.now().year}/{timezone.now().month:02d}/{filename}'
+
 
 class ContentItem(models.Model):
     # Workflow states (storage values chosen for clarity)
@@ -22,7 +34,7 @@ class ContentItem(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     body = models.TextField(blank=True)
-    file = models.FileField(upload_to='content_files/%Y/%m/%d', null=True, blank=True)
+    file = models.FileField(upload_to=content_file_upload_to, null=True, blank=True)
     
     # Additional fields for content management
     content_type = models.CharField(max_length=50, default='text', choices=[
@@ -72,7 +84,15 @@ class ContentItem(models.Model):
             base = slugify(self.title) if self.title else 'content'
             slug = base
             idx = 1
+            
+            # Prevent infinite loops by limiting attempts
+            max_attempts = 1000
             while ContentItem.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                if idx > max_attempts:
+                    # If we reach max attempts, add a random suffix
+                    import uuid
+                    slug = f"{base}-{uuid.uuid4().hex[:8]}"
+                    break
                 slug = f"{base}-{idx}"
                 idx += 1
             self.slug = slug
@@ -99,37 +119,13 @@ class ContentItem(models.Model):
         }
 
         if new_status not in status_transitions:
-            raise ValueError(f"Invalid status transition to {new_status}")
+            raise ValueError(f"Invalid status: {new_status}")
 
-        self.status = new_status
-        transition_data = status_transitions[new_status]
-
-        timestamp_field = transition_data['timestamp_field']
-        user_field = transition_data['user_field']
-
-        setattr(self, timestamp_field, timezone.now())
+        # Update the appropriate fields based on the transition
+        transition = status_transitions[new_status]
+        setattr(self, transition['timestamp_field'], timezone.now())
         if user:
-            setattr(self, user_field, user)
-
-        update_fields = ['status', timestamp_field, user_field]
-        self.save(update_fields=update_fields)
-
-    def send_for_approval(self, user=None):
-        # Move from For editing -> For approval
-        self.transition_status(self.STATUS_FOR_APPROVAL, user)
-
-    def approve(self, user=None):
-        # Move from For approval -> For publishing
-        self.transition_status(self.STATUS_FOR_PUBLISHING, user)
-
-    def publish(self, user=None):
-        # Move from For publishing -> Published
-        self.transition_status(self.STATUS_PUBLISHED, user)
-
-    def soft_delete(self, user=None):
-        self.is_deleted = True
-        self.status = self.STATUS_DELETED
-        self.save(update_fields=['is_deleted', 'status'])
-
-    def __str__(self):
-        return f"{self.title} ({self.status})"
+            setattr(self, transition['user_field'], user)
+        self.status = new_status
+        
+        return self.save()

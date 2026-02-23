@@ -5,7 +5,7 @@ from django.utils import timezone
 from datetime import timedelta, datetime
 from apps.contentmanagement.models import ContentItem
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import HttpResponse
 import json
 import io
@@ -224,6 +224,101 @@ def generate_analytics_report(request):
             }
         }
         
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_content_engagement_metrics(request):
+    """Get engagement metrics for content items."""
+    try:
+        from .models import ContentViewTracking, ContentEngagement
+        from django.db.models import Count
+
+        # Get total views
+        total_views = ContentViewTracking.objects.count()
+        
+        # Get engagement by type
+        engagement_by_type = {}
+        for action_choice, action_label in ContentEngagement.ACTION_CHOICES:
+            count = ContentEngagement.objects.filter(action=action_choice).count()
+            engagement_by_type[action_choice] = count
+        
+        # Get average engagement rate per published content
+        published_content_count = ContentItem.objects.filter(status=ContentItem.STATUS_PUBLISHED).count()
+        avg_views_per_content = 0
+        if published_content_count > 0:
+            avg_views_per_content = round(total_views / published_content_count, 2)
+        
+        # Top viewed content
+        top_viewed_content = []
+        if published_content_count > 0:
+            top_content = ContentItem.objects.filter(
+                status=ContentItem.STATUS_PUBLISHED
+            ).annotate(
+                view_count=Count('views')
+            ).order_by('-view_count')[:5]
+            
+            for item in top_content:
+                top_viewed_content.append({
+                    'id': item.id,
+                    'title': item.title,
+                    'view_count': item.view_count,
+                    'created_at': item.created_at.isoformat()
+                })
+        
+        data = {
+            'total_views': total_views,
+            'average_views_per_content': avg_views_per_content,
+            'engagement_breakdown': engagement_by_type,
+            'top_viewed_content': top_viewed_content,
+            'timestamp': timezone.now().isoformat(),
+        }
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_views_over_time(request):
+    """Get views over time (daily aggregation)."""
+    try:
+        from .models import ContentViewTracking
+        from django.db.models import Count
+        import datetime
+
+        # Get views from the last 30 days
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        views_data = (
+            ContentViewTracking.objects
+            .filter(viewed_at__gte=thirty_days_ago)
+            .annotate(date=TruncDate('viewed_at'))
+            .values('date')
+            .annotate(view_count=Count('id'))
+            .order_by('date')
+        )
+        
+        # Format the data for charting
+        views_over_time = []
+        current_date = thirty_days_ago.date()
+        end_date = timezone.now().date()
+        
+        # Convert queryset to dictionary for faster lookup
+        date_counts = {item['date']: item['view_count'] for item in views_data}
+        
+        # Fill in missing dates with 0 views
+        while current_date <= end_date:
+            views_over_time.append({
+                'date': current_date.isoformat(),
+                'views': date_counts.get(current_date, 0)
+            })
+            current_date += datetime.timedelta(days=1)
+        
+        data = {
+            'views_over_time': views_over_time,
+            'timestamp': timezone.now().isoformat(),
+        }
         return Response(data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

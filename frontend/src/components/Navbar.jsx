@@ -91,7 +91,7 @@ const Navbar = ({ collapsed, onToggle }) => {
 
   // Notification dropdown overlay - wrapped in a div to ensure single element
   const notificationOverlay = (
-    <div key="notification-overlay">
+    <div key="notification-overlay" style={{ width: '320px' }}>
       <NotificationPanel />
     </div>
   );
@@ -116,7 +116,6 @@ const Navbar = ({ collapsed, onToggle }) => {
           overlay={notificationOverlay}
           trigger={['click']}
           placement="bottomRight"
-          overlayStyle={{ width: '320px' }}
         >
           <Badge count={unreadNotifications} overflowCount={99}>
             <Button 

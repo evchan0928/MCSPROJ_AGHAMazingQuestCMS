@@ -12,7 +12,7 @@ import {
   ExclamationCircleOutlined,
   CalendarOutlined
 } from '@ant-design/icons';
-import { getDashboardStats, getRecentContent, signOut } from './api/django-api';
+import { getDashboardStats, getRecentContent, signOut, getCurrentUser } from './api/django-api';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -35,15 +35,18 @@ const Dashboard = () => {
     const [recentContent, setRecentContent] = useState([]);
     const [loadingStats, setLoadingStats] = useState(true);
     const [loadingContent, setLoadingContent] = useState(true);
-
-    const currentUser = {
-        name: "Super Boss",
-        initials: "SB",
-        roles: ['Super Admin'],
-        is_superuser: true 
-    };
+    const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
+        // Fetch current user data from backend
+        getCurrentUser().then(userData => {
+            setCurrentUser(userData);
+        }).catch(error => {
+            console.error('Error fetching current user:', error);
+            // Redirect to login if user data cannot be fetched
+            navigate('/signin');
+        });
+
         if (isIndexRoute) {
             fetchDashboardData();
         }

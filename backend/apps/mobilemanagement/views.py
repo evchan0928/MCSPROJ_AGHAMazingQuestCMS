@@ -5,12 +5,62 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth.models import User
+from django.db.models import Count, Sum, Avg
+from django.utils import timezone
+from datetime import timedelta
 
 from .models import UserProfile, UserSession, Score, Badge, UserBadge, Leaderboard
 from .serializers import (
     UserProfileSerializer, UserSessionSerializer, ScoreSerializer, 
     BadgeSerializer, UserBadgeSerializer, LeaderboardSerializer
 )
+
+
+@api_view(['GET'])
+def get_mobile_statistics(request):
+    """Get mobile application statistics."""
+    try:
+        # Calculate user profiles count
+        total_profiles = UserProfile.objects.count()
+        
+        # Calculate active sessions
+        # Sessions created in the last 30 minutes are considered active
+        thirty_mins_ago = timezone.now() - timedelta(minutes=30)
+        active_sessions = UserSession.objects.filter(
+            created_at__gte=thirty_mins_ago,
+            is_active=True
+        ).count()
+        
+        # Calculate total scores
+        total_scores = Score.objects.aggregate(total=Sum('score'))['total'] or 0
+        total_score_records = Score.objects.count()
+        
+        # Calculate badges earned
+        total_badges_earned = UserBadge.objects.count()
+        total_unique_badges = Badge.objects.count()
+        
+        # Additional stats
+        recent_profiles = UserProfile.objects.filter(
+            created_at__gte=timezone.now() - timedelta(days=7)
+        ).count()
+        
+        avg_scores_per_user = Score.objects.aggregate(avg=Avg('score'))['avg'] or 0
+        
+        data = {
+            'statistics': {
+                'total_user_profiles': total_profiles,
+                'active_sessions': active_sessions,
+                'total_score_records': total_score_records,
+                'total_badges_earned': total_badges_earned,
+                'total_unique_badges': total_unique_badges,
+                'recent_profiles_last_7_days': recent_profiles,
+                'average_score_per_user': round(avg_scores_per_user, 2),
+                'timestamp': timezone.now().isoformat(),
+            }
+        }
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UserProfileViewSet(ModelViewSet):

@@ -1,22 +1,23 @@
 #!/bin/bash
+# AGHAMazingQuestCMS Service Stop Script
+# This script stops all running backend and frontend development servers
 
-# Stop Services Script for AGHAMazingQuestCMS
-# Stops all running backend and frontend services
+set -e  # Exit immediately if a command exits with a non-zero status
 
-# Color codes for output
+# Color codes for output formatting
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}=========================${NC}"
-echo -e "${BLUE}Stopping AGHAMazingQuestCMS${NC}"
-echo -e "${BLUE}=========================${NC}"
-
-# Function to print colored output
+# Print colored output
 print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 print_warning() {
@@ -27,58 +28,54 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if services.conf exists
-if [ ! -f services.conf ]; then
-    print_warning "services.conf not found. Services may not have been started with setup_full_stack.sh"
-    exit 1
-fi
+# Print header
+echo "================================"
+echo "AGHAMazingQuestCMS Service Stop"
+echo "================================"
 
-# Load service PIDs
-source services.conf
+# Kill all child processes
+print_status "Stopping backend and frontend processes..."
 
-# Kill backend process if it exists
-if [ ! -z "$BACKEND_PID" ]; then
-    if kill -0 $BACKEND_PID 2>/dev/null; then
-        print_status "Stopping backend server (PID: $BACKEND_PID)..."
-        kill $BACKEND_PID
-        sleep 2
-        
-        # Verify it's stopped
-        if kill -0 $BACKEND_PID 2>/dev/null; then
-            print_warning "Backend server did not stop gracefully, forcing termination..."
-            kill -9 $BACKEND_PID 2>/dev/null
-        fi
-        print_status "Backend server stopped"
-    else
-        print_warning "Backend process (PID: $BACKEND_PID) not found or already stopped"
-    fi
+# Kill any running Python processes (backend)
+PYTHON_PROCESSES=$(pgrep -f "manage.py runserver")
+if [ -n "$PYTHON_PROCESSES" ]; then
+    kill $PYTHON_PROCESSES 2>/dev/null || true
+    print_success "Stopped backend processes"
 else
-    print_warning "Backend PID not found in services.conf"
+    print_status "No backend processes found"
 fi
 
-# Kill frontend process if it exists
-if [ ! -z "$FRONTEND_PID" ]; then
-    if kill -0 $FRONTEND_PID 2>/dev/null; then
-        print_status "Stopping frontend server (PID: $FRONTEND_PID)..."
-        kill $FRONTEND_PID
-        sleep 2
-        
-        # Verify it's stopped
-        if kill -0 $FRONTEND_PID 2>/dev/null; then
-            print_warning "Frontend server did not stop gracefully, forcing termination..."
-            kill -9 $FRONTEND_PID 2>/dev/null
-        fi
-        print_status "Frontend server stopped"
-    else
-        print_warning "Frontend process (PID: $FRONTEND_PID) not found or already stopped"
-    fi
+# Kill any running Node processes (frontend)
+NODE_PROCESSES=$(pgrep -f "npm start\|node")
+if [ -n "$NODE_PROCESSES" ]; then
+    kill $NODE_PROCESSES 2>/dev/null || true
+    print_success "Stopped frontend processes"
 else
-    print_warning "Frontend PID not found in services.conf"
+    print_status "No frontend processes found"
 fi
 
-# Clean up PID files
-rm -f backend_pid.txt frontend_pid.txt services.conf
+# Kill any remaining processes that might be running on ports 8000 or 3000
+if command -v lsof &> /dev/null; then
+    LSOFLIST_8000=$(lsof -ti:8000)
+    if [ -n "$LSOFLIST_8000" ]; then
+        kill $LSOFLIST_8000 2>/dev/null || true
+        print_success "Stopped processes on port 8000"
+    fi
+    
+    LSOFLIST_3000=$(lsof -ti:3000)
+    if [ -n "$LSOFLIST_3000" ]; then
+        kill $LSOFLIST_3000 2>/dev/null || true
+        print_success "Stopped processes on port 3000"
+    fi
+fi
 
-print_status "All services stopped successfully"
+# Clear any remaining node processes
+if command -v pkill &> /dev/null; then
+    pkill -f "webpack" 2>/dev/null || true
+    pkill -f "react-scripts" 2>/dev/null || true
+    pkill -f "webpack-dev-server" 2>/dev/null || true
+fi
+
+print_success "All services have been stopped"
 echo ""
-print_status "AGHAMazingQuestCMS has been shut down"
+print_status "To restart the application, run: ./setup_full_stack.sh"

@@ -12,7 +12,7 @@ drf-yasg==1.21.14
 gunicorn==25.0.3
 idna==3.11
 inflection==0.5.1
-oauthlib==3.3.
+oauthlib==3.3.1
 packaging==26.0
 pillow==12.1.1
 psycopg2-binary==2.9.11
@@ -30,3 +30,4 @@ sqlparse==0.5.5
 uritemplate==4.2.0
 urllib3==2.6.3
 whitenoise==6.11.0
+dj-database-url==2.3.0

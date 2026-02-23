@@ -37,7 +37,8 @@ class IsContentWorkflowAllowed(BasePermission):
                 user_in_group(user, 'Encoder') or
                 user_in_group(user, 'Editor') or
                 user_in_group(user, 'Approver') or
-                user_in_group(user, 'Admin')
+                user_in_group(user, 'Admin') or
+                user.is_superuser
             )
         if action in ('create',):
             return user_in_group(user, 'Encoder') or user_in_group(user, 'Editor')
@@ -46,7 +47,7 @@ class IsContentWorkflowAllowed(BasePermission):
         if action in ('send_for_approval',):
             return user_in_group(user, 'Editor')
         if action in ('approve', 'publish', 'deny'):
-            return user_in_group(user, 'Approver')
+            return user_in_group(user, 'Approver') or user.is_superuser or user_in_group(user, 'Admin')
         if action in ('destroy',):
             return user_in_group(user, 'Admin')
 

@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsContentWorkflowAllowed
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -256,7 +257,13 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         # When a new content item is uploaded by an Encoder/Editor, set its status
         # to 'edited' (i.e. ready for final editing) and record who created it.
         # Save with the new workflow initial state: For editing
-        serializer.save(created_by=self.request.user, status=ContentItem.STATUS_FOR_EDITING)
+        # Don't pass `context` into `save()`; DRF provides the serializer
+        # with `context` when it is instantiated. Passing `context` to
+        # `save()` causes a TypeError. Only provide model fields here.
+        serializer.save(
+            created_by=self.request.user,
+            status=ContentItem.STATUS_FOR_EDITING
+        )
 
     def create(self, request, *args, **kwargs):
         """Create endpoint returns a friendly message and the created Content ID.
@@ -272,18 +279,34 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         }
         """
         try:
-            response = super().create(request, *args, **kwargs)
-            if response.status_code == status.HTTP_201_CREATED:
-                content_item = response.data
-                response.data = {
-                    "success": True,
-                    "message": "Content created successfully",
-                    "data": {
-                        "id": content_item.get('id'),
-                        "title": content_item.get('title'),
-                    }
-                }
-            return response
+            # Log incoming request data for debugging
+            print(f"Creating content with data keys: {request.data.keys()}")
+            if 'file' in request.data:
+                print(f"File received: {request.data['file']}")
+                
+            # Validate content_type is one of the allowed choices
+            content_type = request.data.get('content_type', 'text')
+            valid_types = ['text', 'image', 'video', 'document', 'quiz']
+            if content_type not in valid_types:
+                return Response({
+                    'success': False,
+                    'message': f'Invalid content_type: {content_type}. Must be one of {valid_types}',
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            return super().create(request, *args, **kwargs)
+            
+        except ValidationError as e:
+            # Handle validation errors specifically
+            import traceback
+            tb = traceback.format_exc()
+            payload = {
+                'success': False,
+                'message': 'Validation error during content creation',
+                'error': str(e),
+            }
+            if getattr(settings, 'DEBUG', False):
+                payload['traceback'] = tb
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             # Return a helpful error payload for debugging. In production
             # you may want to log the full traceback instead of returning it.
@@ -316,10 +339,8 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         """Custom action to approve content for publishing."""
         content_item = self.get_object()
-        if user_in_group(request.user, 'Approver') or user_in_group(request.user, 'Admin'):
-            content_item.status = ContentItem.STATUS_FOR_PUBLISHING
-            content_item.approved_by = request.user
-            content_item.save()
+        if user_in_group(request.user, 'Approver') or user_in_group(request.user, 'Admin') or request.user.is_superuser:
+            content_item.approve(user=request.user)
             serializer = self.get_serializer(content_item)
             return Response({
                 "success": True,
@@ -330,6 +351,27 @@ class ContentItemViewSet(viewsets.ModelViewSet):
             return Response({
                 "success": False,
                 "message": "You do not have permission to approve content"
+            }, status=status.HTTP_403_FORBIDDEN)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def deny(self, request, pk=None):
+        """Custom action to deny content and send it back for editing."""
+        content_item = self.get_object()
+        if user_in_group(request.user, 'Approver') or user_in_group(request.user, 'Admin') or request.user.is_superuser:
+            content_item.status = ContentItem.STATUS_FOR_EDITING
+            content_item.approved_by = None
+            content_item.approved_at = None
+            content_item.save()
+            serializer = self.get_serializer(content_item)
+            return Response({
+                "success": True,
+                "message": f"Content '{content_item.title}' denied and sent back for editing",
+                "data": serializer.data
+            })
+        else:
+            return Response({
+                "success": False,
+                "message": "You do not have permission to deny content"
             }, status=status.HTTP_403_FORBIDDEN)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])

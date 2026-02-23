@@ -229,29 +229,72 @@ export const getRecentContent = async () => {
  */
 export const createContentItem = async (data) => {
   try {
-    const formData = new FormData();
-    
-    // Map the frontend field names to backend field names
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined && data[key] !== null) {
-        // Convert boolean values to strings as Django expects
-        if (typeof data[key] === 'boolean') {
-          formData.append(key, data[key].toString());
-        } else {
-          formData.append(key, data[key]);
+    let payload;
+    let headers = {
+      'Content-Type': 'multipart/form-data',
+    };
+
+    // If `data` is already a FormData instance (UploadContentPage passes FormData),
+    // send it as-is. Otherwise build a FormData from the plain object.
+    if (data instanceof FormData) {
+      payload = data;
+    } else {
+      const formData = new FormData();
+      // Map the frontend field names to backend field names
+      Object.keys(data).forEach(key => {
+        if (data[key] !== undefined && data[key] !== null) {
+          // Handle special cases for data types
+          if (key === 'quiz_correct_answers' && typeof data[key] === 'object') {
+            formData.append(key, JSON.stringify(data[key]));
+          } else if (key === 'quiz_questions' && typeof data[key] === 'object') {
+            formData.append(key, JSON.stringify(data[key]));
+          } else if (typeof data[key] === 'boolean') {
+            formData.append(key, data[key].toString());
+          } else {
+            formData.append(key, data[key]);
+          }
         }
-      }
-    });
-    
-    const response = await apiClient.post('/content/items/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      }
+      });
+      payload = formData;
+    }
+
+    const response = await apiClient.post('/content/items/', payload, {
+      headers
     });
     
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.detail || error.message);
+    console.error("API Error Details:", error.response);
+    // Provide more detailed error information
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      console.error('Response headers:', error.response.headers);
+      
+      // Try to extract the most descriptive error message
+      let errorMessage = 'Unknown error occurred';
+      if (error.response.data && error.response.data.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response.data && typeof error.response.data === 'string') {
+        errorMessage = error.response.data;
+      } else if (error.response.statusText) {
+        errorMessage = `${error.response.status} - ${error.response.statusText}`;
+      }
+      
+      throw new Error(errorMessage);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('Request details:', error.request);
+      throw new Error('No response received from server');
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error message:', error.message);
+      throw new Error(error.message);
+    }
   }
 };
 
@@ -519,15 +562,21 @@ export const generateAnalyticsReport = async (params) => {
  * Download analytics report
  */
 export const downloadAnalyticsReport = async (params) => {
-  try {
-    const response = await apiClient.post('/analytics/download/', params, {
-      responseType: 'blob', // Important for file downloads
-      timeout: 120000 // Extended timeout for report generation
-    });
-    return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.detail || error.message);
-  }
+  const response = await apiClient.post('/analytics/download/', params, {
+    responseType: 'blob', // Important for handling file downloads
+  });
+  return response.data;
+};
+
+// New API functions for engagement metrics
+export const getContentEngagementMetrics = async () => {
+  const response = await apiClient.get('/analytics/engagement/');
+  return response.data;
+};
+
+export const getViewsOverTime = async () => {
+  const response = await apiClient.get('/analytics/views-over-time/');
+  return response.data;
 };
 
 /**
@@ -570,6 +619,11 @@ export const markAllNotificationsAsRead = async () => {
 };
 
 // 🔑 NEW: Mobile Management API functions
+export const getMobileStatistics = async () => {
+  const response = await apiClient.get('/mobile/stats/');
+  return response.data;
+};
+
 export async function getUserProfiles(params = {}) {
   const token = localStorage.getItem('access_token');
   const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/?${new URLSearchParams(params)}`, {

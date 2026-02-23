@@ -12,4 +12,5 @@ router.register(r'leaderboards', views.LeaderboardViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('stats/', views.get_mobile_statistics, name='mobile-stats'),
 ]

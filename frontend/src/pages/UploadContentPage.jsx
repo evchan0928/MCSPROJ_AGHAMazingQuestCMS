@@ -232,8 +232,8 @@ export default function UploadContentPage() {
         contentData.append('quiz_questions', JSON.stringify(formData.quiz_questions || []));
       }
 
-      // Update status to for approval
-      contentData.append('status', 'for_approval');
+      // Don't append status here since backend handles it in perform_create
+      // contentData.append('status', 'for_approval');
 
       // Use the centralized API function
       const result = await createContentItem(contentData);

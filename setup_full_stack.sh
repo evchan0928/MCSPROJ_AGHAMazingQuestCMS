@@ -162,6 +162,10 @@ verify_db_connection() {
         print_status "Database connection successful"
     else
         print_error "Database connection failed"
+        print_warning "If using Neon database:"
+        print_warning "- Ensure your database is active in the Neon Console"
+        print_warning "- Grant permissions: GRANT CREATE ON SCHEMA public TO neondb_owner;"
+        print_warning "- Check that sslmode=require is in your DATABASE_URL"
         exit 1
     fi
     
@@ -263,7 +267,23 @@ main() {
     if [ "$FRONTEND_AVAILABLE" = true ]; then
         setup_frontend
     fi
-    verify_db_connection
+    # Run Django migrations
+    print_status "Running Django migrations..."
+    cd backend
+    source venv/bin/activate
+    
+    if python manage.py migrate; then
+        print_status "Migrations completed successfully"
+    else
+        print_error "Failed to run Django migrations"
+        print_warning "If using Neon database:"
+        print_warning "- Ensure your database is active in the Neon Console"
+        print_warning "- Grant permissions: GRANT CREATE ON SCHEMA public TO neondb_owner;"
+        print_warning "- Check that sslmode=require is in your DATABASE_URL"
+        exit 1
+    fi
+    
+    cd ..
     start_backend
     if [ "$FRONTEND_AVAILABLE" = true ]; then
         start_frontend
