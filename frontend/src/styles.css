@@ -877,6 +877,21 @@ button {
   justify-content: center;
   align-items: center;
   padding: 2rem;
+  overflow: hidden;
+}
+
+/* Legacy/alternate wrapper used by Login.jsx */
+.signin-main-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e6f0ff 100%);
+  box-sizing: border-box;
+  overflow: hidden; /* prevent vertical scroll on signin */
 }
 
 .signin-left-panel {
@@ -1151,11 +1166,30 @@ button {
 }
 
 .signin-footer {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   width: 100%;
   max-width: 450px;
   display: flex;
   justify-content: center;
+  align-items: center;
+}
+
+.signin-logo-footer {
+  width: 100%;
+}
+
+.header-logos-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.header-logo-item {
+  height: 46px;
+  width: 46px;
+  object-fit: contain;
 }
 
 /* Responsive Design */

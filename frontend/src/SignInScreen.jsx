@@ -183,20 +183,6 @@ const SignInScreen = () => {
                     </div>
                 </div>
                 
-                {/* Image gallery section below the form */}
-                <div className="signin-image-gallery">
-                    <div className="image-row">
-                        <img src="https://via.placeholder.com/300x200/3b82f6/FFFFFF?text=Dashboard" alt="Dashboard Preview" className="signin-gallery-image" />
-                        <img src="https://via.placeholder.com/300x200/10b981/FFFFFF?text=Content+Editor" alt="Content Editor" className="signin-gallery-image" />
-                        <img src="https://via.placeholder.com/300x200/8b5cf6/FFFFFF?text=Analytics" alt="Analytics Dashboard" className="signin-gallery-image" />
-                    </div>
-                    <div className="image-row">
-                        <img src="https://via.placeholder.com/300x200/f59e0b/FFFFFF?text=User+Management" alt="User Management" className="signin-gallery-image" />
-                        <img src="https://via.placeholder.com/300x200/ef4444/FFFFFF?text=Security" alt="Security Features" className="signin-gallery-image" />
-                        <img src="https://via.placeholder.com/300x200/0ea5e9/FFFFFF?text=Mobile+View" alt="Mobile Responsive" className="signin-gallery-image" />
-                    </div>
-                </div>
-                
                 <div className="signin-footer">
                     <LogosContainer />
                 </div>

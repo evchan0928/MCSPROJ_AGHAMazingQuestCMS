@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout } from 'antd';
 
 import Navbar from './components/Navbar';
@@ -26,41 +26,50 @@ import AccountSettingsPage from './pages/AccountSettingsPage'; // Import the new
 
 const { Content, Sider } = Layout;
 
-function App() {
+function AppLayout() {
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+
+  const isAuthRoute = location.pathname === '/' || location.pathname === '/signin';
 
   const toggleSider = () => {
     setCollapsed(!collapsed);
   };
 
-  return (
-    <Router>
-      <Layout style={{ minHeight: '100vh' }}>
-        <Sider 
-          width={280} 
-          collapsible 
-          collapsed={collapsed} 
-          onCollapse={toggleSider}
-          style={{
-            overflow: 'auto',
-            height: '100vh',
-            position: 'fixed',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            zIndex: 100,
-          }}
-        >
-          <Sidebar collapsed={collapsed} />
-        </Sider>
+  if (isAuthRoute) {
+    return (
+      <Routes>
+        <Route path="/" element={<SignInScreen />} />
+        <Route path="/signin" element={<SignInScreen />} />
+      </Routes>
+    );
+  }
 
-        <Layout className="site-layout" style={{ marginLeft: collapsed ? 80 : 280 }}>
-          <Navbar collapsed={collapsed} onToggle={toggleSider} />
-          
-          <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280, background: '#fff' }}>
-            <Routes>
-              <Route path="/" element={<SignInScreen />} />
-              <Route path="/signin" element={<SignInScreen />} />
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      <Sider 
+        width={280} 
+        collapsible 
+        collapsed={collapsed} 
+        onCollapse={toggleSider}
+        style={{
+          overflow: 'auto',
+          height: '100vh',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 100,
+        }}
+      >
+        <Sidebar collapsed={collapsed} />
+      </Sider>
+
+      <Layout className="site-layout" style={{ marginLeft: collapsed ? 80 : 280 }}>
+        <Navbar collapsed={collapsed} onToggle={toggleSider} />
+        
+        <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280, background: '#fff' }}>
+          <Routes>
               
               <Route 
                 path="/dashboard" 
@@ -231,10 +240,17 @@ function App() {
                 } 
               />
               
-            </Routes>
-          </Content>
-        </Layout>
+          </Routes>
+        </Content>
       </Layout>
+    </Layout>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppLayout />
     </Router>
   );
 }
