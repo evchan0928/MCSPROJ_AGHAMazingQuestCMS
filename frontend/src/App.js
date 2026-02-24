@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from 'antd';
 
 import Navbar from './components/Navbar';
@@ -99,12 +99,17 @@ function App() {
               />
               
               <Route 
-                path="/dashboard/content/edit" 
+                path="/dashboard/content/edit/:id" 
                 element={
                   <ProtectedRoute>
                     <EditContentPage />
                   </ProtectedRoute>
                 } 
+              />
+
+              <Route 
+                path="/dashboard/content/edit" 
+                element={<Navigate to="/dashboard/content/list" replace />} 
               />
               
               <Route 

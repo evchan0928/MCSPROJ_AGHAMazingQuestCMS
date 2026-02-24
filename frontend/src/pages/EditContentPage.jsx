@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, message, Spin, Select, Upload, InputNumber } from 'antd';
 import { UploadOutlined, SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Editor } from '@tinymce/tinymce-react';
 import { 
   getContentItems, 
+  getContentItemById,
   updateContentItem,
   getCurrentUser
 } from '../api/django-api';
@@ -41,9 +41,32 @@ const EditContentPage = () => {
 
   const fetchContentDetails = async () => {
     try {
-      // Fetch the content item by ID
-      const allContents = await getContentItems();
-      const contentItem = allContents.find(item => item.id === parseInt(id));
+      let contentItem = null;
+      
+      // Primary: Try to fetch content by ID directly from API
+      try {
+        contentItem = await getContentItemById(id);
+        console.log('Successfully fetched content by ID from API:', contentItem);
+      } catch (error) {
+        console.warn('Failed to fetch content by ID, falling back to list fetch:', error);
+        
+        // Fallback: Fetch all content items and search for the one we need
+        const allContents = await getContentItems();
+        console.log('Fetched all contents:', allContents);
+        console.log('Looking for ID:', id, 'Type:', typeof id);
+        
+        // Try to find content by ID - handle both string and number types
+        contentItem = allContents.find(item => {
+          // Compare both as strings and as numbers to handle type mismatches
+          return String(item.id) === String(id) || item.id === parseInt(id);
+        });
+        
+        console.log('Found content from list:', contentItem);
+        
+        if (!contentItem) {
+          console.error('Content not found. Available IDs:', allContents.map(c => c.id));
+        }
+      }
       
       if (contentItem) {
         setContent(contentItem);
@@ -161,22 +184,7 @@ const EditContentPage = () => {
             label="Content Body"
             name="body"
           >
-            <Editor
-              apiKey="your-api-key" // In a real implementation, you'd use a proper TinyMCE API key
-              init={{
-                height: 400,
-                menubar: false,
-                plugins: [
-                  'advlist autolink lists link image charmap print preview anchor',
-                  'searchreplace visualblocks code fullscreen',
-                  'insertdatetime media table paste code help wordcount'
-                ],
-                toolbar:
-                  'undo redo | formatselect | bold italic backcolor | \
-                  alignleft aligncenter alignright alignjustify | \
-                  bullist numlist outdent indent | removeformat | help'
-              }}
-            />
+            <TextArea rows={12} placeholder="Enter content body" />
           </Form.Item>
 
           <Form.Item

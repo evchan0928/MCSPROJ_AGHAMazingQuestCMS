@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Typography, Statistic, Table, DatePicker, Select, Button } from 'antd';
 import { UserOutlined, FileTextOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { getAnalyticsSummary } from '../api/django-api';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -25,61 +25,26 @@ const AnalyticsManagementPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Mock data for demonstration - would connect to actual API in production
+      const analyticsData = await getAnalyticsSummary();
+      const summary = analyticsData?.summary || {};
+      const content = Array.isArray(analyticsData?.content) ? analyticsData.content : [];
+
       setStats({
-        totalUsers: 124,
-        totalContent: 320,
-        publishedContent: 280,
-        contentViews: 12450
+        totalUsers: summary.total_users || 0,
+        totalContent: summary.total_content || 0,
+        publishedContent: summary.published_content || 0,
+        contentViews: summary.total_views || 0
       });
-      
-      setContentData([
-        {
-          key: '1',
-          title: 'Historical Landmarks of DOST',
-          author: 'John Smith',
-          views: 1240,
-          likes: 98,
-          status: 'Published',
-          date: '2023-11-15'
-        },
-        {
-          key: '2',
-          title: 'Research Breakthroughs in 2023',
-          author: 'Maria Garcia',
-          views: 987,
-          likes: 76,
-          status: 'Published',
-          date: '2023-11-10'
-        },
-        {
-          key: '3',
-          title: 'Innovation Labs Overview',
-          author: 'Robert Johnson',
-          views: 756,
-          likes: 54,
-          status: 'Published',
-          date: '2023-11-05'
-        },
-        {
-          key: '4',
-          title: 'Future Tech Predictions',
-          author: 'Emily Chen',
-          views: 632,
-          likes: 42,
-          status: 'Published',
-          date: '2023-10-28'
-        },
-        {
-          key: '5',
-          title: 'Sustainability Initiatives',
-          author: 'David Wilson',
-          views: 543,
-          likes: 38,
-          status: 'Published',
-          date: '2023-10-22'
-        }
-      ]);
+
+      setContentData(
+        content.map((item, index) => ({
+          key: item.id || `${index + 1}`,
+          name: item.name || item.title || 'Untitled',
+          author: item.author || 'Unknown',
+          status: item.status || 'N/A',
+          date: item.date || item.created_at || item.created_date || null
+        }))
+      );
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
@@ -98,26 +63,14 @@ const AnalyticsManagementPage = () => {
 
   const statColumns = [
     {
-      title: 'Content Title',
-      dataIndex: 'title',
-      key: 'title',
+      title: 'Content Name',
+      dataIndex: 'name',
+      key: 'name',
     },
     {
       title: 'Author',
       dataIndex: 'author',
       key: 'author',
-    },
-    {
-      title: 'Views',
-      dataIndex: 'views',
-      key: 'views',
-      sorter: (a, b) => a.views - b.views,
-    },
-    {
-      title: 'Likes',
-      dataIndex: 'likes',
-      key: 'likes',
-      sorter: (a, b) => a.likes - b.likes,
     },
     {
       title: 'Status',
@@ -133,6 +86,7 @@ const AnalyticsManagementPage = () => {
       title: 'Date',
       dataIndex: 'date',
       key: 'date',
+      render: (date) => (date ? new Date(date).toLocaleString() : 'N/A'),
     },
   ];
 

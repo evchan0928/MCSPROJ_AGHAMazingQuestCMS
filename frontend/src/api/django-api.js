@@ -193,6 +193,18 @@ export const getContentItems = async () => {
 };
 
 /**
+ * Get a single content item by ID
+ */
+export const getContentItemById = async (id) => {
+  try {
+    const response = await apiClient.get(`/content/items/${id}/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+/**
  * Get dashboard statistics
  */
 export const getDashboardStats = async () => {

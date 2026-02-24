@@ -35,7 +35,7 @@ const Sidebar = ({ collapsed }) => {
         },
         {
           key: '/dashboard/content/edit',
-          label: <Link to="/dashboard/content/edit">Edit Content</Link>
+          label: <Link to="/dashboard/content/list">Edit Content</Link>
         },
         {
           key: '/dashboard/content/approval',
