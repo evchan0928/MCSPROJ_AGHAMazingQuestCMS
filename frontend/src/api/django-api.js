@@ -584,45 +584,6 @@ export const getViewsOverTime = async () => {
   return response.data;
 };
 
-/**
- * Get user notifications
- */
-export const getNotifications = async () => {
-  try {
-    const response = await apiClient.get('/notifications/');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-    throw new Error(error.response?.data?.detail || error.message);
-  }
-};
-
-/**
- * Mark a specific notification as read
- */
-export const markNotificationAsRead = async (notificationId) => {
-  try {
-    const response = await apiClient.patch(`/notifications/${notificationId}/mark-as-read/`);
-    return response.data;
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-    throw new Error(error.response?.data?.detail || error.message);
-  }
-};
-
-/**
- * Mark all notifications as read
- */
-export const markAllNotificationsAsRead = async () => {
-  try {
-    const response = await apiClient.post('/notifications/mark-all-as-read/');
-    return response.data;
-  } catch (error) {
-    console.error('Error marking all notifications as read:', error);
-    throw new Error(error.response?.data?.detail || error.message);
-  }
-};
-
 // 🔑 NEW: Mobile Management API functions
 export const getMobileStatistics = async () => {
   const response = await apiClient.get('/mobile/stats/');

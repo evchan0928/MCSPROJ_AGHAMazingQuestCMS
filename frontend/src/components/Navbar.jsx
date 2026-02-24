@@ -5,18 +5,15 @@ import {
   MenuUnfoldOutlined, 
   UserOutlined,
   SettingOutlined,
-  LogoutOutlined,
-  BellOutlined
+  LogoutOutlined
 } from '@ant-design/icons';
-import { Layout, Button, Dropdown, Space, Avatar, Badge, message } from 'antd';
-import { getCurrentUser, getNotifications } from '../api/django-api';
-import NotificationPanel from './notifications/NotificationPanel';
+import { Layout, Button, Dropdown, Space, Avatar, message } from 'antd';
+import { getCurrentUser } from '../api/django-api';
 
 const { Header } = Layout;
 
 const Navbar = ({ collapsed, onToggle }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,24 +30,9 @@ const Navbar = ({ collapsed, onToggle }) => {
       }
     };
 
-    // Fetch notification count
-    const fetchNotificationCount = async () => {
-      try {
-        const notifications = await getNotifications();
-        const unreadCount = notifications.filter(n => !n.is_read).length;
-        setUnreadNotifications(unreadCount);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-      }
-    };
-
     fetchCurrentUser();
-    fetchNotificationCount();
     
-    // Set up interval to periodically update notification count (every 30 seconds)
-    const interval = setInterval(fetchNotificationCount, 30000);
-    
-    return () => clearInterval(interval);
+    return () => {};
   }, [navigate]);
 
   const handleLogout = () => {
@@ -89,13 +71,6 @@ const Navbar = ({ collapsed, onToggle }) => {
     }
   ];
 
-  // Notification dropdown overlay - wrapped in a div to ensure single element
-  const notificationOverlay = (
-    <div key="notification-overlay" style={{ width: '320px' }}>
-      <NotificationPanel />
-    </div>
-  );
-
   return (
     <Header className="site-layout-background navbar" style={{ padding: '0 16px', background: '#fff' }}>
       <Button
@@ -111,24 +86,6 @@ const Navbar = ({ collapsed, onToggle }) => {
       />
       
       <div className="navbar-right" style={{ float: 'right', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        {/* Notifications dropdown */}
-        <Dropdown
-          overlay={notificationOverlay}
-          trigger={['click']}
-          placement="bottomRight"
-        >
-          <Badge count={unreadNotifications} overflowCount={99}>
-            <Button 
-              type="text" 
-              shape="circle" 
-              size="large"
-              style={{ marginRight: 16 }}
-            >
-              <BellOutlined style={{ fontSize: '18px' }} />
-            </Button>
-          </Badge>
-        </Dropdown>
-        
         {/* User profile dropdown */}
         {currentUser && (
           <Dropdown

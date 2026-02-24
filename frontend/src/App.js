@@ -21,7 +21,6 @@ import ScoresPage from './pages/mobile/ScoresPage';
 import BadgesPage from './pages/mobile/BadgesPage';
 import LeaderboardsPage from './pages/mobile/LeaderboardPage'; // Changed from LeaderboardsPage to LeaderboardPage
 import AccountSettingsPage from './pages/AccountSettingsPage'; // Import the new account settings page
-import NotificationsPage from './pages/NotificationsPage'; // Import the notifications page
 
 const { Content, Sider } = Layout;
 
@@ -198,15 +197,6 @@ function App() {
                 } 
               />
               
-              {/* Notifications Route */}
-              <Route 
-                path="/dashboard/notifications" 
-                element={
-                  <ProtectedRoute>
-                    <NotificationsPage />
-                  </ProtectedRoute>
-                } 
-              />
             </Routes>
           </Content>
         </Layout>

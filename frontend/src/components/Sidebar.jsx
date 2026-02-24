@@ -1,40 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Badge } from 'antd';
+import { Menu } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
   TeamOutlined,
   BarChartOutlined,
   SettingOutlined,
-  AppstoreOutlined,
-  BellOutlined
+  AppstoreOutlined
 } from '@ant-design/icons';
-import { getNotifications } from '../api/django-api';
 
 const Sidebar = ({ collapsed }) => {
   const location = useLocation();
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
-
-  useEffect(() => {
-    // Fetch notification count
-    const fetchNotificationCount = async () => {
-      try {
-        const notifications = await getNotifications();
-        const unreadCount = notifications.filter(n => !n.is_read).length;
-        setUnreadNotifications(unreadCount);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-      }
-    };
-
-    fetchNotificationCount();
-    
-    // Set up interval to periodically update notification count (every 30 seconds)
-    const interval = setInterval(fetchNotificationCount, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   // Define menu items
   const menuItems = [
@@ -108,11 +85,6 @@ const Sidebar = ({ collapsed }) => {
           label: <Link to="/dashboard/mobile/leaderboards">Leaderboards</Link>
         }
       ]
-    },
-    {
-      key: '/dashboard/notifications',
-      icon: <Badge count={unreadNotifications} overflowCount={99}><BellOutlined /></Badge>,
-      label: <Link to="/dashboard/notifications">Notifications</Link>
     },
     {
       key: '/dashboard/account-settings',

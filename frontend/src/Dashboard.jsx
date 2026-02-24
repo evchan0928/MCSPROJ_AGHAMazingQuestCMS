@@ -6,13 +6,11 @@ import {
   UserOutlined, 
   FileTextOutlined, 
   ClockCircleOutlined, 
-  NotificationOutlined,
-  EyeOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   CalendarOutlined
 } from '@ant-design/icons';
-import { getDashboardStats, getRecentContent, signOut, getCurrentUser } from './api/django-api';
+import { getDashboardStats, getRecentContent, signOut, getCurrentUser, getAnalyticsSummary } from './api/django-api';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -23,13 +21,9 @@ const Dashboard = () => {
     const isIndexRoute = location.pathname === '/dashboard';
 
     const [dashboardStats, setDashboardStats] = useState({
-        published: 0,
-        pendingApproval: 0,
-        activeUsers: 0,
-        notifications: 0,
-        totalContent: 0,
-        contentInEditing: 0,
-        recentlyPublished: 0
+        total_users: 0,
+        total_content: 0,
+        published_content: 0
     });
     
     const [recentContent, setRecentContent] = useState([]);
@@ -57,24 +51,25 @@ const Dashboard = () => {
         setLoadingContent(true);
         
         try {
-            // Fetch dashboard statistics
-            const statsData = await getDashboardStats();
-            setDashboardStats(statsData);
+            // Fetch analytics data from the new endpoint
+            const analyticsData = await getAnalyticsSummary();
             
-            // Fetch recent content
-            const contentData = await getRecentContent();
-            setRecentContent(contentData);
+            // Extract summary and content from the response
+            if (analyticsData.summary) {
+                setDashboardStats(analyticsData.summary);
+            }
+            
+            // Use the content list from analytics endpoint
+            if (analyticsData.content) {
+                setRecentContent(analyticsData.content);
+            }
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             // Set default values in case of error
             setDashboardStats({
-                published: 0,
-                pendingApproval: 0,
-                activeUsers: 0,
-                notifications: 0,
-                totalContent: 0,
-                contentInEditing: 0,
-                recentlyPublished: 0
+                total_users: 0,
+                total_content: 0,
+                published_content: 0
             });
             setRecentContent([]);
         } finally {
@@ -105,28 +100,16 @@ const Dashboard = () => {
             key: 'id',
         },
         {
-            title: 'Title',
-            dataIndex: 'title',
-            key: 'title',
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
             render: (text) => <span className="table-title">{text}</span>,
         },
         {
-            title: 'Type',
-            dataIndex: 'content_type',
-            key: 'content_type',
-            render: (type) => <span>{type || 'text'}</span>,
-        },
-        {
-            title: 'Time Stamp',
-            dataIndex: 'created_at',
-            key: 'created_at',
-            render: (date) => date ? new Date(date).toLocaleString() : 'N/A',
-        },
-        {
-            title: 'Encoded By',
-            dataIndex: 'created_by',
-            key: 'created_by',
-            render: (user) => user?.username || 'Unknown',
+            title: 'Author',
+            dataIndex: 'author',
+            key: 'author',
+            render: (author) => <span>{author || 'Unknown'}</span>,
         },
         {
             title: 'Status',
@@ -139,21 +122,18 @@ const Dashboard = () => {
                 </span>
             ),
         },
+        {
+            title: 'Date',
+            dataIndex: 'date',
+            key: 'date',
+            render: (date) => date ? new Date(date).toLocaleString() : 'N/A',
+        },
     ];
 
     // Calculate content distribution for progress visualization
-    const totalContent = dashboardStats.totalContent || 1; // Avoid division by zero
-    const publishedPercentage = dashboardStats.published 
-      ? Math.round((dashboardStats.published / totalContent) * 100) 
-      : 0;
-    const pendingPercentage = dashboardStats.pendingApproval 
-      ? Math.round((dashboardStats.pendingApproval / totalContent) * 100) 
-      : 0;
-    const editingPercentage = dashboardStats.contentInEditing 
-      ? Math.round((dashboardStats.contentInEditing / totalContent) * 100) 
-      : 0;
-    const publishedProgressPercentage = dashboardStats.published && dashboardStats.recentlyPublished 
-      ? Math.round(((dashboardStats.published + dashboardStats.recentlyPublished) / totalContent) * 100)
+    const totalContent = dashboardStats.total_content || 1; // Avoid division by zero
+    const publishedPercentage = dashboardStats.published_content 
+      ? Math.round((dashboardStats.published_content / totalContent) * 100) 
       : 0;
 
     return ( 
@@ -201,43 +181,33 @@ const Dashboard = () => {
                     <React.Fragment>
                         {/* Summary Statistics */}
                         <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
-                            <Col xs={24} sm={12} md={6}>
+                            <Col xs={24} sm={12} md={8}>
+                                <Card className="card">
+                                    <Statistic
+                                        title="Total Users"
+                                        value={dashboardStats.total_users || 0}
+                                        prefix={<UserOutlined />}
+                                        valueStyle={{ color: '#2196F3' }}
+                                    />
+                                </Card>
+                            </Col>
+                            <Col xs={24} sm={12} md={8}>
                                 <Card className="card">
                                     <Statistic
                                         title="Total Content"
-                                        value={dashboardStats.totalContent || 0}
+                                        value={dashboardStats.total_content || 0}
                                         prefix={<FileTextOutlined />}
                                         valueStyle={{ color: '#1C244D' }}
                                     />
                                 </Card>
                             </Col>
-                            <Col xs={24} sm={12} md={6}>
+                            <Col xs={24} sm={12} md={8}>
                                 <Card className="card">
                                     <Statistic
-                                        title="Published"
-                                        value={dashboardStats.published || 0}
+                                        title="Published Content"
+                                        value={dashboardStats.published_content || 0}
                                         prefix={<CheckCircleOutlined />}
                                         valueStyle={{ color: '#4CAF50' }}
-                                    />
-                                </Card>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Card className="card">
-                                    <Statistic
-                                        title="Pending Approval"
-                                        value={dashboardStats.pendingApproval || 0}
-                                        prefix={<ExclamationCircleOutlined />}
-                                        valueStyle={{ color: '#FFC107' }}
-                                    />
-                                </Card>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Card className="card">
-                                    <Statistic
-                                        title="Active Users"
-                                        value={dashboardStats.activeUsers || 0}
-                                        prefix={<UserOutlined />}
-                                        valueStyle={{ color: '#2196F3' }}
                                     />
                                 </Card>
                             </Col>
@@ -245,12 +215,12 @@ const Dashboard = () => {
 
                         {/* Content Distribution and Progress */}
                         <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
-                            <Col xs={24} lg={16}>
+                            <Col xs={24} lg={24}>
                                 <Card className="card">
-                                    <h3 className="card-title">Content Distribution</h3>
+                                    <h3 className="card-title">Content Overview</h3>
                                     <div style={{ marginBottom: '20px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                            <span>Published: {dashboardStats.published || 0} ({publishedPercentage}%)</span>
+                                            <span>Published Content: {dashboardStats.published_content || 0} ({publishedPercentage}%)</span>
                                             <Tag color="green">Published</Tag>
                                         </div>
                                         <Progress 
@@ -258,61 +228,6 @@ const Dashboard = () => {
                                             strokeColor="#52c41a" 
                                             showInfo={false} 
                                         />
-                                    </div>
-                                    
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                            <span>Pending Approval: {dashboardStats.pendingApproval || 0} ({pendingPercentage}%)</span>
-                                            <Tag color="orange">Pending</Tag>
-                                        </div>
-                                        <Progress 
-                                            percent={pendingPercentage} 
-                                            strokeColor="#faad14" 
-                                            showInfo={false} 
-                                        />
-                                    </div>
-                                    
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                            <span>In Editing: {dashboardStats.contentInEditing || 0} ({editingPercentage}%)</span>
-                                            <Tag color="blue">Editing</Tag>
-                                        </div>
-                                        <Progress 
-                                            percent={editingPercentage} 
-                                            strokeColor="#1890ff" 
-                                            showInfo={false} 
-                                        />
-                                    </div>
-                                </Card>
-                            </Col>
-                            
-                            <Col xs={24} lg={8}>
-                                <Card className="card">
-                                    <h3 className="card-title">Content Progress</h3>
-                                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1C244D', marginBottom: '10px' }}>
-                                            {publishedProgressPercentage}%
-                                        </div>
-                                        <div style={{ marginBottom: '20px' }}>
-                                            <Progress 
-                                                type="dashboard" 
-                                                percent={publishedProgressPercentage} 
-                                                strokeWidth={12}
-                                                strokeColor="#52c41a"
-                                            />
-                                        </div>
-                                        <p>Overall Publishing Progress</p>
-                                    </div>
-                                    
-                                    <div style={{ marginTop: '20px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                            <span><EyeOutlined style={{ color: '#1890ff' }} /> Recently Active</span>
-                                            <span>{dashboardStats.recentlyPublished || 0}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span><CalendarOutlined style={{ color: '#52c41a' }} /> Notifications</span>
-                                            <span>{dashboardStats.notifications || 0}</span>
-                                        </div>
                                     </div>
                                 </Card>
                             </Col>

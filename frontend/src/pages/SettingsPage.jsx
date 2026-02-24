@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card, Form, Input, Switch, Select, Button, message, Divider, Alert } from 'antd';
 import { 
   SettingOutlined, 
-  BellOutlined, 
   LockOutlined, 
   GlobalOutlined, 
   SafetyCertificateOutlined 
@@ -13,7 +12,6 @@ const { Option } = Select;
 const SettingsPage = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
 
   const handleSaveSettings = async (values) => {
@@ -54,7 +52,6 @@ const SettingsPage = () => {
           initialValues={{
             language: 'en',
             timezone: 'Asia/Manila',
-            notifications: ['email', 'push'],
             privacy: 'private',
           }}
         >
@@ -79,33 +76,6 @@ const SettingsPage = () => {
                 <Option value="Asia/Manila">Asia/Manila (GMT+8)</Option>
                 <Option value="UTC">UTC</Option>
                 <Option value="America/New_York">America/New_York (EST)</Option>
-              </Select>
-            </Form.Item>
-          </div>
-
-          <Divider orientation="left">Notification Settings</Divider>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-            <Form.Item
-              label="Enable Notifications"
-              name="enableNotifications"
-              valuePropName="checked"
-            >
-              <Switch 
-                checked={notificationsEnabled} 
-                onChange={setNotificationsEnabled} 
-                checkedChildren="ON" 
-                unCheckedChildren="OFF" 
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Notification Types"
-              name="notifications"
-            >
-              <Select mode="multiple" placeholder="Select notification types">
-                <Option value="email">Email</Option>
-                <Option value="push">Push Notification</Option>
-                <Option value="sms">SMS</Option>
               </Select>
             </Form.Item>
           </div>

@@ -146,7 +146,6 @@ INSTALLED_APPS.extend([
     'apps.usermanagement',
     'apps.analyticsmanagement',
     'apps.mobilemanagement',
-    'apps.notificationsmanagement',
 ])
 
 MIDDLEWARE = [
