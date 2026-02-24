@@ -424,6 +424,16 @@ export const createUser = async (userData) => {
     const response = await apiClient.post('/users/', userData);
     return response.data;
   } catch (error) {
+    const errorData = error.response?.data;
+    if (errorData && typeof errorData === 'object') {
+      if (errorData.error) {
+        throw new Error(errorData.error);
+      }
+      if (Object.keys(errorData).length > 0) {
+        const messages = Object.values(errorData).flat().join(', ');
+        throw new Error(messages || 'Validation error occurred');
+      }
+    }
     throw new Error(error.response?.data?.detail || error.message);
   }
 };

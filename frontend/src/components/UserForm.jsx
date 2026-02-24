@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Row, Col, Checkbox, Divider, Select, notification } from 'antd';
+import { Form, Input, Button, Card, Row, Col, Divider, Select, notification } from 'antd';
 import { UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
 import { createUser, updateUser } from '../api/django-api'; // Import the API functions
 import '../pages/ContentManagementPage.css'; // Import the CSS file from pages directory
@@ -32,9 +32,6 @@ export default function UserForm({ user, roles = [], onDone, onCancel }) {
         email: user.email || '',
         first_name: user.first_name || '',
         last_name: user.last_name || '',
-        is_active: user.is_active !== undefined ? user.is_active : true,
-        is_staff: user.is_staff || false,
-        is_superuser: user.is_superuser || false,
         roles: formattedRoles,
         password: '' // Don't populate existing passwords for security
       });
@@ -44,9 +41,6 @@ export default function UserForm({ user, roles = [], onDone, onCancel }) {
         email: '',
         first_name: '',
         last_name: '',
-        is_active: true,
-        is_staff: false,
-        is_superuser: false,
         roles: [],
         password: ''
       });
@@ -99,9 +93,6 @@ export default function UserForm({ user, roles = [], onDone, onCancel }) {
             email: '',
             first_name: '',
             last_name: '',
-            is_active: true,
-            is_staff: false,
-            is_superuser: false,
             roles: [],
             password: ''
           }}
@@ -173,6 +164,7 @@ export default function UserForm({ user, roles = [], onDone, onCancel }) {
                 name="roles"
                 label="Roles"
                 tooltip="Assign roles to the user for permission management"
+                rules={[{ required: true, message: 'Please assign at least one role' }]}
               >
                 <Select 
                   mode="multiple"
@@ -189,36 +181,6 @@ export default function UserForm({ user, roles = [], onDone, onCancel }) {
           </Row>
           
           <Divider />
-          
-          <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item
-                name="is_active"
-                label="Status"
-                valuePropName="checked"
-              >
-                <Checkbox>Active</Checkbox>
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item
-                name="is_staff"
-                label="Staff"
-                valuePropName="checked"
-              >
-                <Checkbox>Staff User</Checkbox>
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item
-                name="is_superuser"
-                label="Superuser"
-                valuePropName="checked"
-              >
-                <Checkbox>Superuser</Checkbox>
-              </Form.Item>
-            </Col>
-          </Row>
           
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={saving}>

@@ -9,9 +9,30 @@ import {
   SettingOutlined,
   AppstoreOutlined
 } from '@ant-design/icons';
+import { getCurrentUser } from '../api/django-api';
 
 const Sidebar = ({ collapsed }) => {
   const location = useLocation();
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error fetching user for sidebar:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const roles = currentUser?.roles || [];
+  const isSuperUser = Boolean(currentUser?.is_superuser);
+  const isAdmin = isSuperUser || roles.includes('Admin') || roles.includes('Super Admin');
+  const canEditContent = isSuperUser || roles.includes('Editor') || roles.includes('Admin') || roles.includes('Super Admin');
+  const canApproveContent = isSuperUser || roles.includes('Approver') || roles.includes('Admin') || roles.includes('Super Admin');
 
   // Define menu items
   const menuItems = [
@@ -35,15 +56,18 @@ const Sidebar = ({ collapsed }) => {
         },
         {
           key: '/dashboard/content/edit',
-          label: <Link to="/dashboard/content/list">Edit Content</Link>
+          label: <Link to="/dashboard/content/list">Edit Content</Link>,
+          hidden: !canEditContent
         },
         {
           key: '/dashboard/content/approval',
-          label: <Link to="/dashboard/content/approval">Approve Content</Link>
+          label: <Link to="/dashboard/content/approval">Approve Content</Link>,
+          hidden: !canApproveContent
         },
         {
           key: '/dashboard/content/publish',
-          label: <Link to="/dashboard/content/publish">Publish Content</Link>
+          label: <Link to="/dashboard/content/publish">Publish Content</Link>,
+          hidden: !canApproveContent
         }
       ]
     },
@@ -51,6 +75,7 @@ const Sidebar = ({ collapsed }) => {
       key: '/dashboard/users',
       icon: <TeamOutlined />,
       label: 'User Management',
+      hidden: !isAdmin,
       children: [
         {
           key: '/dashboard/users/list',
@@ -65,12 +90,14 @@ const Sidebar = ({ collapsed }) => {
     {
       key: '/dashboard/analytics',
       icon: <BarChartOutlined />,
-      label: <Link to="/dashboard/analytics">Analytics</Link>
+      label: <Link to="/dashboard/analytics">Analytics</Link>,
+      hidden: !isAdmin
     },
     {
       key: '/dashboard/mobile',
       icon: <AppstoreOutlined />,
       label: 'Mobile Management',
+      hidden: !isAdmin,
       children: [
         {
           key: '/dashboard/mobile/profiles',
@@ -101,6 +128,17 @@ const Sidebar = ({ collapsed }) => {
     }
   ];
 
+  const filteredMenuItems = menuItems
+    .filter(item => !item.hidden)
+    .map(item => {
+      if (!item.children) {
+        return item;
+      }
+
+      const children = item.children.filter(child => !child.hidden);
+      return { ...item, children };
+    });
+
   return (
     <div style={{ height: '100vh', overflow: 'auto' }}>
       <div className="logo" style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -112,7 +150,7 @@ const Sidebar = ({ collapsed }) => {
         theme="dark"
         mode="inline"
         selectedKeys={[location.pathname]}
-        items={menuItems}
+        items={filteredMenuItems}
         style={{ borderRight: 0 }}
       />
     </div>

@@ -47,20 +47,22 @@ const ContentListPage = () => {
 
   // Determine if user can perform actions based on role
   const canEdit = (content) => {
-    // Can edit if user is superuser, or if status is for_editing and user is encoder/editor
-    return currentUser && (currentUser.is_superuser || 
-           (currentUser.roles || []).includes('Super Admin') ||
-           (content.status === 'for_editing' && 
-            ((currentUser.roles || []).includes('Encoder') || (currentUser.roles || []).includes('Editor'))));
+    // Edit: Editor, Admin, Super Admin (and superuser)
+    return currentUser && (
+      currentUser.is_superuser ||
+      (currentUser.roles || []).includes('Editor') ||
+      (currentUser.roles || []).includes('Admin') ||
+      (currentUser.roles || []).includes('Super Admin')
+    );
   };
 
   const canDelete = (content) => {
-    // Can delete if user is superuser, admin, or if status is for_editing and user is encoder/editor
-    return currentUser && (currentUser.is_superuser || 
-           (currentUser.roles || []).includes('Super Admin') ||
-           (currentUser.roles || []).includes('Admin') ||
-           (content.status === 'for_editing' && 
-            ((currentUser.roles || []).includes('Encoder') || (currentUser.roles || []).includes('Editor'))));
+    // Delete: Admin, Super Admin (and superuser)
+    return currentUser && (
+      currentUser.is_superuser ||
+      (currentUser.roles || []).includes('Admin') ||
+      (currentUser.roles || []).includes('Super Admin')
+    );
   };
 
   const canSendForApproval = (content) => {
@@ -70,15 +72,23 @@ const ContentListPage = () => {
   };
 
   const canApprove = (content) => {
-    // Can approve if user is approver and status is for_approval
-    return currentUser && ((currentUser.roles || []).includes('Approver') || (currentUser.roles || []).includes('Super Admin')) &&
-           content.status === 'for_approval';
+    // Approve/Reject: Approver, Admin, Super Admin (and superuser)
+    return currentUser && (
+      currentUser.is_superuser ||
+      (currentUser.roles || []).includes('Approver') ||
+      (currentUser.roles || []).includes('Admin') ||
+      (currentUser.roles || []).includes('Super Admin')
+    );
   };
 
   const canPublish = (content) => {
-    // Can publish if user is admin and status is approved
-    return currentUser && (currentUser.is_superuser || (currentUser.roles || []).includes('Super Admin') || (currentUser.roles || []).includes('Admin')) &&
-           content.status === 'approved';
+    // Publish: Approver, Admin, Super Admin (and superuser)
+    return currentUser && (
+      currentUser.is_superuser ||
+      (currentUser.roles || []).includes('Approver') ||
+      (currentUser.roles || []).includes('Admin') ||
+      (currentUser.roles || []).includes('Super Admin')
+    );
   };
 
   // Action handlers
