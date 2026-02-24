@@ -5,6 +5,7 @@ import { Table, Card, Modal, message, Tag, Button, Space, Divider } from 'antd';
 import { EditOutlined, EyeOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getContentItems, deleteContentItem, sendContentForApproval, approveContentItem, denyContentItem, publishContentItem, getCurrentUser } from '../api/django-api';
+import statusLabel, { getStatusColor } from '../utils/statusLabels.jsx';
 
 const { confirm } = Modal;
 
@@ -66,9 +67,10 @@ const ContentListPage = () => {
   };
 
   const canSendForApproval = (content) => {
-    // Can send for approval if user is encoder/editor and status is for_editing
-    return currentUser && ((currentUser.roles || []).includes('Encoder') || (currentUser.roles || []).includes('Editor')) &&
-           content.status === 'for_editing';
+      // Can send for approval if user is encoder/editor and status is editable
+      const editableStatuses = ['for_editing', 'edited', 'pending_approval'];
+      return currentUser && ((currentUser.roles || []).includes('Encoder') || (currentUser.roles || []).includes('Editor')) &&
+        editableStatuses.includes(String(content.status));
   };
 
   const canApprove = (content) => {
@@ -173,16 +175,7 @@ const ContentListPage = () => {
 
   // Status badge component
   const getStatusTag = (status) => {
-    const statusConfig = {
-      for_editing: { color: 'processing', text: 'For Editing' },
-      for_approval: { color: 'orange', text: 'For Approval' },
-      approved: { color: 'success', text: 'Approved' },
-      published: { color: 'purple', text: 'Published' },
-      rejected: { color: 'error', text: 'Rejected' },
-    };
-
-    const config = statusConfig[status] || { color: 'default', text: status };
-    return <Tag color={config.color}>{config.text}</Tag>;
+    return <Tag color={getStatusColor(status)}>{statusLabel(status)}</Tag>;
   };
 
   // Define columns for the table
@@ -215,10 +208,11 @@ const ContentListPage = () => {
         { text: 'For Editing', value: 'for_editing' },
         { text: 'For Approval', value: 'for_approval' },
         { text: 'Approved', value: 'approved' },
+        { text: 'For Publishing', value: 'for_publishing' },
         { text: 'Published', value: 'published' },
-        { text: 'Rejected', value: 'rejected' },
+        { text: 'Deleted', value: 'deleted' },
       ],
-      onFilter: (value, record) => record.status.indexOf(value) === 0,
+      onFilter: (value, record) => String(record.status) === String(value),
     },
     {
       title: 'Created At',

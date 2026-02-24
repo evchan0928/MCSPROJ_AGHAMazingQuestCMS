@@ -6,6 +6,7 @@ import {
   publishContentItem,
   getCurrentUser
 } from '../api/django-api';
+import statusLabel, { getStatusColor } from '../utils/statusLabels.jsx';
 
 const PublishContentPage = () => {
   const [contents, setContents] = useState([]);
@@ -38,9 +39,9 @@ const PublishContentPage = () => {
 
   const fetchContentForPublishing = async () => {
     try {
-      // Fetch content items with status 'for_publishing' (approved but not yet published)
+      // Fetch content items with status 'for_publishing' or 'approved' (accept both workflow names)
       const allContent = await getContentItems();
-      const contentForPublishing = allContent.filter(item => item.status === 'for_publishing');
+      const contentForPublishing = allContent.filter(item => ['for_publishing', 'approved'].includes(String(item.status)));
       setContents(contentForPublishing);
       setLoading(false);
     } catch (error) {
@@ -160,26 +161,7 @@ const PublishContentPage = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => {
-        const colorMap = {
-          draft: 'default',
-          review: 'orange',
-          approved: 'blue',
-          published: 'green',
-          archived: 'gray',
-          rejected: 'red',
-          for_editing: 'default',
-          for_approval: 'orange',
-          for_publishing: 'blue',
-          deleted: 'gray'
-        };
-        
-        return (
-          <Tag color={colorMap[status] || 'default'}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </Tag>
-        );
-      },
+      render: (status) => <Tag color={getStatusColor(status)}>{statusLabel(status)}</Tag>,
     },
     {
       title: 'Actions',

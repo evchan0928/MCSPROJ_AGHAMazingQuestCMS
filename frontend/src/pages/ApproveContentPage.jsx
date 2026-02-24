@@ -7,7 +7,7 @@ import {
   denyContentItem,
   getCurrentUser
 } from '../api/django-api';
-import statusLabel from '../utils/statusLabels.jsx';
+import statusLabel, { getStatusColor } from '../utils/statusLabels.jsx';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -33,9 +33,9 @@ export default function ApproveContentPage() {
     
     setLoading(true);
     try {
-      // Fetch content items with status 'for_approval'
+      // Fetch content items with status 'for_approval' (also accept legacy variants)
       const allContent = await getContentItems();
-      const pendingApprovalContent = allContent.filter(item => item.status === 'for_approval');
+      const pendingApprovalContent = allContent.filter(item => ['for_approval', 'pending_approval', 'edited'].includes(String(item.status)));
       setContents(pendingApprovalContent);
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -153,10 +153,8 @@ export default function ApproveContentPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {statusLabel(status)}
-        </Tag>
-      ),
+        <Tag color={getStatusColor(status)}>{statusLabel(status)}</Tag>
+      )
     },
     {
       title: 'Created At',

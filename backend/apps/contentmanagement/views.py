@@ -326,27 +326,73 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     def publish(self, request, pk=None):
         """Custom action to change the status of a content item to published."""
         content_item = self.get_object()
-        content_item.status = ContentItem.STATUS_PUBLISHED
-        content_item.save()
-        serializer = self.get_serializer(content_item)
-        return Response({
-            "success": True,
-            "message": f"Content '{content_item.title}' published successfully",
-            "data": serializer.data
-        })
+        # Only Approver/Admin/superuser allowed (permission class should handle this,
+        # but enforce again defensively)
+        if user_in_group(request.user, 'Approver') or user_in_group(request.user, 'Admin') or request.user.is_superuser:
+            try:
+                # Use transition helper to set published timestamp and user
+                content_item.transition_status(ContentItem.STATUS_PUBLISHED, user=request.user)
+                serializer = self.get_serializer(content_item)
+                return Response({
+                    "success": True,
+                    "message": f"Content '{content_item.title}' published successfully",
+                    "data": serializer.data
+                })
+            except Exception as e:
+                return Response({
+                    "success": False,
+                    "message": f"Failed to publish content: {str(e)}"
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({
+                "success": False,
+                "message": "You do not have permission to publish content"
+            }, status=status.HTTP_403_FORBIDDEN)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def send_for_approval(self, request, pk=None):
+        """Custom action to send a content item for approval (editor -> approver)."""
+        content_item = self.get_object()
+        # Only Editors are allowed to send for approval (permission class covers this)
+        if user_in_group(request.user, 'Editor') or request.user.is_superuser:
+            try:
+                content_item.transition_status(ContentItem.STATUS_FOR_APPROVAL, user=request.user)
+                serializer = self.get_serializer(content_item)
+                return Response({
+                    "success": True,
+                    "message": f"Content '{content_item.title}' sent for approval",
+                    "data": serializer.data
+                })
+            except Exception as e:
+                return Response({
+                    "success": False,
+                    "message": f"Failed to send content for approval: {str(e)}"
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({
+                "success": False,
+                "message": "You do not have permission to send content for approval"
+            }, status=status.HTTP_403_FORBIDDEN)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approve(self, request, pk=None):
         """Custom action to approve content for publishing."""
         content_item = self.get_object()
         if user_in_group(request.user, 'Approver') or user_in_group(request.user, 'Admin') or request.user.is_superuser:
-            content_item.approve(user=request.user)
-            serializer = self.get_serializer(content_item)
-            return Response({
-                "success": True,
-                "message": f"Content '{content_item.title}' approved for publishing",
-                "data": serializer.data
-            })
+            try:
+                # Transition to 'for_publishing' and set approved_by/approved_at
+                content_item.transition_status(ContentItem.STATUS_FOR_PUBLISHING, user=request.user)
+                serializer = self.get_serializer(content_item)
+                return Response({
+                    "success": True,
+                    "message": f"Content '{content_item.title}' approved for publishing",
+                    "data": serializer.data
+                })
+            except Exception as e:
+                return Response({
+                    "success": False,
+                    "message": f"Failed to approve content: {str(e)}"
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response({
                 "success": False,
