@@ -2,8 +2,13 @@
 import axios from 'axios';
 
 // Initialize Django API client
-// Updated to handle the correct backend URL for both axios and fetch calls
-const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8001';
+// Always use Tailscale IP for all API requests
+const getBackendURL = () => {
+  // Always route through Tailscale IP
+  return 'http://100.93.255.84:8000';
+};
+
+const BACKEND_BASE_URL = getBackendURL();
 const BACKEND_API_URL = BACKEND_BASE_URL.endsWith('/api') ? BACKEND_BASE_URL : `${BACKEND_BASE_URL}/api`;
 
 // Create an axios instance with default settings

@@ -235,22 +235,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Read allowed origins from environment variable for flexibility.
 # Default to common development values if not set.
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://[::1]:3000',      # IPv6 localhost
-    'http://192.168.0.1:3000',  # Common router IP
-    'http://192.168.1.1:3000',  # Another common router IP
-    'http://10.0.0.1:3000',     # Private network
-    'http://172.16.0.1:3000',   # Private network
-    'http://172.19.91.23:3000',  # Staging environment IP for frontend
-    'http://localhost:8080',  # Nginx proxy server
-    'https://localhost:8080',  # Nginx proxy server (HTTPS)
-    # Adding origins for Flutter app access
-    'http://localhost:8000',  # Django development server (for Flutter app)
-    'http://127.0.0.1:8000',  # IPv4 localhost (for Flutter app)
-    # Adding the frontend port where it's actually running
-    'http://localhost:3001',  # Frontend development server
-    'http://127.0.0.1:3001',  # IPv4 localhost for frontend
+    'http://100.93.255.84:3000',  # Tailscale IP
+    'https://100.93.255.84:3000',  # Tailscale IP (HTTPS)
+    'http://100.93.255.84:8000',  # Tailscale IP backend
+    'https://100.93.255.84:8000', # Tailscale IP backend (HTTPS)
 ]
 CORS_ALLOW_CREDENTIALS = True
 # You can override this with a comma-separated list in the environment variable
@@ -261,12 +249,12 @@ if os.environ.get('CORS_ALLOWED_ORIGIN_REGEXES'):
 # Allow all origins if CORS_ALLOWED_ORIGIN_REGEXES is not set (for development)
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
 
-# CSRF Trusted Origins for development
+# CSRF Trusted Origins - Tailscale IP only
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',    # React development server
-    'http://127.0.0.1:3000',    # IPv4 localhost
-    'http://localhost:8001',    # Django development server
-    'http://127.0.0.1:8001',    # IPv4 localhost
+    'http://100.93.255.84:3000',  # Tailscale IP frontend
+    'https://100.93.255.84:3000', # Tailscale IP frontend (HTTPS)
+    'http://100.93.255.84:8000',  # Tailscale IP backend
+    'https://100.93.255.84:8000', # Tailscale IP backend (HTTPS)
 ]
 
 # Add additional trusted origins from environment variable if set
