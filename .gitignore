@@ -40,6 +40,13 @@ frontend/node_modules/
 frontend/build/
 frontend/dist/
 frontend/.next/
+frontend/.pnp
+frontend/.pnp.js
+frontend/coverage
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
 
 # Backend media and static files
 backend/media/
