@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Card, Modal, notification, Tag, Space, Pagination, Descriptions, Typography } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
-import { useOutletContext } from 'react-router-dom';
 import { 
   getContentItems, 
   approveContentItem, 
-  denyContentItem 
+  denyContentItem,
+  getCurrentUser
 } from '../api/django-api';
 import statusLabel from '../utils/statusLabels.jsx';
 
@@ -19,14 +19,14 @@ export default function ApproveContentPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [api, contextHolder] = notification.useNotification();
-  const outlet = useOutletContext();
-  const outletUser = outlet?.user || null;
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // Check user permissions - allowing Admins as well
-  const allowed = (outletUser && (outletUser.is_superuser || 
-    (outletUser.roles || []).includes('Approver') || 
-    (outletUser.roles || []).includes('Admin') || 
-    (outletUser.roles || []).includes('Super Admin'))) || false;
+  // Role-based access control
+  const allowedRoles = ['Approver', 'Admin', 'Super Admin'];
+
+  // Check user permissions
+  const allowed = (currentUser && (currentUser.is_superuser || 
+    (currentUser.roles || []).some(role => allowedRoles.includes(role)))) || false;
 
   const fetchPendingContent = async () => {
     if (!allowed) return;
@@ -47,6 +47,24 @@ export default function ApproveContentPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getCurrentUser();
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        api.error({
+          message: 'Error',
+          description: 'Failed to fetch user data'
+        });
+      }
+    };
+    
+    fetchUserData();
+    fetchPendingContent();
+  }, []);
 
   useEffect(() => {
     fetchPendingContent();

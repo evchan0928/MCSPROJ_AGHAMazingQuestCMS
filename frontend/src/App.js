@@ -7,7 +7,9 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './Dashboard';
 import ContentListPage from './pages/ContentListPage';
 import UploadContentPage from './pages/UploadContentPage';
+import EditContentPage from './pages/EditContentPage';
 import ApproveContentPage from './pages/ApproveContentPage';
+import PublishContentPage from './pages/PublishContentPage';
 import UserManagementPage from './pages/UserManagementPage';
 import AnalyticsManagementPage from './pages/AnalyticsManagementPage';
 import RolesPage from './pages/RolesPage';
@@ -88,10 +90,37 @@ function App() {
               />
               
               <Route 
+                path="/dashboard/content/list" 
+                element={
+                  <ProtectedRoute>
+                    <ContentListPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
+                path="/dashboard/content/edit" 
+                element={
+                  <ProtectedRoute>
+                    <EditContentPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
                 path="/dashboard/content/approval" 
                 element={
                   <ProtectedRoute>
                     <ApproveContentPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
+                path="/dashboard/content/publish" 
+                element={
+                  <ProtectedRoute>
+                    <PublishContentPage />
                   </ProtectedRoute>
                 } 
               />

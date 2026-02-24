@@ -34,8 +34,16 @@ const Sidebar = ({ collapsed }) => {
           label: <Link to="/dashboard/content/list">Content List</Link>
         },
         {
+          key: '/dashboard/content/edit',
+          label: <Link to="/dashboard/content/edit">Edit Content</Link>
+        },
+        {
           key: '/dashboard/content/approval',
-          label: <Link to="/dashboard/content/approval">For Approval</Link>
+          label: <Link to="/dashboard/content/approval">Approve Content</Link>
+        },
+        {
+          key: '/dashboard/content/publish',
+          label: <Link to="/dashboard/content/publish">Publish Content</Link>
         }
       ]
     },

@@ -4,22 +4,33 @@ import React, { useState, useEffect } from 'react';
 import { Table, Card, Modal, message, Tag, Button, Space, Divider } from 'antd';
 import { EditOutlined, EyeOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { getContentItems, deleteContentItem, sendContentForApproval, approveContentItem, denyContentItem, publishContentItem } from '../api/django-api';
+import { getContentItems, deleteContentItem, sendContentForApproval, approveContentItem, denyContentItem, publishContentItem, getCurrentUser } from '../api/django-api';
 
 const { confirm } = Modal;
 
 const ContentListPage = () => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
-  // Get current user from localStorage
-  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  // Role-based access control
+  const allowedRoles = ['Encoder', 'Editor', 'Approver', 'Admin', 'Super Admin'];
 
   // Fetch content items from the API
   useEffect(() => {
+    fetchUserData();
     fetchContents();
   }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    }
+  };
 
   const fetchContents = async () => {
     try {
@@ -37,36 +48,36 @@ const ContentListPage = () => {
   // Determine if user can perform actions based on role
   const canEdit = (content) => {
     // Can edit if user is superuser, or if status is for_editing and user is encoder/editor
-    return currentUser.is_superuser || 
-           currentUser.groups?.includes('Super Admin') ||
+    return currentUser && (currentUser.is_superuser || 
+           (currentUser.roles || []).includes('Super Admin') ||
            (content.status === 'for_editing' && 
-            (currentUser.groups?.includes('Encoder') || currentUser.groups?.includes('Editor')));
+            ((currentUser.roles || []).includes('Encoder') || (currentUser.roles || []).includes('Editor'))));
   };
 
   const canDelete = (content) => {
     // Can delete if user is superuser, admin, or if status is for_editing and user is encoder/editor
-    return currentUser.is_superuser || 
-           currentUser.groups?.includes('Super Admin') ||
-           currentUser.groups?.includes('Admin') ||
+    return currentUser && (currentUser.is_superuser || 
+           (currentUser.roles || []).includes('Super Admin') ||
+           (currentUser.roles || []).includes('Admin') ||
            (content.status === 'for_editing' && 
-            (currentUser.groups?.includes('Encoder') || currentUser.groups?.includes('Editor')));
+            ((currentUser.roles || []).includes('Encoder') || (currentUser.roles || []).includes('Editor'))));
   };
 
   const canSendForApproval = (content) => {
     // Can send for approval if user is encoder/editor and status is for_editing
-    return (currentUser.groups?.includes('Encoder') || currentUser.groups?.includes('Editor')) &&
+    return currentUser && ((currentUser.roles || []).includes('Encoder') || (currentUser.roles || []).includes('Editor')) &&
            content.status === 'for_editing';
   };
 
   const canApprove = (content) => {
     // Can approve if user is approver and status is for_approval
-    return (currentUser.groups?.includes('Approver') || currentUser.groups?.includes('Super Admin')) &&
+    return currentUser && ((currentUser.roles || []).includes('Approver') || (currentUser.roles || []).includes('Super Admin')) &&
            content.status === 'for_approval';
   };
 
   const canPublish = (content) => {
     // Can publish if user is admin and status is approved
-    return (currentUser.is_superuser || currentUser.groups?.includes('Super Admin') || currentUser.groups?.includes('Admin')) &&
+    return currentUser && (currentUser.is_superuser || (currentUser.roles || []).includes('Super Admin') || (currentUser.roles || []).includes('Admin')) &&
            content.status === 'approved';
   };
 
@@ -280,6 +291,22 @@ const ContentListPage = () => {
       ),
     },
   ];
+
+  if (!currentUser) {
+    return <div style={{ padding: '20px' }}>Loading...</div>;
+  }
+
+  const hasPermission = currentUser.is_superuser || 
+    (currentUser.roles || []).some(role => allowedRoles.includes(role));
+
+  if (!hasPermission) {
+    return (
+      <Card style={{ margin: '20px' }}>
+        <h2>Access Denied</h2>
+        <p>You don't have permission to view content. Required roles: Encoder, Editor, Approver, Admin, or Super Admin.</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="content-list-page">

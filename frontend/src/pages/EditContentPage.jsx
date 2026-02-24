@@ -21,6 +21,9 @@ const EditContentPage = () => {
   const [saving, setSaving] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
+  // Role-based access control
+  const allowedRoles = ['Editor', 'Admin', 'Super Admin'];
+
   useEffect(() => {
     fetchUserData();
     fetchContentDetails();
@@ -89,6 +92,19 @@ const EditContentPage = () => {
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <Spin size="large" />
       </div>
+    );
+  }
+
+  // Check permissions
+  const hasPermission = currentUser && (currentUser.is_superuser || 
+    (currentUser.roles || []).some(role => allowedRoles.includes(role)));
+
+  if (!hasPermission) {
+    return (
+      <Card style={{ margin: '20px' }}>
+        <h2>Access Denied</h2>
+        <p>You don't have permission to edit content. Required roles: Editor, Admin, or Super Admin.</p>
+      </Card>
     );
   }
 

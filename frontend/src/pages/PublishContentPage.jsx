@@ -15,6 +15,9 @@ const PublishContentPage = () => {
   const [api, contextHolder] = notification.useNotification();
   const [currentUser, setCurrentUser] = useState(null);
 
+  // Role-based access control
+  const allowedRoles = ['Approver', 'Admin', 'Super Admin'];
+
   const fetchUserData = async () => {
     try {
       const userData = await getCurrentUser();
@@ -204,11 +207,8 @@ const PublishContentPage = () => {
   ];
 
   // Check if user has permission to publish content
-  const hasPermission = currentUser && (
-    currentUser.is_superuser || 
-    currentUser.role === 'approver' || 
-    currentUser.role === 'super_admin'
-  );
+  const hasPermission = currentUser && (currentUser.is_superuser || 
+    (currentUser.roles || []).some(role => allowedRoles.includes(role)));
 
   if (!hasPermission) {
     return (

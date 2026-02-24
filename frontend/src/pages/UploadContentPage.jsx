@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { message, notification } from 'antd';
+import { message, notification, Card } from 'antd';
 import { createContentItem, getCurrentUser } from '../api/django-api';
 
 export default function UploadContentPage() {
@@ -48,6 +48,9 @@ export default function UploadContentPage() {
 
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+
+  // Role-based access control
+  const allowedRoles = ['Encoder', 'Editor', 'Approver', 'Admin', 'Super Admin'];
 
   // Initialize current user on component mount
   React.useEffect(() => {
@@ -280,6 +283,22 @@ export default function UploadContentPage() {
     }
   };
   
+
+  if (!currentUser) {
+    return <div style={{ padding: '20px' }}>Loading...</div>;
+  }
+
+  const hasPermission = currentUser.is_superuser || 
+    (currentUser.roles || []).some(role => allowedRoles.includes(role));
+
+  if (!hasPermission) {
+    return (
+      <Card style={{ margin: '20px' }}>
+        <h2>Access Denied</h2>
+        <p>You don't have permission to upload content. Required roles: Encoder, Editor, Approver, Admin, or Super Admin.</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="upload-page-container">

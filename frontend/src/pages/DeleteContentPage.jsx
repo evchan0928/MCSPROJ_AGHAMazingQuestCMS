@@ -1,18 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Card, Modal, message, Tag, Space, Spin } from 'antd';
 import { DeleteOutlined, ExclamationCircleOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
-import { getContentItems, deleteContentItem, updateContentItem } from '../api/django-api';
+import { getContentItems, deleteContentItem, updateContentItem, getCurrentUser } from '../api/django-api';
 
 const DeleteContentPage = () => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [hasPermission, setHasPermission] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Role-based access control
+  const allowedRoles = ['Admin', 'Super Admin'];
+
   useEffect(() => {
+    fetchUserData();
     fetchContentForDeletion();
   }, [refreshTrigger]);
+
+  const fetchUserData = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      setHasPermission(userData.is_superuser || 
+        (userData.roles || []).some(role => allowedRoles.includes(role)));
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    }
+  };
 
   const fetchContentForDeletion = async () => {
     try {
@@ -191,6 +208,19 @@ const DeleteContentPage = () => {
       ),
     },
   ];
+
+  if (!currentUser) {
+    return <div style={{ padding: '20px' }}>Loading...</div>;
+  }
+
+  if (!hasPermission) {
+    return (
+      <Card style={{ margin: '20px' }}>
+        <h2>Access Denied</h2>
+        <p>You don't have permission to delete content. Only Admins and Super Admins can delete content.</p>
+      </Card>
+    );
+  }
 
   return (
     <div style={{ padding: '24px' }}>
