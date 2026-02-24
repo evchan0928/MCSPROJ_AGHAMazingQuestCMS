@@ -1,16 +1,16 @@
 // Dashboard component for the CMS
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Card, Statistic, Table, Row, Col, Button, DatePicker, Select, Space, Progress, Tag } from 'antd';
+import { Card, Statistic, Table, Row, Col, DatePicker, Select, Space, Progress, Tag } from 'antd';
 import { 
-  UserOutlined, 
-  FileTextOutlined, 
-  ClockCircleOutlined, 
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  CalendarOutlined
+    UserOutlined, 
+    FileTextOutlined, 
+    CheckCircleOutlined,
+    ExclamationCircleOutlined,
+    CalendarOutlined
 } from '@ant-design/icons';
 import { getDashboardStats, getRecentContent, signOut, getCurrentUser, getAnalyticsSummary } from './api/django-api';
+import statusLabel, { getStatusColor } from './utils/statusLabels.jsx';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -116,10 +116,7 @@ const Dashboard = () => {
             dataIndex: 'status',
             key: 'status',
             render: (status) => (
-                <span className={`status-cell status-${status.toLowerCase().replace(' ', '-')}`}>
-                    <span className="status-dot"></span>
-                    {status}
-                </span>
+                <Tag color={getStatusColor(status)}>{statusLabel(status)}</Tag>
             ),
         },
         {
@@ -139,15 +136,7 @@ const Dashboard = () => {
     return ( 
         <div className="dashboard-content-wrapper" role="main">
             {/* Back to top button - accessibility improvement */}
-            {isIndexRoute && (
-                <Button 
-                    type="primary" 
-                    shape="circle" 
-                    icon={<ClockCircleOutlined />} 
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    className="back-to-top"
-                />
-            )}
+            { /* back-to-top button removed per design request */ }
 
             {/* Main Content - Scrollable area */}
             <div className="main-content">

@@ -269,7 +269,7 @@ button {
 .main-content {
   flex: 1;
   padding: 1.5rem;
-  margin-left: 200px;
+  margin-left: 0; /* default no offset; offset only applied when sidebar present */
   margin-top: 64px; /* Keep top margin to account for fixed navbar */
   transition: margin-left var(--transition-normal);
   min-height: calc(100vh - 64px);
@@ -277,6 +277,11 @@ button {
   overflow-x: hidden;
   position: relative;
   background-color: var(--background-color);
+}
+
+/* Apply left offset only when sidebar exists in the DOM */
+.sidebar + .main-content {
+  margin-left: 200px;
 }
 
 .page-content {
