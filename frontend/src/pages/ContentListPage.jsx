@@ -233,6 +233,9 @@ const ContentListPage = () => {
       render: (_, record) => {
         const menuItems = [];
 
+        // Always allow preview from actions
+        menuItems.push({ key: 'preview', label: 'Preview' });
+
         if (canEdit(record)) {
           menuItems.push({ key: 'edit', label: 'Edit' });
         }
@@ -270,6 +273,10 @@ const ContentListPage = () => {
               case 'approve':
                 handleApprove(record.id);
                 break;
+              case 'preview':
+                setPreviewContent(record);
+                setPreviewVisible(true);
+                break;
               case 'deny':
                 handleDeny(record.id);
                 break;
@@ -300,18 +307,13 @@ const ContentListPage = () => {
         };
 
         return (
-          <>
-            <Dropdown menu={dropdownMenu} trigger={["click"]}>
-              <span>
-                <Button>
-                  Actions <DownOutlined />
-                </Button>
-              </span>
-            </Dropdown>
-            <Button style={{ marginLeft: 8 }} onClick={() => { setPreviewContent(record); setPreviewVisible(true); }}>
-              Preview
-            </Button>
-          </>
+          <Dropdown menu={dropdownMenu} trigger={["click"]}>
+            <span>
+              <Button>
+                Actions <DownOutlined />
+              </Button>
+            </span>
+          </Dropdown>
         );
       },
     },
