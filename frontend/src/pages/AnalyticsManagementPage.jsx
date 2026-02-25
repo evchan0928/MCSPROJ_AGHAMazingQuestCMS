@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Col, Row, Typography, Statistic, Table, DatePicker, Select, Button } from 'antd';
+import { Card, Col, Row, Typography, Statistic, Table, DatePicker, Select, Button, Tag } from 'antd';
 import { UserOutlined, FileTextOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { getAnalyticsSummary } from '../api/django-api';
+import statusLabel, { getStatusColor } from '../utils/statusLabels.jsx';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -77,8 +78,8 @@ const AnalyticsManagementPage = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <span style={{ color: status === 'Published' ? '#52c41a' : '#faad14' }}>
-          {status}
+        <span>
+          <Tag color={getStatusColor(status)}>{statusLabel(status)}</Tag>
         </span>
       ),
     },

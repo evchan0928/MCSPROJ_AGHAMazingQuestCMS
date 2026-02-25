@@ -10,7 +10,7 @@ import {
     CalendarOutlined
 } from '@ant-design/icons';
 import { getDashboardStats, getRecentContent, signOut, getCurrentUser, getAnalyticsSummary } from './api/django-api';
-import statusLabel, { getStatusColor } from './utils/statusLabels.jsx';
+import statusLabel, { getStatusColor, STATUS_LABELS } from './utils/statusLabels.jsx';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -27,6 +27,7 @@ const Dashboard = () => {
     });
     
     const [recentContent, setRecentContent] = useState([]);
+    const [statusCounts, setStatusCounts] = useState({});
     const [loadingStats, setLoadingStats] = useState(true);
     const [loadingContent, setLoadingContent] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
@@ -62,6 +63,32 @@ const Dashboard = () => {
             // Use the content list from analytics endpoint
             if (analyticsData.content) {
                 setRecentContent(analyticsData.content);
+                // Build status counts from the content list if not provided by backend
+                const counts = {};
+                const canonicalStatuses = ['for_editing','for_approval','approved','for_publishing','published','deleted'];
+                // helper to normalize status to canonical key
+                const normalizeKey = (s) => {
+                    if (s === null || s === undefined) return 'for_editing';
+                    const raw = String(s).toLowerCase();
+                    // direct canonical match
+                    if (canonicalStatuses.includes(raw)) return raw;
+                    // legacy mappings
+                    if (raw === 'uploaded') return 'for_editing';
+                    if (raw === 'edited' || raw === 'pending_approval') return 'for_approval';
+                    // check against STATUS_LABELS display values
+                    for (const k of Object.keys(STATUS_LABELS)) {
+                        if (String(STATUS_LABELS[k]).toLowerCase() === raw) return k;
+                    }
+                    // fallback: attempt to replace spaces
+                    const underscored = raw.replace(/\s+/g, '_');
+                    return canonicalStatuses.includes(underscored) ? underscored : 'for_editing';
+                };
+
+                analyticsData.content.forEach(item => {
+                    const key = normalizeKey(item.status);
+                    counts[key] = (counts[key] || 0) + 1;
+                });
+                setStatusCounts(counts);
             }
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
@@ -210,7 +237,13 @@ const Dashboard = () => {
                                     <div style={{ marginBottom: '20px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                             <span>Published Content: {dashboardStats.published_content || 0} ({publishedPercentage}%)</span>
-                                            <Tag color="green">Published</Tag>
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                {['for_editing','for_approval','approved','for_publishing','published','deleted'].map(key => (
+                                                    <Tag key={key} color={getStatusColor(key)}>
+                                                        {statusLabel(key)}: {statusCounts[key] || 0}
+                                                    </Tag>
+                                                ))}
+                                            </div>
                                         </div>
                                         <Progress 
                                             percent={publishedPercentage} 

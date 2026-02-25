@@ -1,8 +1,8 @@
 // src/pages/ContentListPage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Modal, message, Tag, Button, Space, Divider } from 'antd';
-import { EditOutlined, EyeOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Table, Card, Modal, message, Tag, Button, Space, Divider, Dropdown, Menu } from 'antd';
+import { EditOutlined, EyeOutlined, DeleteOutlined, ExclamationCircleOutlined, MoreOutlined, DownOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getContentItems, deleteContentItem, sendContentForApproval, approveContentItem, denyContentItem, publishContentItem, getCurrentUser } from '../api/django-api';
 import statusLabel, { getStatusColor } from '../utils/statusLabels.jsx';
@@ -224,75 +224,85 @@ const ContentListPage = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, record) => (
-        <Space size="middle">
-          {canEdit(record) && (
-            <Button 
-              icon={<EditOutlined />} 
-              onClick={() => handleEdit(record.id)}
-              title="Edit Content"
-              className="btn-primary btn-sm"
-            >
-              Edit
-            </Button>
-          )}
-          
-          {canDelete(record) && (
-            <Button 
-              icon={<DeleteOutlined />} 
-              danger
-              onClick={() => handleDelete(record.id)}
-              title="Delete Content"
-              className="btn-danger btn-sm"
-            >
-              Delete
-            </Button>
-          )}
-          
-          {canSendForApproval(record) && (
-            <Button 
-              type="primary" 
-              onClick={() => handleSendForApproval(record.id)}
-              title="Send for Approval"
-              className="btn-success btn-sm"
-            >
-              Send for Approval
-            </Button>
-          )}
-          
-          {canApprove(record) && (
-            <Space>
-              <Button 
-                type="primary" 
-                onClick={() => handleApprove(record.id)}
-                title="Approve Content"
-                className="btn-success btn-sm"
-              >
-                Approve
+      render: (_, record) => {
+        const menuItems = [];
+
+        if (canEdit(record)) {
+          menuItems.push({ key: 'edit', label: 'Edit' });
+        }
+
+        if (canSendForApproval(record)) {
+          menuItems.push({ key: 'send_for_approval', label: 'Send for Approval' });
+        }
+
+        if (canApprove(record)) {
+          menuItems.push({ key: 'approve', label: 'Approve' });
+          menuItems.push({ key: 'deny', label: 'Reject' });
+        }
+
+        if (canPublish(record)) {
+          menuItems.push({ key: 'publish', label: 'Publish' });
+        }
+
+        if (canDelete(record)) {
+          menuItems.push({ key: 'delete', label: 'Delete' });
+        }
+
+        const onMenuClick = ({ key, domEvent }) => {
+          // prevent default link/navigation and stop propagation to table row
+          if (domEvent && domEvent.preventDefault) domEvent.preventDefault();
+          if (domEvent && domEvent.stopPropagation) domEvent.stopPropagation();
+
+          try {
+            switch (key) {
+              case 'edit':
+                handleEdit(record.id);
+                break;
+              case 'send_for_approval':
+                handleSendForApproval(record.id);
+                break;
+              case 'approve':
+                handleApprove(record.id);
+                break;
+              case 'deny':
+                handleDeny(record.id);
+                break;
+              case 'publish':
+                handlePublish(record.id);
+                break;
+              case 'delete':
+                handleDelete(record.id);
+                break;
+              default:
+                break;
+            }
+          } catch (err) {
+            console.error('Action handler error:', err);
+            message.error('Action failed');
+          }
+        };
+
+        // If no actions available, show a disabled placeholder
+        if (menuItems.length === 0) {
+          return <span style={{ color: '#999' }}>No actions</span>;
+        }
+
+        // Use Ant Design `menu` prop with items to avoid overlay child issues
+        const dropdownMenu = {
+          items: menuItems,
+          onClick: onMenuClick,
+        };
+
+        return (
+          <Dropdown menu={dropdownMenu} trigger={["click"]}>
+            <span>
+              <Button>
+                Actions <DownOutlined />
               </Button>
-              <Button 
-                danger 
-                onClick={() => handleDeny(record.id)}
-                title="Deny Content"
-                className="btn-danger btn-sm"
-              >
-                Deny
-              </Button>
-            </Space>
-          )}
-          
-          {canPublish(record) && (
-            <Button 
-              type="primary" 
-              onClick={() => handlePublish(record.id)}
-              title="Publish Content"
-              className="btn-primary btn-sm"
-            >
-              Publish
-            </Button>
-          )}
-        </Space>
-      ),
+            </span>
+          </Dropdown>
+        );
+      },
     },
   ];
 
