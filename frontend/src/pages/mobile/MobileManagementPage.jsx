@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic, Button, Space, Spin } from 'antd';
-import { UserOutlined, TrophyOutlined, StarOutlined, TeamOutlined } from '@ant-design/icons';
+import { UserOutlined, TrophyOutlined, StarOutlined, TeamOutlined, MessageOutlined, SwapOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { getMobileStatistics } from '../../api/django-api';
 
 const MobileManagementPage = () => {
   const [stats, setStats] = useState({
-    total_user_profiles: 0,
+    total_player_stats: 0,
     active_sessions: 0,
-    total_score_records: 0,
-    total_badges_earned: 0,
+    total_users: 0,
+    total_feedback: 0,
+    total_coin_transactions: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -50,11 +51,11 @@ const MobileManagementPage = () => {
         ) : (
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={6}>
-              <Link to="/dashboard/mobile/profiles">
+              <Link to="/dashboard/mobile/player-stats">
                 <Card>
                   <Statistic
-                    title="User Profiles"
-                    value={stats.total_user_profiles || 0}
+                    title="Player Stats"
+                    value={stats.total_player_stats || 0}
                     prefix={<UserOutlined />}
                   />
                 </Card>
@@ -64,7 +65,7 @@ const MobileManagementPage = () => {
               <Link to="/dashboard/mobile/sessions">
                 <Card>
                   <Statistic
-                    title="Active Sessions"
+                    title="Sessions"
                     value={stats.active_sessions || 0}
                     prefix={<TeamOutlined />}
                   />
@@ -72,23 +73,34 @@ const MobileManagementPage = () => {
               </Link>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Link to="/dashboard/mobile/scores">
+              <Link to="/dashboard/mobile/users">
                 <Card>
                   <Statistic
-                    title="Total Scores"
-                    value={stats.total_score_records || 0}
+                    title="Users"
+                    value={stats.total_users || 0}
                     prefix={<StarOutlined />}
                   />
                 </Card>
               </Link>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Link to="/dashboard/mobile/badges">
+              <Link to="/dashboard/mobile/chatbot-feedback">
                 <Card>
                   <Statistic
-                    title="Badges Earned"
-                    value={stats.total_badges_earned || 0}
-                    prefix={<TrophyOutlined />}
+                    title="Feedback"
+                    value={stats.total_feedback || 0}
+                    prefix={<MessageOutlined />}
+                  />
+                </Card>
+              </Link>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Link to="/dashboard/mobile/coin-transactions">
+                <Card>
+                  <Statistic
+                    title="Coin Txns"
+                    value={stats.total_coin_transactions || 0}
+                    prefix={<SwapOutlined />}
                   />
                 </Card>
               </Link>
@@ -99,17 +111,20 @@ const MobileManagementPage = () => {
         <div style={{ marginTop: 24 }}>
           <h3 className="section-title">Quick Actions</h3>
           <Space wrap>
-            <Link to="/dashboard/mobile/profiles">
-              <Button type="primary">Manage User Profiles</Button>
-            </Link>
-            <Link to="/dashboard/mobile/leaderboards">
-              <Button type="default">View Leaderboards</Button>
+            <Link to="/dashboard/mobile/player-stats">
+              <Button type="primary">Player Stats</Button>
             </Link>
             <Link to="/dashboard/mobile/sessions">
-              <Button type="default">Active Sessions</Button>
+              <Button type="default">Sessions</Button>
             </Link>
-            <Link to="/dashboard/mobile/scores">
-              <Button type="default">View Scores</Button>
+            <Link to="/dashboard/mobile/users">
+              <Button type="default">Users</Button>
+            </Link>
+            <Link to="/dashboard/mobile/chatbot-feedback">
+              <Button type="default">Chatbot Feedback</Button>
+            </Link>
+            <Link to="/dashboard/mobile/coin-transactions">
+              <Button type="default">Coin Transactions</Button>
             </Link>
           </Space>
         </div>

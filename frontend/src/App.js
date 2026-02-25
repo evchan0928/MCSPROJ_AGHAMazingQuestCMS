@@ -22,6 +22,10 @@ import UserSessionsPage from './pages/mobile/UserSessionsPage';
 import ScoresPage from './pages/mobile/ScoresPage';
 import BadgesPage from './pages/mobile/BadgesPage';
 import LeaderboardsPage from './pages/mobile/LeaderboardPage'; // Changed from LeaderboardsPage to LeaderboardPage
+import PlayerStatsPage from './pages/mobile/PlayerStatsPage';
+import ChatbotFeedbackPage from './pages/mobile/ChatbotFeedbackPage';
+import CoinTransactionsPage from './pages/mobile/CoinTransactionsPage';
+import UsersPage from './pages/mobile/UsersPage';
 import AccountSettingsPage from './pages/AccountSettingsPage'; // Import the new account settings page
 
 const { Content, Sider } = Layout;
@@ -188,12 +192,45 @@ function AppLayout() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/dashboard/mobile/player-stats" 
+                element={
+                  <ProtectedRoute>
+                    <PlayerStatsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/dashboard/mobile/chatbot-feedback" 
+                element={
+                  <ProtectedRoute>
+                    <ChatbotFeedbackPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/dashboard/mobile/coin-transactions" 
+                element={
+                  <ProtectedRoute>
+                    <CoinTransactionsPage />
+                  </ProtectedRoute>
+                } 
+              />
               
               <Route 
                 path="/dashboard/mobile/profiles" 
                 element={
                   <ProtectedRoute>
                     <UserProfilesPage />
+                  </ProtectedRoute>
+                } 
+              />
+             
+              <Route 
+                path="/dashboard/mobile/users" 
+                element={
+                  <ProtectedRoute>
+                    <UsersPage />
                   </ProtectedRoute>
                 } 
               />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Button, Space, Tag, message } from 'antd';
-import { getUserSessions } from '../../api/django-api';
+import { getSessions } from '../../api/firebase-placeholder';
 
 const UserSessionsPage = () => {
   const [sessions, setSessions] = useState([]);
@@ -61,20 +61,19 @@ const UserSessionsPage = () => {
   ];
 
   useEffect(() => {
-    fetchUserSessions();
+    (async () => {
+      try {
+        const data = await getSessions();
+        // our placeholder returns an array
+        setSessions(Array.isArray(data) ? data : (data.results || []));
+      } catch (error) {
+        console.error('Error fetching user sessions:', error);
+        message.error('Failed to load user sessions');
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
-
-  const fetchUserSessions = async () => {
-    try {
-      const data = await getUserSessions();
-      setSessions(data.results || data);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching user sessions:", error);
-      setLoading(false);
-      message.error("Failed to load user sessions");
-    }
-  };
 
   return (
     <div className="content-list-page">
