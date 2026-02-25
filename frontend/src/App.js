@@ -118,7 +118,11 @@ function AppLayout() {
 
               <Route 
                 path="/dashboard/content/edit" 
-                element={<Navigate to="/dashboard/content/list" replace />} 
+                element={
+                  <ProtectedRoute>
+                    <EditContentPage />
+                  </ProtectedRoute>
+                } 
               />
               
               <Route 

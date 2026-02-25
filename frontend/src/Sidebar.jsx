@@ -108,15 +108,26 @@ export default function Sidebar({ user }) {
 
                             {/* 🔑 CHANGED: Renamed from "Edit content" to "Content list" and updated path */}
                             {(user?.is_superuser || isEditor || roleNames.includes('Super Admin')) && (
+                              <>
                                 <li>
-                                    <NavLink 
-                                        to="/dashboard/content/list" 
-                                        style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
-                                        onClick={handleNavClick}
-                                    >
-                                        Content List
-                                    </NavLink>
+                                  <NavLink 
+                                    to="/dashboard/content/list" 
+                                    style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                    onClick={handleNavClick}
+                                  >
+                                    Content List
+                                  </NavLink>
                                 </li>
+                                <li>
+                                  <NavLink
+                                  to="/dashboard/content/edit"
+                                  style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                  onClick={handleNavClick}
+                                  >
+                                  Edit Content
+                                  </NavLink>
+                                </li>
+                              </>
                             )}
 
                             {/* Approve & Publish: Approver, Admin, Super Admin */}
