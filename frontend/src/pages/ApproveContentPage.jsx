@@ -16,6 +16,8 @@ export default function ApproveContentPage() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewContent, setPreviewContent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [api, contextHolder] = notification.useNotification();
@@ -149,6 +151,12 @@ export default function ApproveContentPage() {
       ),
     },
     {
+      title: 'Type',
+      dataIndex: 'content_type',
+      key: 'content_type',
+      render: (type) => type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Text'
+    },
+    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
@@ -157,9 +165,14 @@ export default function ApproveContentPage() {
       )
     },
     {
-      title: 'Created At',
+      title: 'Created',
       dataIndex: 'created_at',
       key: 'created_at',
+      render: (date) => {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+      }
     },
     {
       title: 'Actions',
@@ -169,7 +182,7 @@ export default function ApproveContentPage() {
           <Button 
             type="primary" 
             icon={<EyeOutlined />}
-            onClick={() => showModal(record)}
+            onClick={() => { setPreviewContent(record); setPreviewVisible(true); }}
           >
             Preview
           </Button>
@@ -235,101 +248,89 @@ export default function ApproveContentPage() {
           visible={modalVisible}
           onCancel={closeModal}
           footer={[
-            <Button key="back" onClick={closeModal}>Cancel</Button>,
-            <Button 
-              key="deny" 
-              type="primary" 
-              danger
-              onClick={() => {
-                handleReject(selectedContent?.id);
-              }}
-            >
-              Deny
-            </Button>,
-            <Button 
-              key="approve" 
-              type="primary"
-              onClick={() => {
-                handleApprove(selectedContent?.id);
-              }}
-            >
-              Approve
-            </Button>,
+            <Button key="back" onClick={closeModal}>Close</Button>,
+            <Button key="deny" type="primary" danger onClick={() => handleReject(selectedContent?.id)}>Deny</Button>,
+            <Button key="approve" type="primary" onClick={() => handleApprove(selectedContent?.id)}>Approve</Button>
           ]}
           width={800}
         >
-          {selectedContent && (
+          {selectedContent ? (
             <div>
               <Descriptions bordered column={2} style={{ marginBottom: 20 }}>
                 <Descriptions.Item label="Title">{selectedContent.title}</Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color={getStatusColor(selectedContent.status)}>{statusLabel(selectedContent.status)}</Tag>
-                </Descriptions.Item>
+                <Descriptions.Item label="Status"><Tag color={getStatusColor(selectedContent.status)}>{statusLabel(selectedContent.status)}</Tag></Descriptions.Item>
                 <Descriptions.Item label="Type">{selectedContent.content_type || 'Text'}</Descriptions.Item>
                 <Descriptions.Item label="Created At">{selectedContent.created_at}</Descriptions.Item>
-                <Descriptions.Item label="Author" span={2}>
-                  {selectedContent.created_by?.username || 'Unknown'}
-                </Descriptions.Item>
+                <Descriptions.Item label="Author" span={2}>{selectedContent.created_by?.username || 'Unknown'}</Descriptions.Item>
               </Descriptions>
 
-              <div style={{ marginTop: '16px' }}>
-                <Title level={4}>Content Preview</Title>
-                <Paragraph strong>Body:</Paragraph>
-                <div 
-                  style={{ 
-                    padding: '16px', 
-                    background: '#f5f5f5', 
-                    borderRadius: '4px', 
-                    maxHeight: '200px', 
-                    overflow: 'auto' 
-                  }}
-                  dangerouslySetInnerHTML={{ __html: selectedContent.body || 'No content provided' }}
-                />
-
-                {selectedContent.meta_description && (
-                  <>
-                    <Paragraph strong style={{ marginTop: '16px' }}>Meta Description:</Paragraph>
-                    <Text>{selectedContent.meta_description}</Text>
-                  </>
-                )}
-
-                {selectedContent.meta_keywords && (
-                  <>
-                    <Paragraph strong style={{ marginTop: '16px' }}>Meta Keywords:</Paragraph>
-                    <Text>{selectedContent.meta_keywords}</Text>
-                  </>
-                )}
-
-                {selectedContent.photo_caption && (
-                  <>
-                    <Paragraph strong style={{ marginTop: '16px' }}>Photo Caption:</Paragraph>
-                    <Text>{selectedContent.photo_caption}</Text>
-                  </>
-                )}
-
-                {selectedContent.highlights && (
-                  <>
-                    <Paragraph strong style={{ marginTop: '16px' }}>Highlights:</Paragraph>
-                    <div 
-                      style={{ 
-                        padding: '16px', 
-                        background: '#f5f5f5', 
-                        borderRadius: '4px', 
-                        maxHeight: '150px', 
-                        overflow: 'auto' 
-                      }}
-                      dangerouslySetInnerHTML={{ __html: selectedContent.highlights }}
-                    />
-                  </>
-                )}
-
-                {selectedContent.file && (
-                  <>
-                    <Paragraph strong style={{ marginTop: '16px' }}>Attached File:</Paragraph>
-                    <Text>{selectedContent.file.split('/').pop()}</Text>
-                  </>
-                )}
+              <div style={{ marginTop: 16 }}>
+                <Paragraph strong>Attached File:</Paragraph>
+                <Text>{((selectedContent.file || selectedContent.file_url) || '').split('/').pop() || 'None'}</Text>
               </div>
+            </div>
+          ) : null}
+        </Modal>
+
+        {/* Preview modal (separate) */}
+        <Modal
+          title={previewContent?.title}
+          open={previewVisible}
+          onCancel={() => { setPreviewVisible(false); setPreviewContent(null); }}
+          footer={[<Button key="close" onClick={() => { setPreviewVisible(false); setPreviewContent(null); }}>Close</Button>]}
+          width={800}
+        >
+          {previewContent && (
+            <div>
+              {(() => {
+                const fileUrl = previewContent.file_url || previewContent.file || previewContent.fileUrl || null;
+                let trivia = previewContent.trivia_questions || previewContent.triviaQuestions || null;
+                if (trivia && typeof trivia === 'string') {
+                  try { trivia = JSON.parse(trivia); } catch (e) { trivia = null; }
+                }
+
+                return (
+                  <div>
+                    <p><strong>Type:</strong> {previewContent.content_type}</p>
+                    <p><strong>Created:</strong> {previewContent.created_at ? (() => { const d = new Date(previewContent.created_at); return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}` })() : 'N/A'}</p>
+
+                    {previewContent.content_type === 'image' && fileUrl && (
+                      <img src={fileUrl} alt={previewContent.title} style={{ maxWidth: '100%' }} />
+                    )}
+
+                    {previewContent.content_type === 'trivia' && trivia && (
+                      <div>
+                        <h4>Trivia Questions</h4>
+                        {(trivia || []).map((q, idx) => (
+                          <div key={idx} style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <p style={{ margin: 0 }}><strong>Q{idx+1}:</strong> {q.question}</p>
+                            <ul>
+                              {(q.choices || []).map((choice, cidx) => (
+                                <li key={cidx} style={{ fontWeight: q.correctIndex === cidx ? 600 : 400 }}>{String.fromCharCode(65+cidx)}. {choice}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {previewContent.content_type === 'text' && previewContent.body && (
+                      <div dangerouslySetInnerHTML={{ __html: previewContent.body }} style={{ padding: 8, background: '#f5f5f5' }} />
+                    )}
+
+                    {previewContent.content_type === 'video' && fileUrl && (
+                      <video controls style={{ width: '100%' }} src={fileUrl} />
+                    )}
+
+                    {previewContent.content_type === 'document' && fileUrl && (
+                      <div>
+                        <p><strong>Document:</strong> {fileUrl.split('/').pop()}</p>
+                        <Button onClick={() => window.open(fileUrl, '_blank')}>Open Document</Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </Modal>

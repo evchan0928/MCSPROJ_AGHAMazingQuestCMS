@@ -14,6 +14,8 @@ const ContentListPage = () => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewContent, setPreviewContent] = useState(null);
 
   // Role-based access control
   const allowedRoles = ['Encoder', 'Editor', 'Approver', 'Admin', 'Super Admin'];
@@ -215,10 +217,14 @@ const ContentListPage = () => {
       onFilter: (value, record) => String(record.status) === String(value),
     },
     {
-      title: 'Created At',
+      title: 'Created',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date) => date ? new Date(date).toLocaleDateString() : 'N/A',
+      render: (date) => {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+      },
       sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
     },
     {
@@ -294,13 +300,18 @@ const ContentListPage = () => {
         };
 
         return (
-          <Dropdown menu={dropdownMenu} trigger={["click"]}>
-            <span>
-              <Button>
-                Actions <DownOutlined />
-              </Button>
-            </span>
-          </Dropdown>
+          <>
+            <Dropdown menu={dropdownMenu} trigger={["click"]}>
+              <span>
+                <Button>
+                  Actions <DownOutlined />
+                </Button>
+              </span>
+            </Dropdown>
+            <Button style={{ marginLeft: 8 }} onClick={() => { setPreviewContent(record); setPreviewVisible(true); }}>
+              Preview
+            </Button>
+          </>
         );
       },
     },
@@ -341,6 +352,52 @@ const ContentListPage = () => {
           className="content-table"
         />
       </Card>
+      <Modal
+        title={previewContent?.title}
+        open={previewVisible}
+        onCancel={() => { setPreviewVisible(false); setPreviewContent(null); }}
+        footer={[
+          <Button key="close" onClick={() => { setPreviewVisible(false); setPreviewContent(null); }}>Close</Button>
+        ]}
+        width={800}
+      >
+        {previewContent && (
+          <div>
+            <p><strong>Type:</strong> {previewContent.content_type}</p>
+            <p><strong>Created:</strong> {previewContent.created_at ? (() => { const d = new Date(previewContent.created_at); return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}` })() : 'N/A'}</p>
+            {previewContent.content_type === 'image' && previewContent.file_url && (
+              <img src={previewContent.file_url} alt={previewContent.title} style={{ maxWidth: '100%' }} />
+            )}
+            {previewContent.content_type === 'trivia' && previewContent.trivia_questions && (
+              <div>
+                <h4>Trivia Questions</h4>
+                {(previewContent.trivia_questions || []).map((q, idx) => (
+                  <div key={idx} style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                    <p style={{ margin: 0 }}><strong>Q{idx+1}:</strong> {q.question}</p>
+                    <ul>
+                      {(q.choices || []).map((choice, cidx) => (
+                        <li key={cidx} style={{ fontWeight: q.correctIndex === cidx ? 600 : 400 }}>{String.fromCharCode(65+cidx)}. {choice}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+            {previewContent.content_type === 'text' && previewContent.body && (
+              <div dangerouslySetInnerHTML={{ __html: previewContent.body }} style={{ padding: 8, background: '#f5f5f5' }} />
+            )}
+            {previewContent.content_type === 'video' && previewContent.file_url && (
+              <video controls style={{ width: '100%' }} src={previewContent.file_url} />
+            )}
+            {previewContent.content_type === 'document' && previewContent.file_url && (
+              <div>
+                <p><strong>Document:</strong> {previewContent.file_url.split('/').pop()}</p>
+                <Button onClick={() => window.open(previewContent.file_url, '_blank')}>Open Document</Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
