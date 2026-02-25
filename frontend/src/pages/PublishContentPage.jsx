@@ -13,6 +13,8 @@ const PublishContentPage = () => {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewContent, setPreviewContent] = useState(null);
   const [api, contextHolder] = notification.useNotification();
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -171,7 +173,7 @@ const PublishContentPage = () => {
           <Button 
             type="primary" 
             icon={<EyeOutlined />}
-            onClick={() => showModal(record)}
+            onClick={() => { setPreviewContent(record); setPreviewVisible(true); }}
           >
             Preview
           </Button>
@@ -260,9 +262,73 @@ const PublishContentPage = () => {
                     maxHeight: '200px', 
                     overflow: 'auto' 
                   }}
-                  dangerouslySetInnerHTML={{ __html: selectedContent.body || 'No content provided' }}
-                />
+                >
+                  <div dangerouslySetInnerHTML={{ __html: selectedContent.body || 'No content provided' }} />
+                </div>
               </div>
+            </div>
+          )}
+        </Modal>
+
+        {/* Unified Preview modal (matches Content List & Approve pages) */}
+        <Modal
+          title={previewContent?.title}
+          open={previewVisible}
+          onCancel={() => { setPreviewVisible(false); setPreviewContent(null); }}
+          footer={[<Button key="close" onClick={() => { setPreviewVisible(false); setPreviewContent(null); }}>Close</Button>]}
+          width={800}
+        >
+          {previewContent && (
+            <div>
+              {(() => {
+                const fileUrl = previewContent.file_url || previewContent.file || previewContent.fileUrl || null;
+                let trivia = previewContent.trivia_questions || previewContent.triviaQuestions || null;
+                if (trivia && typeof trivia === 'string') {
+                  try { trivia = JSON.parse(trivia); } catch (e) { trivia = null; }
+                }
+
+                return (
+                  <div>
+                    <p><strong>Type:</strong> {previewContent.content_type}</p>
+                    <p><strong>Created:</strong> {previewContent.created_at ? (() => { const d = new Date(previewContent.created_at); return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}` })() : 'N/A'}</p>
+
+                    {previewContent.content_type === 'image' && fileUrl && (
+                      <img src={fileUrl} alt={previewContent.title} style={{ maxWidth: '100%' }} />
+                    )}
+
+                    {previewContent.content_type === 'trivia' && trivia && (
+                      <div>
+                        <h4>Trivia Questions</h4>
+                        {(trivia || []).map((q, idx) => (
+                          <div key={idx} style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <p style={{ margin: 0 }}><strong>Q{idx+1}:</strong> {q.question}</p>
+                            <ul>
+                              {(q.choices || []).map((choice, cidx) => (
+                                <li key={cidx} style={{ fontWeight: q.correctIndex === cidx ? 600 : 400 }}>{String.fromCharCode(65+cidx)}. {choice}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {previewContent.content_type === 'text' && previewContent.body && (
+                      <div dangerouslySetInnerHTML={{ __html: previewContent.body }} style={{ padding: 8, background: '#f5f5f5' }} />
+                    )}
+
+                    {previewContent.content_type === 'video' && fileUrl && (
+                      <video controls style={{ width: '100%' }} src={fileUrl} />
+                    )}
+
+                    {previewContent.content_type === 'document' && fileUrl && (
+                      <div>
+                        <p><strong>Document:</strong> {fileUrl.split('/').pop()}</p>
+                        <Button onClick={() => window.open(fileUrl, '_blank')}>Open Document</Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </Modal>
