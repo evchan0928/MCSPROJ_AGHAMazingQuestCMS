@@ -284,9 +284,9 @@ class ContentItemViewSet(viewsets.ModelViewSet):
             if 'file' in request.data:
                 print(f"File received: {request.data['file']}")
                 
-            # Validate content_type is one of the allowed choices
+            # Validate content_type is one of the allowed choices. Use 'trivia' instead of legacy 'quiz'.
             content_type = request.data.get('content_type', 'text')
-            valid_types = ['text', 'image', 'video', 'document', 'quiz']
+            valid_types = ['text', 'image', 'video', 'document', 'trivia']
             if content_type not in valid_types:
                 return Response({
                     'success': False,

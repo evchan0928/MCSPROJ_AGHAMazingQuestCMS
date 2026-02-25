@@ -20,6 +20,8 @@ const EditContentPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [triviaQuestions, setTriviaQuestions] = useState([]);
+  const [triviaCorrectAnswers, setTriviaCorrectAnswers] = useState({});
 
   // Role-based access control
   const allowedRoles = ['Editor', 'Admin', 'Super Admin'];
@@ -70,16 +72,51 @@ const EditContentPage = () => {
       
       if (contentItem) {
         setContent(contentItem);
+        // Populate form and trivia editor state
         form.setFieldsValue({
           title: contentItem.title,
           body: contentItem.body || contentItem.description || '',
           status: contentItem.status,
           content_type: contentItem.content_type || 'text',
           photo_caption: contentItem.photo_caption || '',
-          quiz_length: contentItem.quiz_length || '',
-          quiz_badges: contentItem.quiz_badges || 'no',
-          quiz_number: contentItem.quiz_number || ''
+          trivia_questions: contentItem.trivia_questions || []
         });
+
+        // Transform backend trivia schema (question, choices[], correctIndex, category, difficulty)
+        // into editor-friendly shape: { question, options: {a,b,c,d}, category, difficulty }
+        try {
+          const backendQuestions = contentItem.trivia_questions || [];
+          const editorQuestions = backendQuestions.map((q) => {
+            const choices = Array.isArray(q.choices) ? q.choices : [];
+            return {
+              question: q.question || '',
+              options: {
+                a: choices[0] || '',
+                b: choices[1] || '',
+                c: choices[2] || '',
+                d: choices[3] || ''
+              },
+              category: q.category || '',
+              difficulty: q.difficulty || 'easy'
+            };
+          });
+
+          const correctMap = {};
+          backendQuestions.forEach((q, idx) => {
+            const correctIndex = Number.isInteger(q.correctIndex) ? q.correctIndex : null;
+            if (correctIndex !== null) {
+              const letters = ['a', 'b', 'c', 'd'];
+              correctMap[idx + 1] = letters[correctIndex] || 'a';
+            }
+          });
+
+          setTriviaQuestions(editorQuestions);
+          setTriviaCorrectAnswers(correctMap);
+        } catch (err) {
+          console.warn('Failed to parse trivia questions for editor:', err);
+          setTriviaQuestions([]);
+          setTriviaCorrectAnswers({});
+        }
       } else {
         message.error('Content not found');
         navigate('/dashboard/content/list');
@@ -95,7 +132,29 @@ const EditContentPage = () => {
   const handleSave = async (values) => {
     setSaving(true);
     try {
-      const updatedContent = await updateContentItem(id, values);
+      // If editing trivia, convert editor state into backend schema
+      const payload = { ...values };
+      if ((values.content_type === 'trivia') || form.getFieldValue('content_type') === 'trivia') {
+        // Convert editor questions to backend format: { question, choices[], correctIndex, category, difficulty }
+        const letterToIndex = { a: 0, b: 1, c: 2, d: 3 };
+        const converted = (triviaQuestions || []).map((q, idx) => {
+          const opts = q.options || {};
+          const choices = [opts.a || '', opts.b || '', opts.c || '', opts.d || ''];
+          const correctLetter = triviaCorrectAnswers[idx + 1];
+          const correctIndex = correctLetter ? (letterToIndex[correctLetter] ?? 0) : 0;
+          return {
+            question: q.question || '',
+            choices,
+            correctIndex,
+            category: q.category || '',
+            difficulty: q.difficulty || 'easy'
+          };
+        });
+
+        payload.trivia_questions = converted;
+      }
+
+      const updatedContent = await updateContentItem(id, payload);
       message.success('Content updated successfully!');
       navigate('/dashboard/content/list'); // Redirect to content list after saving
     } catch (error) {
@@ -104,6 +163,44 @@ const EditContentPage = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Trivia editor handlers
+  const handleTriviaAnswerChange = (questionNum, option) => {
+    setTriviaCorrectAnswers(prev => ({ ...prev, [questionNum]: option }));
+  };
+
+  const handleQuestionTextChange = (index, value) => {
+    const updated = [...(triviaQuestions || [])];
+    if (!updated[index]) updated[index] = { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
+    updated[index].question = value;
+    setTriviaQuestions(updated);
+  };
+
+  const handleOptionChange = (index, optionKey, value) => {
+    const updated = [...(triviaQuestions || [])];
+    if (!updated[index]) updated[index] = { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
+    if (!updated[index].options) updated[index].options = { a: '', b: '', c: '', d: '' };
+    updated[index].options[optionKey] = value;
+    setTriviaQuestions(updated);
+  };
+
+  const handleCategoryChange = (index, value) => {
+    const updated = [...(triviaQuestions || [])];
+    if (!updated[index]) updated[index] = { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
+    updated[index].category = value;
+    setTriviaQuestions(updated);
+  };
+
+  const handleDifficultyChange = (index, value) => {
+    const updated = [...(triviaQuestions || [])];
+    if (!updated[index]) updated[index] = { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
+    updated[index].difficulty = value;
+    setTriviaQuestions(updated);
+  };
+
+  const addTriviaQuestion = () => {
+    setTriviaQuestions(prev => ([...(prev || []), { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' }]));
   };
 
   const handleBack = () => {
@@ -176,7 +273,7 @@ const EditContentPage = () => {
               <Option value="image">Image</Option>
               <Option value="video">Video</Option>
               <Option value="document">Document</Option>
-              <Option value="quiz">Quiz</Option>
+              <Option value="trivia">Trivia Questions</Option>
             </Select>
           </Form.Item>
 
@@ -194,33 +291,66 @@ const EditContentPage = () => {
             <Input placeholder="Enter photo caption (if applicable)" />
           </Form.Item>
 
-          {/* Quiz-specific fields */}
-          {form.getFieldValue('content_type') === 'quiz' && (
-            <>
-              <Form.Item
-                label="Number of Questions"
-                name="quiz_length"
-              >
-                <InputNumber min={1} max={100} placeholder="Enter number of questions" style={{ width: '100%' }} />
-              </Form.Item>
+          {/* Trivia editor — show when content_type is trivia */}
+          {(form.getFieldValue('content_type') === 'trivia' || content?.content_type === 'trivia') && (
+            <div style={{ marginBottom: 16, padding: 12, border: '1px solid #e8e8e8', borderRadius: 6, background: '#fafafa' }}>
+              <h3 style={{ marginTop: 0 }}>Trivia Questions</h3>
+              <div style={{ marginBottom: 12 }}>
+                <Button type="default" onClick={addTriviaQuestion}>Add Question</Button>
+              </div>
 
-              <Form.Item
-                label="Quiz Badges"
-                name="quiz_badges"
-              >
-                <Select placeholder="Does this quiz have badges?">
-                  <Option value="no">No</Option>
-                  <Option value="yes">Yes</Option>
-                </Select>
-              </Form.Item>
+              {triviaQuestions && triviaQuestions.length > 0 ? (
+                triviaQuestions.map((q, idx) => {
+                  const questionNum = idx + 1;
+                  const question = q || { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
+                  return (
+                    <div key={questionNum} style={{ padding: 12, border: '1px solid #ececec', borderRadius: 6, marginBottom: 12, background: 'white' }}>
+                      <Form.Item label={`Question ${questionNum}`}>
+                        <Input value={question.question || ''} onChange={(e) => handleQuestionTextChange(idx, e.target.value)} />
+                      </Form.Item>
 
-              <Form.Item
-                label="Quiz Number"
-                name="quiz_number"
-              >
-                <InputNumber min={1} placeholder="Enter quiz sequence number" style={{ width: '100%' }} />
-              </Form.Item>
-            </>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                        {['a','b','c','d'].map(optKey => (
+                          <div key={optKey}>
+                            <label style={{ display: 'block', marginBottom: 6 }}>Option {optKey.toUpperCase()}</label>
+                            <Input value={(question.options && question.options[optKey]) || ''} onChange={(e) => handleOptionChange(idx, optKey, e.target.value)} />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', marginBottom: 6 }}>Category</label>
+                          <Input value={question.category || ''} onChange={(e) => handleCategoryChange(idx, e.target.value)} />
+                        </div>
+                        <div style={{ width: 160 }}>
+                          <label style={{ display: 'block', marginBottom: 6 }}>Difficulty</label>
+                          <Select value={question.difficulty || 'easy'} onChange={(val) => handleDifficultyChange(idx, val)}>
+                            <Option value="easy">Easy</Option>
+                            <Option value="medium">Medium</Option>
+                            <Option value="hard">Hard</Option>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 12 }}>
+                        <label style={{ display: 'block', marginBottom: 6 }}>Correct Answer</label>
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          {['a','b','c','d'].map(option => (
+                            <label key={option} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <input type="radio" name={`question_${questionNum}`} value={option} checked={triviaCorrectAnswers[questionNum] === option} onChange={() => handleTriviaAnswerChange(questionNum, option)} />
+                              <span>{option.toUpperCase()}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ color: '#666' }}>No trivia questions yet. Click "Add Question" to create one.</div>
+              )}
+            </div>
           )}
 
           <Form.Item

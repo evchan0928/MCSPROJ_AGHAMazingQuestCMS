@@ -8,7 +8,7 @@ User = get_user_model()
 
 class ContentItemSerializer(serializers.ModelSerializer):
     file = serializers.FileField(required=False)
-    quiz_correct_answers = serializers.JSONField(required=False, default=dict)
+    trivia_questions = serializers.JSONField(required=False, default=list)
     file_url = serializers.SerializerMethodField(read_only=True)
     # Expose related user objects (read-only) so the frontend can show names
     created_by = UserSerializer(read_only=True)
@@ -25,9 +25,9 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'file_url',
             # Additional content management fields
             'content_type', 'meta_keywords', 'meta_description', 'photo_caption', 
-            'highlights', 'ar_marker', 'quiz', 'enable_badges', 'chat_bot_allow', 'exclude_audio',
-            # Quiz-specific fields
-            'quiz_length', 'quiz_badges', 'quiz_number', 'quiz_correct_answers'
+            'highlights', 'ar_marker', 'enable_badges', 'chat_bot_allow', 'exclude_audio',
+            # Trivia questions payload
+            'trivia_questions'
         ]
         read_only_fields = ['slug', 'created_at', 'edited_at', 'approved_at', 'published_at', 'is_deleted']
 

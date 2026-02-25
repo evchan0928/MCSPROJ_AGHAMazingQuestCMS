@@ -42,23 +42,21 @@ class ContentItem(models.Model):
         ('image', 'Image'),
         ('video', 'Video'),
         ('document', 'Document'),
-        ('quiz', 'Quiz'),
+        ('trivia', 'Trivia Questions'),
     ])
     meta_keywords = models.TextField(blank=True)
     meta_description = models.TextField(blank=True)
     photo_caption = models.CharField(max_length=500, blank=True)
     highlights = models.TextField(blank=True)
     ar_marker = models.BooleanField(default=False)
-    quiz = models.BooleanField(default=False)
+    # `quiz` legacy removed; use `trivia_questions` for structured Q&A content
     enable_badges = models.BooleanField(default=False)
     chat_bot_allow = models.BooleanField(default=True)
     exclude_audio = models.BooleanField(default=False)
 
-    # Quiz-specific fields
-    quiz_length = models.IntegerField(null=True, blank=True, help_text="Number of questions in the quiz")
-    quiz_badges = models.CharField(max_length=10, choices=[('yes', 'Yes'), ('no', 'No')], default='no', help_text="Whether quiz awards badges")
-    quiz_number = models.IntegerField(null=True, blank=True, help_text="Quiz sequence number")
-    quiz_correct_answers = models.JSONField(default=dict, blank=True, help_text="Quiz correct answers: {1: 'a', 2: 'b', ...}")
+    # New: store trivia questions payload expected by mobile app
+    # Each item: {"question": str, "choices": [str], "correctIndex": int, "category": str, "difficulty": str}
+    trivia_questions = models.JSONField(default=list, blank=True, help_text="Array of trivia question objects for mobile clients")
 
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=STATUS_FOR_EDITING)
 

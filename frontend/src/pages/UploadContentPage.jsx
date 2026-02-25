@@ -13,7 +13,7 @@ export default function UploadContentPage() {
     contentInfo: true,
     description: true,
     media: true,
-    quiz: true
+    trivia: true
   });
   
   // State for form data
@@ -26,16 +26,13 @@ export default function UploadContentPage() {
     photo_caption: '',
     highlights: '',
     ar_marker: '',
-    quiz_length: '',
-    quiz_badges: 'no',
-    quiz_number: '',
     chat_bot_allow: true,
     exclude_audio: false,
-    quiz_questions: []  // Initialize quiz questions
+    trivia_questions: []  // Initialize trivia questions
   });
 
-  // State to manage quiz correct answers: { 1: 'a', 2: 'b', ... }
-  const [quizCorrectAnswers, setQuizCorrectAnswers] = useState({});
+  // State to manage trivia correct answers mapping: { 1: 'a', 2: 'b', ... }
+  const [triviaCorrectAnswers, setTriviaCorrectAnswers] = useState({});
   
   // State for files
   const [imageFile, setImageFile] = useState(null);
@@ -85,8 +82,8 @@ export default function UploadContentPage() {
   };
 
   // Handle quiz answer changes
-  const handleQuizAnswerChange = (questionNum, option) => {
-    setQuizCorrectAnswers(prev => ({
+  const handleTriviaAnswerChange = (questionNum, option) => {
+    setTriviaCorrectAnswers(prev => ({
       ...prev,
       [questionNum]: option
     }));
@@ -94,19 +91,39 @@ export default function UploadContentPage() {
 
   // Handle question text changes
   const handleQuestionTextChange = (index, value) => {
-    const updatedQuestions = [...(formData.quiz_questions || [])];
-    if (!updatedQuestions[index]) updatedQuestions[index] = { question: '', options: { a: '', b: '', c: '', d: '' } };
+    const updatedQuestions = [...(formData.trivia_questions || [])];
+    if (!updatedQuestions[index]) updatedQuestions[index] = { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
     updatedQuestions[index].question = value;
     
     setFormData(prev => ({
       ...prev,
-      quiz_questions: updatedQuestions
+      trivia_questions: updatedQuestions
+    }));
+  };
+
+  const handleCategoryChange = (index, value) => {
+    const updatedQuestions = [...(formData.trivia_questions || [])];
+    if (!updatedQuestions[index]) updatedQuestions[index] = { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
+    updatedQuestions[index].category = value;
+    setFormData(prev => ({
+      ...prev,
+      trivia_questions: updatedQuestions
+    }));
+  };
+
+  const handleDifficultyChange = (index, value) => {
+    const updatedQuestions = [...(formData.trivia_questions || [])];
+    if (!updatedQuestions[index]) updatedQuestions[index] = { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
+    updatedQuestions[index].difficulty = value;
+    setFormData(prev => ({
+      ...prev,
+      trivia_questions: updatedQuestions
     }));
   };
 
   // Handle option changes
   const handleOptionChange = (index, optionKey, value) => {
-    const updatedQuestions = [...(formData.quiz_questions || [])];
+    const updatedQuestions = [...(formData.trivia_questions || [])];
     if (!updatedQuestions[index]) updatedQuestions[index] = { question: '', options: { a: '', b: '', c: '', d: '' } };
     
     if (!updatedQuestions[index].options) {
@@ -117,7 +134,7 @@ export default function UploadContentPage() {
     
     setFormData(prev => ({
       ...prev,
-      quiz_questions: updatedQuestions
+      trivia_questions: updatedQuestions
     }));
   };
 
@@ -132,11 +149,25 @@ export default function UploadContentPage() {
         file: imageFile || pdfFile || null
       };
 
-      // Add quiz correct answers if this is a quiz
-      if (formData.content_type === 'quiz') {
-        contentData.quiz_correct_answers = JSON.stringify(quizCorrectAnswers);
-        // include full questions so mobile app can render them
-        contentData.quiz_questions = JSON.stringify(formData.quiz_questions || []);
+      // Add trivia payload when content_type is 'trivia'
+      if (formData.content_type === 'trivia') {
+        // Build new `trivia_questions` schema expected by mobile: question, choices[], correctIndex, category, difficulty
+        const letterToIndex = { a: 0, b: 1, c: 2, d: 3 };
+        const triviaQuestions = (formData.trivia_questions || []).map((q, idx) => {
+          const optsObj = q.options || {};
+          const choices = [optsObj.a || '', optsObj.b || '', optsObj.c || '', optsObj.d || ''];
+          const correctLetter = triviaCorrectAnswers[idx + 1];
+          const correctIndex = correctLetter ? (letterToIndex[correctLetter] ?? 0) : 0;
+          return {
+            question: q.question || '',
+            choices,
+            correctIndex,
+            category: q.category || '',
+            difficulty: q.difficulty || 'easy'
+          };
+        });
+
+        contentData.trivia_questions = JSON.stringify(triviaQuestions);
       }
 
       // Use the centralized API function
@@ -214,9 +245,9 @@ export default function UploadContentPage() {
       // Create form data to handle both files and other fields
       const contentData = new FormData();
       
-      // Append all form fields
+      // Append all form fields except the questions array which we append separately as JSON
       Object.keys(formData).forEach(key => {
-        if (key !== 'quiz_questions') {
+        if (key !== 'trivia_questions') {
           contentData.append(key, formData[key]);
         }
       });
@@ -228,11 +259,25 @@ export default function UploadContentPage() {
         contentData.append('file', pdfFile);
       }
 
-      // Add quiz correct answers if this is a quiz
-      if (formData.content_type === 'quiz') {
-        contentData.append('quiz_correct_answers', JSON.stringify(quizCorrectAnswers));
-        // include full questions so mobile app can render them
-        contentData.append('quiz_questions', JSON.stringify(formData.quiz_questions || []));
+      // Add quiz/trivia payload if this is a quiz (compatibility + new format)
+      if (formData.content_type === 'trivia') {
+        // Build new `trivia_questions` schema expected by mobile: question, choices[], correctIndex, category, difficulty
+        const letterToIndex = { a: 0, b: 1, c: 2, d: 3 };
+        const triviaQuestions = (formData.trivia_questions || []).map((q, idx) => {
+          const optsObj = q.options || {};
+          const choices = [optsObj.a || '', optsObj.b || '', optsObj.c || '', optsObj.d || ''];
+          const correctLetter = triviaCorrectAnswers[idx + 1];
+          const correctIndex = correctLetter ? (letterToIndex[correctLetter] ?? 0) : 0;
+          return {
+            question: q.question || '',
+            choices,
+            correctIndex,
+            category: q.category || '',
+            difficulty: q.difficulty || 'easy'
+          };
+        });
+
+        contentData.append('trivia_questions', JSON.stringify(triviaQuestions));
       }
 
       // Don't append status here since backend handles it in perform_create
@@ -253,18 +298,16 @@ export default function UploadContentPage() {
         photo_caption: '',
         highlights: '',
         ar_marker: '',
-        quiz_length: '',
-        quiz_badges: 'no',
-        quiz_number: '',
         chat_bot_allow: true,
-        exclude_audio: false
+        exclude_audio: false,
+        trivia_questions: []
       });
       setImageFile(null);
       setPdfFile(null);
       setPreviewImage(null);
       setImageUploadStatus('');
       setPdfUploadStatus('');
-      setQuizCorrectAnswers({});
+      setTriviaCorrectAnswers({});
       
       // Reset file input elements
       if (document.getElementById('imageFile')) {
@@ -366,7 +409,7 @@ export default function UploadContentPage() {
                   <option value="image">Image</option>
                   <option value="video">Video</option>
                   <option value="document">Document</option>
-                  <option value="quiz">Quiz</option>
+                  <option value="trivia">Trivia Questions</option>
                 </select>
                 <span className="field-hint">Choose the type of content you are uploading</span>
               </div>
@@ -404,70 +447,34 @@ export default function UploadContentPage() {
             </div>
           </div>
 
-          {/* Quiz Specific Fields */}
-          {formData.content_type === 'quiz' && (
+          {/* Trivia Questions Section */}
+          {formData.content_type === 'trivia' && (
             <div className="form-section">
-              <h2 className="section-title">Quiz Configuration</h2>
-              
-              <div className="form-row double-column">
-                <div className="form-group">
-                  <label htmlFor="quiz_length" className="required">Number of Questions</label>
-                  <input
-                    type="number"
-                    id="quiz_length"
-                    name="quiz_length"
-                    value={formData.quiz_length}
-                    onChange={handleChange}
-                    placeholder="e.g., 10"
-                    min="1"
-                    max="100"
-                    className="form-input"
-                    required
-                  />
-                  <span className="field-hint">How many questions will be in this quiz?</span>
-                </div>
+              <h2 className="section-title">Trivia Questions</h2>
 
-                <div className="form-group">
-                  <label htmlFor="quiz_badges" className="required">Award Badges</label>
-                  <select
-                    id="quiz_badges"
-                    name="quiz_badges"
-                    value={formData.quiz_badges}
-                    onChange={handleChange}
-                    className="form-select"
-                    required
-                  >
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                  </select>
-                  <span className="field-hint">Will this quiz award badges upon completion?</span>
-                </div>
+              <div style={{ marginBottom: 12 }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    // append an empty question
+                    setFormData(prev => ({
+                      ...prev,
+                      trivia_questions: [...(prev.trivia_questions || []), { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' }]
+                    }));
+                  }}
+                >
+                  Add Question
+                </button>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="quiz_number" className="required">Quiz Sequence Number</label>
-                <input
-                  type="number"
-                  id="quiz_number"
-                  name="quiz_number"
-                  value={formData.quiz_number}
-                  onChange={handleChange}
-                  placeholder="e.g., 1"
-                  min="1"
-                  className="form-input"
-                  required
-                />
-                <span className="field-hint">The order in which this quiz appears in the sequence</span>
-              </div>
-
-              {/* Dynamic Question Fields */}
-              {formData.quiz_length && Number(formData.quiz_length) > 0 && (
+              {formData.trivia_questions && formData.trivia_questions.length > 0 && (
                 <div className="quiz-section">
-                  <h3 className="quiz-section-title">Quiz Questions & Options</h3>
+                  <h3 className="quiz-section-title">Questions & Options</h3>
                   <div className="quiz-questions-container">
-                    {Array.from({ length: Number(formData.quiz_length) }, (_, i) => i).map((index) => {
-                      const questionNum = index + 1;
-                      const question = formData.quiz_questions[index] || { question: '', options: { a: '', b: '', c: '', d: '' } };
+                      {formData.trivia_questions.map((question, index) => {
+                        const questionNum = index + 1;
+                        const q = question || { question: '', options: { a: '', b: '', c: '', d: '' }, category: '', difficulty: 'easy' };
                       return (
                         <div key={questionNum} className="question-card">
                           {/* Question Text Input */}
@@ -475,7 +482,7 @@ export default function UploadContentPage() {
                             <label className="required">Question {questionNum}</label>
                             <input
                               type="text"
-                              value={question.question || ''}
+                              value={q.question || ''}
                               onChange={(e) => handleQuestionTextChange(index, e.target.value)}
                               placeholder={`Enter question ${questionNum}`}
                               className="form-input"
@@ -485,7 +492,7 @@ export default function UploadContentPage() {
 
                           {/* Options Grid */}
                           <div className="options-grid">
-                            {Object.entries(question.options || {}).map(([optKey, optValue]) => (
+                            {Object.entries(q.options || {}).map(([optKey, optValue]) => (
                               <div key={optKey} className="form-group">
                                 <label>Option {optKey.toUpperCase()}</label>
                                 <input
@@ -500,6 +507,33 @@ export default function UploadContentPage() {
                             ))}
                           </div>
 
+                          {/* Category & Difficulty */}
+                          <div className="form-row">
+                            <div className="form-group">
+                              <label>Category</label>
+                              <input
+                                type="text"
+                                value={q.category || ''}
+                                onChange={(e) => handleCategoryChange(index, e.target.value)}
+                                placeholder="e.g., technology"
+                                className="form-input"
+                              />
+                            </div>
+
+                            <div className="form-group">
+                              <label>Difficulty</label>
+                              <select
+                                value={q.difficulty || 'easy'}
+                                onChange={(e) => handleDifficultyChange(index, e.target.value)}
+                                className="form-select"
+                              >
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                              </select>
+                            </div>
+                          </div>
+
                           {/* Correct Answer Selection */}
                           <div className="form-group">
                             <label>Correct Answer</label>
@@ -510,8 +544,8 @@ export default function UploadContentPage() {
                                     type="radio"
                                     name={`question_${questionNum}`}
                                     value={option}
-                                    checked={quizCorrectAnswers[questionNum] === option}
-                                    onChange={() => handleQuizAnswerChange(questionNum, option)}
+                                    checked={triviaCorrectAnswers[questionNum] === option}
+                                    onChange={() => handleTriviaAnswerChange(questionNum, option)}
                                   />
                                   <span className="radio-text">{option.toUpperCase()}</span>
                                 </label>
@@ -547,8 +581,8 @@ export default function UploadContentPage() {
             </div>
           </div>
 
-          {/* File Upload Section - Hidden for Quiz */}
-          {formData.content_type !== 'quiz' && (
+          {/* File Upload Section - Hidden for Trivia */}
+          {formData.content_type !== 'trivia' && (
             <div className="form-section">
               <h2 className="section-title">Media Files</h2>
               

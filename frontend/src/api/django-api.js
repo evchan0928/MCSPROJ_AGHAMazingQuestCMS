@@ -265,6 +265,9 @@ export const createContentItem = async (data) => {
             formData.append(key, JSON.stringify(data[key]));
           } else if (key === 'quiz_questions' && typeof data[key] === 'object') {
             formData.append(key, JSON.stringify(data[key]));
+          } else if (key === 'trivia_questions' && typeof data[key] === 'object') {
+            // New trivia schema: question, choices[], correctIndex, category, difficulty
+            formData.append(key, JSON.stringify(data[key]));
           } else if (typeof data[key] === 'boolean') {
             formData.append(key, data[key].toString());
           } else {

@@ -65,7 +65,7 @@ class Command(BaseCommand):
         ]
         
         # Content types available in the model
-        content_types = ['text', 'image', 'video', 'document']
+        content_types = ['text', 'image', 'video', 'document', 'trivia']
         
         # Status options from the model
         statuses = [
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                 photo_caption=f"Caption for {title}",
                 highlights=highlight,
                 ar_marker=random.choice([True, False]),
-                quiz=random.choice([True, False]),
+                # legacy `quiz` removed; trivia content represented by `trivia_questions`
                 enable_badges=random.choice([True, False]),
                 chat_bot_allow=random.choice([True, False]),
                 exclude_audio=random.choice([True, False]),
