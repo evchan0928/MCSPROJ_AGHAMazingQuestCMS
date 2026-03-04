@@ -2,14 +2,23 @@
 import axios from 'axios';
 
 // Initialize Django API client
-// Always use Tailscale IP for all API requests
+// Use environment-appropriate URL
 const getBackendURL = () => {
-  // Always route through Tailscale IP
-  return 'http://100.93.255.84:8000';
+  // Use localhost for development, Tailscale for production
+  if (process.env.NODE_ENV === 'production') {
+    return 'http://100.93.255.84:8000';
+  } else {
+    // For development, use the proxy URL which forwards to backend
+    return '';
+  }
 };
 
 const BACKEND_BASE_URL = getBackendURL();
-const BACKEND_API_URL = BACKEND_BASE_URL.endsWith('/api') ? BACKEND_BASE_URL : `${BACKEND_BASE_URL}/api`;
+// If we're using the proxy (empty string), the API calls will go directly to /api
+// Otherwise, append /api to the base URL
+const BACKEND_API_URL = BACKEND_BASE_URL ? 
+  (BACKEND_BASE_URL.endsWith('/api') ? BACKEND_BASE_URL : `${BACKEND_BASE_URL}/api`) : 
+  '/api';
 
 // Create an axios instance with default settings
 const apiClient = axios.create({

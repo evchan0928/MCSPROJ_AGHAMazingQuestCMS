@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18
+    image: postgres:15
     restart: unless-stopped
     env_file:
       - .env.local
@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-appuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     command: >
-      sh -c "until pg_isready -h ${DB_HOST:-db} -p ${DB_PORT:-5432}; do echo waiting for db; sleep 1; done; python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+      sh -c "until pg_isready -h ${DB_HOST:-db} -p ${DB_PORT:-5432}; do echo waiting for db; sleep 1; done; python manage.py migrate --noinput && python manage.py load_initial_data && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/app:cached
     ports:
@@ -57,6 +57,20 @@ services:
     environment:
       - INITIAL_ADMIN_PASSWORD=admin123
 
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+
 volumes:
   postgres_data:
+  pgadmin_data:
   portainer_data:
