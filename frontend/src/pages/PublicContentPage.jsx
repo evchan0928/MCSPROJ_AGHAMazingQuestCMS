@@ -20,13 +20,45 @@ const PublicContentPage = () => {
       setLoading(true);
       // Using the public content endpoint that doesn't require authentication
       const response = await axios.get('/api/content/game/public-content/');
-      setContents(response.data);
+      // Process the response to fix file URLs that may be incorrectly formatted
+      const processedData = response.data.map(item => ({
+        ...item,
+        file_url: fixImageUrl(item.file_url),
+        image_url: fixImageUrl(item.image_url)
+      }));
+      setContents(processedData);
     } catch (err) {
       console.error('Error fetching published content:', err);
       setError('Failed to load content. Please try again later.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to fix image URLs to work through the proxy
+  const fixImageUrl = (url) => {
+    if (!url) return url;
+    
+    // If it's already an absolute URL with http/https, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      // If the URL contains the backend port, replace it with frontend proxy
+      if (url.includes(':8000')) {
+        return url.replace('http://backend:8000', window.location.origin)
+                 .replace('http://localhost:8000', window.location.origin);
+      }
+      return url;
+    }
+    
+    // If it's a relative path, prepend the backend API path
+    if (url.startsWith('/')) {
+      // Check if it's already prefixed with /api
+      if (url.startsWith('/media/')) {
+        return `${window.location.origin}${url}`;
+      }
+      return `${window.location.origin}${url}`;
+    }
+    
+    return url;
   };
 
   if (loading) {
@@ -87,7 +119,7 @@ const PublicContentPage = () => {
               <Row gutter={[24, 24]}>
                 {contents.map((item) => (
                   <Col xs={24} sm={12} md={12} lg={8} xl={6} key={item.id}>
-                    <ContentCard content={item} />
+                    <ContentCard content={item} fixImageUrl={fixImageUrl} />
                   </Col>
                 ))}
               </Row>
@@ -98,7 +130,7 @@ const PublicContentPage = () => {
                 <Row gutter={[24, 24]}>
                   {textContent.map((item) => (
                     <Col xs={24} sm={12} md={12} lg={8} xl={6} key={item.id}>
-                      <ContentCard content={item} />
+                      <ContentCard content={item} fixImageUrl={fixImageUrl} />
                     </Col>
                   ))}
                 </Row>
@@ -110,7 +142,7 @@ const PublicContentPage = () => {
                 <Row gutter={[24, 24]}>
                   {imageContent.map((item) => (
                     <Col xs={24} sm={12} md={12} lg={8} xl={6} key={item.id}>
-                      <ContentCard content={item} />
+                      <ContentCard content={item} fixImageUrl={fixImageUrl} />
                     </Col>
                   ))}
                 </Row>
@@ -122,7 +154,7 @@ const PublicContentPage = () => {
                 <Row gutter={[24, 24]}>
                   {videoContent.map((item) => (
                     <Col xs={24} sm={12} md={12} lg={8} xl={6} key={item.id}>
-                      <ContentCard content={item} />
+                      <ContentCard content={item} fixImageUrl={fixImageUrl} />
                     </Col>
                   ))}
                 </Row>
@@ -134,7 +166,7 @@ const PublicContentPage = () => {
                 <Row gutter={[24, 24]}>
                   {documentContent.map((item) => (
                     <Col xs={24} sm={12} md={12} lg={8} xl={6} key={item.id}>
-                      <ContentCard content={item} />
+                      <ContentCard content={item} fixImageUrl={fixImageUrl} />
                     </Col>
                   ))}
                 </Row>
@@ -146,7 +178,7 @@ const PublicContentPage = () => {
                 <Row gutter={[24, 24]}>
                   {triviaContent.map((item) => (
                     <Col xs={24} sm={12} md={12} lg={8} xl={6} key={item.id}>
-                      <ContentCard content={item} />
+                      <ContentCard content={item} fixImageUrl={fixImageUrl} />
                     </Col>
                   ))}
                 </Row>
@@ -166,7 +198,7 @@ const PublicContentPage = () => {
 };
 
 // Component to display individual content items
-const ContentCard = ({ content }) => {
+const ContentCard = ({ content, fixImageUrl }) => {
   const renderContent = () => {
     switch (content.content_type) {
       case 'text':
@@ -174,9 +206,10 @@ const ContentCard = ({ content }) => {
           <div>
             {content.image_url && (
               <Image 
-                src={content.image_url} 
+                src={fixImageUrl(content.image_url)} 
                 alt={content.title}
                 style={{ width: '100%', height: '150px', objectFit: 'cover' }}
+                fallback="https://via.placeholder.com/300x150?text=Image+Not+Available"
               />
             )}
             <div style={{ padding: '10px 0' }}>
@@ -193,9 +226,10 @@ const ContentCard = ({ content }) => {
       case 'image':
         return content.file_url ? (
           <Image 
-            src={content.file_url} 
+            src={fixImageUrl(content.file_url)} 
             alt={content.title}
             style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+            fallback="https://via.placeholder.com/300x200?text=Image+Not+Available"
           />
         ) : (
           <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5' }}>
@@ -206,7 +240,7 @@ const ContentCard = ({ content }) => {
       case 'video':
         return content.file_url ? (
           <video 
-            src={content.file_url} 
+            src={fixImageUrl(content.file_url)} 
             controls 
             style={{ width: '100%', height: '200px' }}
           >
@@ -224,7 +258,7 @@ const ContentCard = ({ content }) => {
             <div style={{ fontSize: '48px', marginBottom: '10px' }}>📄</div>
             <p>Document: {content.file_url ? content.file_url.split('/').pop() : 'N/A'}</p>
             {content.file_url && (
-              <a href={content.file_url} target="_blank" rel="noopener noreferrer">
+              <a href={fixImageUrl(content.file_url)} target="_blank" rel="noopener noreferrer">
                 <button style={{ 
                   backgroundColor: '#1890ff', 
                   color: 'white', 
