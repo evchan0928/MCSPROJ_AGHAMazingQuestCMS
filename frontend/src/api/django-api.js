@@ -4,13 +4,10 @@ import axios from 'axios';
 // Initialize Django API client
 // Use environment-appropriate URL
 const getBackendURL = () => {
-  // Use localhost for development, Tailscale for production
-  if (process.env.NODE_ENV === 'production') {
-    return 'http://100.93.255.84:8000';
-  } else {
-    // For development, use the proxy URL which forwards to backend
-    return '';
-  }
+  // In Docker Compose setup, frontend and backend communicate through nginx proxy
+  // All API calls should be relative to the frontend origin (http://localhost:3000)
+  // which nginx will proxy to the backend (http://backend:8000)
+  return ''; // Always use relative paths in Docker Compose setup
 };
 
 const BACKEND_BASE_URL = getBackendURL();
@@ -626,7 +623,7 @@ export const getMobileStatistics = async () => {
 
 export async function getUserProfiles(params = {}) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`/api/mobile/user-profiles/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -641,7 +638,7 @@ export async function getUserProfiles(params = {}) {
 
 export async function createUserProfile(userData) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/`, {
+  const response = await fetch(`/api/mobile/user-profiles/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -657,7 +654,7 @@ export async function createUserProfile(userData) {
 
 export async function updateUserProfile(profileId, userData) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/${profileId}/`, {
+  const response = await fetch(`/api/mobile/user-profiles/${profileId}/`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -673,7 +670,7 @@ export async function updateUserProfile(profileId, userData) {
 
 export async function deleteUserProfile(profileId) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/user-profiles/${profileId}/`, {
+  const response = await fetch(`/api/mobile/user-profiles/${profileId}/`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -688,7 +685,7 @@ export async function deleteUserProfile(profileId) {
 
 export async function getUserSessions(params = {}) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/user-sessions/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`/api/mobile/user-sessions/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -703,7 +700,7 @@ export async function getUserSessions(params = {}) {
 
 export async function getScores(params = {}) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/scores/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`/api/mobile/scores/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -718,7 +715,7 @@ export async function getScores(params = {}) {
 
 export async function getBadges(params = {}) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/badges/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`/api/mobile/badges/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -733,7 +730,7 @@ export async function getBadges(params = {}) {
 
 export async function getUserBadges(params = {}) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/user-badges/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`/api/mobile/user-badges/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -748,7 +745,7 @@ export async function getUserBadges(params = {}) {
 
 export async function getLeaderboards(params = {}) {
   const token = localStorage.getItem('access_token');
-  const response = await fetch(`${BACKEND_API_URL}/mobile/leaderboards/?${new URLSearchParams(params)}`, {
+  const response = await fetch(`/api/mobile/leaderboards/?${new URLSearchParams(params)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

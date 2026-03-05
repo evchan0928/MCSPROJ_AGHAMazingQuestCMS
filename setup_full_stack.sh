@@ -1,81 +1,116 @@
 #!/bin/bash
 
-# Full Stack Development Setup Script
-# This script starts both the Django backend and React frontend servers
+# AGHAMazingQuestCMS Full Stack Setup Script
+# Sets up and starts the complete application stack with proper service initialization
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-echo "==========================================="
-echo "AHA Amazing Quest CMS - Full Stack Setup"
-echo "==========================================="
+echo "🚀 Starting AGHAMazingQuestCMS Full Stack Setup..."
 
-# Check if running in venv
-if [ -z "$VIRTUAL_ENV" ]; then
-    echo "Activating virtual environment..."
-    source backend/venv/bin/activate
-    echo "Virtual environment activated."
-fi
-
-# Check if ports are available
-if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null || lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null; then
-    echo "ERROR: Port 8000 or 3000 is already in use. Please stop the processes first."
-    echo "Run: lsof -ti:8000 | xargs kill and lsof -ti:3000 | xargs kill"
+# Verify we're on the correct branch
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$CURRENT_BRANCH" != "2.24.1-wip" ]]; then
+    echo "❌ ERROR: Not on 2.24.1-wip branch. Please switch to the correct branch."
     exit 1
 fi
+echo "✅ On correct branch: $CURRENT_BRANCH"
 
-# Navigate to project root
-cd "$(dirname "$0")"
+# Verify virtual environment is active
+if [[ -z "$VIRTUAL_ENV" ]]; then
+    echo "❌ Virtual environment not active. Activating venv..."
+    if [[ -d "venv" ]]; then
+        source venv/bin/activate
+        echo "✅ Virtual environment activated"
+    else
+        echo "❌ venv directory does not exist. Creating virtual environment..."
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        echo "✅ Virtual environment created and activated"
+    fi
+else
+    echo "✅ Virtual environment already active"
+fi
 
-echo "Starting full stack application..."
+# Check if node_modules exists, install if not
+if [[ ! -d "frontend/node_modules" ]]; then
+    echo "📦 Installing frontend dependencies..."
+    cd frontend
+    npm install
+    cd ..
+    echo "✅ Frontend dependencies installed"
+else
+    echo "✅ Frontend dependencies already installed"
+fi
+
+# Check if requirements are installed in venv
+if [[ ! -f "requirements_installed" ]] || [[ "backend/requirements.txt" -nt "requirements_installed" ]]; then
+    echo "📦 Installing backend dependencies..."
+    pip install -r backend/requirements.txt
+    touch requirements_installed
+    echo "✅ Backend dependencies installed"
+else
+    echo "✅ Backend dependencies already installed"
+fi
+
+# Stop any existing services
+echo "🛑 Stopping any existing services..."
+if [[ -f "stop_services.sh" ]]; then
+    ./stop_services.sh || true
+fi
+
+# Wait a moment for ports to be released
+sleep 2
+
+# Check for port availability
+echo "🔍 Checking port availability..."
+for port in 8000 3000 5432 9000 5050; do
+    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null; then
+        echo "⚠️  Port $port is in use. Attempting to free it..."
+        lsof -ti:$port | xargs kill -9 2>/dev/null || true
+    fi
+done
+
+echo "✅ Ports are available"
+
+# Start Docker services
+echo "🐳 Starting Docker services..."
+docker compose up -d
+
+# Wait for services to be healthy
+echo "⏳ Waiting for services to be healthy..."
+sleep 10
+
+# Check if the backend service is running properly
+if docker compose exec backend pg_isready &>/dev/null; then
+    echo "✅ Backend service is ready"
+else
+    echo "⏳ Waiting more time for backend to initialize..."
+    sleep 30
+fi
+
+# Run migrations if this is a fresh start
+echo "🔧 Running database migrations..."
+docker compose exec backend python manage.py migrate
+
+# Create a superuser if one doesn't exist
+echo "🔑 Ensuring superuser account exists..."
+docker compose exec backend python create_admin_user.py
+
+echo "✅ Superuser account ensured"
+
+echo "🌟 AGHAMazingQuestCMS Full Stack is now running!"
+echo ""
+echo "🌐 Access the application at:"
+echo "   Frontend: http://localhost:3000"
+echo "   Backend API: http://localhost:8000/api/"
+echo "   Admin Panel: http://localhost:8000/admin/"
+echo "   Portainer: http://localhost:9000"
+echo "   pgAdmin: http://localhost:5050"
+echo ""
+echo "🔄 To stop the application, run: ./stop_services.sh"
 echo ""
 
-# Start Docker services (database and pgAdmin)
-echo "Starting Docker services (PostgreSQL and pgAdmin)..."
-docker compose up -d db pgadmin
-echo "Docker services started."
-
-# Wait for database to be ready
-echo "Waiting for database to be ready..."
-timeout 30 bash -c 'until docker exec mcsproj_aghamazingquestcms-db-1 pg_isready > /dev/null 2>&1; do sleep 1; done'
-echo "Database is ready."
-
-# Run Django migrations
-echo "Running Django migrations..."
-cd backend
-python manage.py migrate --settings=config.settings.docker_db
-echo "Migrations completed."
-
-# Start backend (Django) in background
-echo "Starting Django backend server on port 8000..."
-nohup python manage.py runserver 0.0.0.0:8000 --settings=config.settings.docker_db > backend.log 2>&1 &
-BACKEND_PID=$!
-echo "Backend started with PID $BACKEND_PID"
-
-# Wait a moment for backend to start
-sleep 3
-
-# Start frontend (React) in background
-echo "Starting React frontend server on port 3000..."
-cd ../frontend
-nohup npm start > frontend.log 2>&1 &
-FRONTEND_PID=$!
-echo "Frontend started with PID $FRONTEND_PID"
-
-echo ""
-echo "==========================================="
-echo "Application is now running!"
-echo "Backend: http://localhost:8000"
-echo "Frontend: http://localhost:3000"
-echo "pgAdmin: http://localhost:5050 (login: admin@admin.com / admin)"
-echo "PostgreSQL: localhost:5432 (user: postgres / password: admin)"
-echo ""
-echo "Valid login credentials:"
-echo "- Username: admin"
-echo "- Password: admin123"
-echo "- Email: admin@example.com"
-echo ""
-echo "To stop the application, run: ./stop_services.sh"
-echo "==========================================="
-
-# Wait for both processes
-wait $BACKEND_PID $FRONTEND_PID
+# Display service status
+echo "📋 Service Status:"
+docker compose ps

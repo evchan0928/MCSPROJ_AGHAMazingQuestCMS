@@ -25,7 +25,7 @@ export default function UploadContentPage() {
     meta_description: '',
     photo_caption: '',
     highlights: '',
-    ar_marker: '',
+    ar_marker: false,  // Changed from empty string to boolean
     chat_bot_allow: true,
     exclude_audio: false,
     trivia_questions: []  // Initialize trivia questions
@@ -77,7 +77,10 @@ export default function UploadContentPage() {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: name === 'ar_marker' ? checked :
+               type === 'checkbox' ? checked :
+               name === 'chat_bot_allow' || name === 'exclude_audio' ? value === 'true' :
+               value
     }));
   };
 
@@ -248,7 +251,12 @@ export default function UploadContentPage() {
       // Append all form fields except the questions array which we append separately as JSON
       Object.keys(formData).forEach(key => {
         if (key !== 'trivia_questions') {
-          contentData.append(key, formData[key]);
+          // Handle boolean values properly
+          if (key === 'chat_bot_allow' || key === 'exclude_audio' || key === 'ar_marker') {
+            contentData.append(key, Boolean(formData[key]).toString());
+          } else {
+            contentData.append(key, formData[key]);
+          }
         }
       });
 
@@ -297,7 +305,7 @@ export default function UploadContentPage() {
         meta_description: '',
         photo_caption: '',
         highlights: '',
-        ar_marker: '',
+        ar_marker: false,  // Reset to false
         chat_bot_allow: true,
         exclude_audio: false,
         trivia_questions: []
@@ -415,17 +423,17 @@ export default function UploadContentPage() {
               </div>
               
               <div className="form-group">
-                <label htmlFor="ar_marker">AR Marker</label>
-                <input
-                  type="text"
-                  id="ar_marker"
-                  name="ar_marker"
-                  value={formData.ar_marker}
-                  onChange={handleChange}
-                  placeholder="Enter AR marker identifier"
-                  className="form-input"
-                />
-                <span className="field-hint">Optional: Specify if this content is tied to an AR marker</span>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="ar_marker"
+                    checked={formData.ar_marker}
+                    onChange={handleChange}
+                    className="form-checkbox"
+                  />{' '}
+                  AR Marker
+                </label>
+                <span className="field-hint">Check if this content is tied to an AR marker</span>
               </div>
             </div>
 
@@ -443,6 +451,20 @@ export default function UploadContentPage() {
                   <option value="false">No</option>
                 </select>
                 <span className="field-hint">Allow chat bot interaction with this content</span>
+              </div>
+              
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    name="exclude_audio"
+                    checked={formData.exclude_audio}
+                    onChange={handleChange}
+                    className="form-checkbox"
+                  />{' '}
+                  Exclude Audio
+                </label>
+                <span className="field-hint">Check if this content should exclude audio</span>
               </div>
             </div>
           </div>

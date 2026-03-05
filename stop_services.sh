@@ -1,37 +1,31 @@
 #!/bin/bash
 
-# Stop Services Script
-# This script stops the running backend and frontend processes
+# AGHAMazingQuestCMS Service Stop Script
+# Safely stops all running services
 
-echo "==========================================="
-echo "Stopping AHA Amazing Quest CMS Services"
-echo "==========================================="
+echo "🛑 Stopping AGHAMazingQuestCMS services..."
 
-# Kill processes running on port 8000 and 3000
-if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null; then
-    echo "Stopping backend server on port 8000..."
-    lsof -ti:8000 | xargs kill -TERM
-    echo "Backend stopped."
+# Stop Docker services
+if [[ -f "docker-compose.yml" ]]; then
+    echo "🐳 Stopping Docker containers..."
+    docker compose down
+    echo "✅ Docker containers stopped"
 else
-    echo "No process found on port 8000"
+    echo "⚠️  No docker-compose.yml found"
 fi
 
-if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null; then
-    echo "Stopping frontend server on port 3000..."
-    lsof -ti:3000 | xargs kill -TERM
-    echo "Frontend stopped."
-else
-    echo "No process found on port 3000"
-fi
+# Kill any remaining processes that might be running on our ports
+echo "🧹 Cleaning up any remaining processes..."
+for port in 8000 3000 5432 9000 5050 8080; do
+    pids=$(lsof -ti:$port)
+    if [[ -n "$pids" ]]; then
+        echo "Killing processes on port $port (PID: $pids)"
+        kill -TERM $pids 2>/dev/null || kill -KILL $pids 2>/dev/null || true
+    fi
+done
 
-# Also kill any lingering node or python processes related to our app
-echo "Stopping any lingering processes..."
-pids=$(pgrep -f "manage.py runserver\|npm start" || true)
-if [ ! -z "$pids" ]; then
-    kill -TERM $pids
-    echo "Lingering processes stopped."
-else
-    echo "No lingering processes found."
-fi
+# Clean up any temporary files
+echo "🧹 Cleaning up temporary files..."
+rm -f requirements_installed
 
-echo "All services stopped."
+echo "✅ All services stopped successfully"

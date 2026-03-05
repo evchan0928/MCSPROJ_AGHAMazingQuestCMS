@@ -27,6 +27,7 @@ import ChatbotFeedbackPage from './pages/mobile/ChatbotFeedbackPage';
 import CoinTransactionsPage from './pages/mobile/CoinTransactionsPage';
 import UsersPage from './pages/mobile/UsersPage';
 import AccountSettingsPage from './pages/AccountSettingsPage'; // Import the new account settings page
+import PublicContentPage from './pages/PublicContentPage'; // Import the new public content page
 
 const { Content, Sider } = Layout;
 
@@ -98,15 +99,6 @@ function AppLayout() {
                 element={
                   <ProtectedRoute>
                     <UploadContentPage />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              <Route 
-                path="/dashboard/content/list" 
-                element={
-                  <ProtectedRoute>
-                    <ContentListPage />
                   </ProtectedRoute>
                 } 
               />
@@ -279,6 +271,12 @@ function AppLayout() {
                     <AccountSettingsPage />
                   </ProtectedRoute>
                 } 
+              />
+              
+              {/* Public Content Page - Accessible without authentication */}
+              <Route 
+                path="/content" 
+                element={<PublicContentPage />}
               />
               
           </Routes>

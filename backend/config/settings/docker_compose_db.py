@@ -1,17 +1,17 @@
 """
-Docker PostgreSQL settings for local development.
-This configuration connects to PostgreSQL running in a Docker container from the host machine.
+Docker Compose PostgreSQL settings for containerized development.
+This configuration connects to PostgreSQL running in a Docker container from another container in the same compose network.
 """
 from .base import *
 
-# Database configuration to connect to PostgreSQL in Docker container
+# Database configuration to connect to PostgreSQL in Docker container from another container
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('POSTGRES_DB', 'aghamazing_db'),
         'USER': os.environ.get('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'admin'),
-        'HOST': 'localhost',  # Connect to localhost instead of 'db' since we're running Django outside Docker
+        'HOST': os.environ.get('DB_HOST', 'db'),  # Use the service name 'db' when in Docker compose network
         'PORT': '5432',       # The port exposed by the Docker container
         'OPTIONS': {
             'connect_timeout': 10,
@@ -75,4 +75,4 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Print emails to console during development
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@aghamazingquestcms.com')
 
-print("Using Docker-hosted PostgreSQL database for development with proper CORS/CSRF configuration.")
+print("Using Docker Compose PostgreSQL database configuration for containerized environment.")
