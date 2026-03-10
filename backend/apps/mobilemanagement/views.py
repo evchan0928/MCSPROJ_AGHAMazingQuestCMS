@@ -7,7 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth.models import User
 from django.db.models import Count, Sum, Avg
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from .models import UserProfile, UserSession, Score, Badge, UserBadge, Leaderboard
 from .serializers import (
@@ -58,6 +58,145 @@ def get_mobile_statistics(request):
                 'timestamp': timezone.now().isoformat(),
             }
         }
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_mobile_analytics(request):
+    """Get comprehensive mobile application analytics."""
+    try:
+        # Get data for the last 30 days
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        
+        # User registration trends
+        user_registrations = []
+        for i in range(30):
+            day = thirty_days_ago + timedelta(days=i)
+            next_day = day + timedelta(days=1)
+            
+            daily_registrations = UserProfile.objects.filter(
+                created_at__gte=day,
+                created_at__lt=next_day
+            ).count()
+            
+            user_registrations.append({
+                'date': day.strftime('%Y-%m-%d'),
+                'registrations': daily_registrations
+            })
+        
+        # Active sessions over time
+        active_sessions = []
+        for i in range(30):
+            day = thirty_days_ago + timedelta(days=i)
+            next_day = day + timedelta(days=1)
+            
+            daily_sessions = UserSession.objects.filter(
+                login_time__gte=day,
+                login_time__lt=next_day
+            ).count()
+            
+            active_sessions.append({
+                'date': day.strftime('%Y-%m-%d'),
+                'sessions': daily_sessions
+            })
+        
+        # Scores distribution
+        score_ranges = [
+            {'range': '0-25%', 'count': Score.objects.filter(percentage__range=(0, 25)).count()},
+            {'range': '26-50%', 'count': Score.objects.filter(percentage__range=(26, 50)).count()},
+            {'range': '51-75%', 'count': Score.objects.filter(percentage__range=(51, 75)).count()},
+            {'range': '76-100%', 'count': Score.objects.filter(percentage__range=(76, 100)).count()},
+        ]
+        
+        # Badge distribution by type
+        badge_types = Badge.objects.values('badge_type').annotate(count=Count('id'))
+        badge_distribution = [
+            {'type': item['badge_type'], 'count': item['count']}
+            for item in badge_types
+        ]
+        
+        # Top performing users by average score
+        top_users = Score.objects.values('user__username').annotate(
+            avg_score=Avg('percentage'),
+            total_scores=Count('id')
+        ).order_by('-avg_score')[:5]
+        
+        # Device information breakdown
+        device_info = UserSession.objects.exclude(device_info='').values('device_info').annotate(
+            count=Count('id')
+        )[:10]  # Top 10 device types
+        
+        data = {
+            'user_registration_trend': user_registrations,
+            'active_sessions_trend': active_sessions,
+            'score_distribution': score_ranges,
+            'badge_distribution': badge_distribution,
+            'top_users': list(top_users),
+            'device_info_breakdown': list(device_info),
+            'timestamp': timezone.now().isoformat(),
+        }
+        
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_user_engagement_analytics(request):
+    """Get user engagement analytics for the mobile app."""
+    try:
+        # Average session duration (simulated since we don't have logout times)
+        # We'll calculate based on last activity vs login time for recent sessions
+        recent_sessions = UserSession.objects.filter(
+            login_time__gte=timezone.now() - timedelta(days=7)
+        )
+        
+        engagement_metrics = {
+            'total_users': UserProfile.objects.count(),
+            'active_users_last_7_days': UserSession.objects.filter(
+                login_time__gte=timezone.now() - timedelta(days=7)
+            ).distinct('user').count(),
+            'active_users_last_30_days': UserSession.objects.filter(
+                login_time__gte=timezone.now() - timedelta(days=30)
+            ).distinct('user').count(),
+            'total_sessions_last_7_days': recent_sessions.count(),
+            'avg_scores_submitted_daily': Score.objects.filter(
+                completed_at__gte=timezone.now() - timedelta(days=7)
+            ).count() / 7,  # Average per day
+            'badges_earned_daily': UserBadge.objects.filter(
+                earned_at__gte=timezone.now() - timedelta(days=7)
+            ).count() / 7,  # Average per day
+        }
+        
+        # Engagement by day of week
+        days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        weekly_engagement = []
+        
+        for i, day_name in enumerate(days_of_week):
+            day_sessions = UserSession.objects.filter(
+                login_time__week_day=i+1  # Django uses 1-7 for Sunday-Saturday
+            ).count()
+            
+            weekly_engagement.append({
+                'day': day_name,
+                'sessions': day_sessions
+            })
+        
+        # Content engagement (scores by content)
+        popular_content = Score.objects.values('content_item__title').annotate(
+            attempt_count=Count('id'),
+            avg_percentage=Avg('percentage')
+        ).order_by('-attempt_count')[:5]
+        
+        data = {
+            'engagement_metrics': engagement_metrics,
+            'weekly_engagement': weekly_engagement,
+            'popular_content': list(popular_content),
+            'timestamp': timezone.now().isoformat(),
+        }
+        
         return Response(data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

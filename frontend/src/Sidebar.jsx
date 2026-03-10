@@ -290,6 +290,15 @@ export default function Sidebar({ user }) {
                                 Badges
                               </NavLink>
                             </li>
+                            <li>
+                              <NavLink 
+                                to="/dashboard/mobile/analytics" 
+                                style={({ isActive }) => ({ ...subDefaultStyle, ...(isActive ? { color: '#3b82f6', fontWeight: '600' } : {}) })}
+                                onClick={handleNavClick}
+                              >
+                                Mobile Analytics
+                              </NavLink>
+                            </li>
                         </ul>
                     )}
                 </li>

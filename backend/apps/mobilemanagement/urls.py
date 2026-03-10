@@ -13,4 +13,6 @@ router.register(r'leaderboards', views.LeaderboardViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('stats/', views.get_mobile_statistics, name='mobile-stats'),
+    path('analytics/', views.get_mobile_analytics, name='mobile-analytics'),
+    path('analytics/engagement/', views.get_user_engagement_analytics, name='mobile-engagement-analytics'),
 ]

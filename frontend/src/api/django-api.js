@@ -621,6 +621,16 @@ export const getMobileStatistics = async () => {
   return response.data;
 };
 
+export const getMobileAnalytics = async () => {
+  const response = await apiClient.get('/mobile/analytics/');
+  return response.data;
+};
+
+export const getMobileUserEngagement = async () => {
+  const response = await apiClient.get('/mobile/analytics/engagement/');
+  return response.data;
+};
+
 export async function getUserProfiles(params = {}) {
   const token = localStorage.getItem('access_token');
   const response = await fetch(`/api/mobile/user-profiles/?${new URLSearchParams(params)}`, {

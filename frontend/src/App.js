@@ -28,6 +28,10 @@ import CoinTransactionsPage from './pages/mobile/CoinTransactionsPage';
 import UsersPage from './pages/mobile/UsersPage';
 import AccountSettingsPage from './pages/AccountSettingsPage'; // Import the new account settings page
 import PublicContentPage from './pages/PublicContentPage'; // Import the new public content page
+import GenerateAnalyticsPage from './pages/GenerateAnalyticsPage'; // Import GenerateAnalyticsPage
+import ViewAnalyticsPage from './pages/ViewAnalyticsPage'; // Import ViewAnalyticsPage
+import DownloadAnalyticsPage from './pages/DownloadAnalyticsPage'; // Import DownloadAnalyticsPage
+import MobileAnalyticsPage from './pages/MobileAnalyticsPage'; // Import MobileAnalyticsPage
 
 const { Content, Sider } = Layout;
 
@@ -167,6 +171,33 @@ function AppLayout() {
               />
               
               <Route 
+                path="/dashboard/analytics/generate" 
+                element={
+                  <ProtectedRoute>
+                    <GenerateAnalyticsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
+                path="/dashboard/analytics/view" 
+                element={
+                  <ProtectedRoute>
+                    <ViewAnalyticsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
+                path="/dashboard/analytics/download" 
+                element={
+                  <ProtectedRoute>
+                    <DownloadAnalyticsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
                 path="/dashboard/profile" 
                 element={
                   <ProtectedRoute>
@@ -259,6 +290,15 @@ function AppLayout() {
                 element={
                   <ProtectedRoute>
                     <LeaderboardsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
+                path="/dashboard/mobile/analytics" 
+                element={
+                  <ProtectedRoute>
+                    <MobileAnalyticsPage />
                   </ProtectedRoute>
                 } 
               />

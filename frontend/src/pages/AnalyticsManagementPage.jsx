@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Typography, Statistic, Table, DatePicker, Select, Button, Tag } from 'antd';
 import { UserOutlined, FileTextOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { getAnalyticsSummary } from '../api/django-api';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { getAnalyticsSummary, getContentAnalytics, getViewsOverTime, getContentEngagementMetrics } from '../api/django-api';
 import statusLabel, { getStatusColor } from '../utils/statusLabels.jsx';
 
 const { RangePicker } = DatePicker;
@@ -16,6 +17,8 @@ const AnalyticsManagementPage = () => {
     contentViews: 0
   });
   const [contentData, setContentData] = useState([]);
+  const [contentDistribution, setContentDistribution] = useState([]);
+  const [viewsOverTime, setViewsOverTime] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(null);
 
@@ -26,15 +29,21 @@ const AnalyticsManagementPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const analyticsData = await getAnalyticsSummary();
+      const [analyticsData, contentAnalytics, viewsTimeData, engagementData] = await Promise.all([
+        getAnalyticsSummary(),
+        getContentAnalytics(),
+        getViewsOverTime(),
+        getContentEngagementMetrics()
+      ]);
+
       const summary = analyticsData?.summary || {};
       const content = Array.isArray(analyticsData?.content) ? analyticsData.content : [];
 
       setStats({
         totalUsers: summary.total_users || 0,
-        totalContent: summary.total_content || 0,
+        totalContent: summary.total_content_items || 0,
         publishedContent: summary.published_content || 0,
-        contentViews: summary.total_views || 0
+        contentViews: engagementData?.total_views || 0
       });
 
       setContentData(
@@ -46,12 +55,27 @@ const AnalyticsManagementPage = () => {
           date: item.date || item.created_at || item.created_date || null
         }))
       );
+
+      // Prepare content distribution data for pie chart
+      const contentByStatus = contentAnalytics?.content_by_status || {};
+      const distributionData = Object.entries(contentByStatus).map(([status, data]) => ({
+        name: statusLabel(status),
+        value: data.count || 0,
+      })).filter(item => item.value > 0);
+
+      setContentDistribution(distributionData);
+      
+      // Prepare views over time data for bar chart
+      setViewsOverTime(viewsTimeData?.views_over_time || []);
+
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
   const handleDateChange = (dates) => {
     setDateRange(dates);
@@ -153,6 +177,59 @@ const AnalyticsManagementPage = () => {
         </Col>
       </Row>
 
+      <Row gutter={16} style={{ marginBottom: '24px' }}>
+        <Col span={12}>
+          <Card title="Content Distribution by Status">
+            <div style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={contentDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {contentDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} items`, 'Count']} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </Col>
+        <Col span={12}>
+          <Card title="Views Over Time">
+            <div style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={viewsOverTime}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="hour" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="views" name="Views" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
       <Card title="Content Performance" loading={loading}>
         <Table 
           columns={statColumns} 
@@ -161,14 +238,6 @@ const AnalyticsManagementPage = () => {
           scroll={{ x: 800 }}
         />
       </Card>
-
-      <div style={{ marginTop: '24px' }}>
-        <Card title="Content Distribution">
-          <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Text type="secondary">Chart visualization would appear here in a full implementation</Text>
-          </div>
-        </Card>
-      </div>
     </div>
   );
 };
