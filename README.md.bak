@@ -101,7 +101,7 @@ The nginx configuration:
 - Includes security headers
 
 
-## Local Database Configuration
+## Neon Database Configuration
 
 This project is configured to work with a local PostgreSQL database using Docker. Follow these steps to set up your local environment:
 

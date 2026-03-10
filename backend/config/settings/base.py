@@ -70,13 +70,9 @@ if os.environ.get('DATABASE_URL'):
     port = tmpPostgres.port or 5432
     options = dict(parse_qsl(tmpPostgres.query))
 
-    # Only validate port and sslmode if using Neon (contains neon.tech)
-    if 'neon.tech' in tmpPostgres.hostname:
         if port != 5432:
-            print(f"WARNING: Neon database should use port 5432, got {port}. This may cause connection issues.")
 
         if options.get('sslmode') != 'require':
-            print("WARNING: Neon database requires sslmode=require. This may cause connection issues.")
 
     DATABASES = {
         'default': {
